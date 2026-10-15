@@ -1,0 +1,652 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Montserrat:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-heading: 'Montserrat', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    --bg-base: #080c14;
+    --bg-surface: #0e1626;
+    --bg-elevated: #152238;
+    --bg-card: rgba(14, 22, 38, 0.75);
+
+    --accent-amber: #f59e0b;
+    --accent-gold: #fbbf24;
+    --accent-cyan: #38bdf8;
+    --accent-emerald: #10b981;
+    --accent-rose: #f43f5e;
+
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+
+    --border-subtle: rgba(255, 255, 255, 0.07);
+    --border-hover: rgba(245, 158, 11, 0.35);
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-full: 9999px;
+
+    --transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    position: relative;
+}
+
+.solar-bg-grid {
+    background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.04) 1px, transparent 0);
+    background-size: 24px 24px;
+}
+
+.glow-ambient-1 {
+    position: absolute;
+    width: 450px;
+    height: 450px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.16) 0%, transparent 70%);
+    filter: blur(90px);
+    top: -100px;
+    right: -80px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.glow-ambient-2 {
+    position: absolute;
+    width: 480px;
+    height: 480px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, transparent 70%);
+    filter: blur(100px);
+    top: 380px;
+    left: -120px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.sol-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.sol-main-content {
+    flex: 1;
+    position: relative;
+    z-index: 1;
+}
+
+.sol-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+    cursor: pointer;
+    border: 1px solid transparent;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.sol-btn--solar {
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+    color: #080c14;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.28);
+}
+
+.sol-btn--solar:hover {
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.42);
+    transform: translateY(-1.5px);
+}
+
+.sol-btn--secondary {
+    background: rgba(21, 34, 56, 0.8);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+    backdrop-filter: blur(8px);
+}
+
+.sol-btn--secondary:hover {
+    background: rgba(30, 48, 78, 0.95);
+    border-color: var(--border-hover);
+    transform: translateY(-1.5px);
+}
+
+.sol-btn--outline {
+    background: transparent;
+    color: var(--accent-amber);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.sol-btn--outline:hover {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: var(--accent-amber);
+    transform: translateY(-1.5px);
+}
+
+.sol-btn--lg {
+    padding: 0.85rem 1.65rem;
+    font-size: 0.95rem;
+    border-radius: var(--radius-md);
+}
+
+.sol-btn--sm {
+    padding: 0.4rem 0.85rem;
+    font-size: 0.8rem;
+}
+
+.sol-glass-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.sol-glass-card:hover {
+    border-color: var(--border-hover);
+    box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.5), 0 0 16px rgba(245, 158, 11, 0.08);
+    transform: translateY(-2px);
+}
+
+.sol-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    font-size: 0.725rem;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+
+.sol-badge--amber {
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--accent-gold);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.sol-badge--emerald {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--accent-emerald);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.sol-badge--cyan {
+    background: rgba(56, 189, 248, 0.12);
+    color: var(--accent-cyan);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.sol-header {
+    background: rgba(8, 12, 20, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 0.75rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.sol-header__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.sol-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+}
+
+.sol-brand__logo {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, #0e1626 0%, #152238 100%);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.18);
+}
+
+.sol-brand__name {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    color: #ffffff;
+    line-height: 1.1;
+}
+
+.sol-brand__name span {
+    color: var(--accent-amber);
+}
+
+.sol-brand__tagline {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.sol-nav-wrapper {
+    background: rgba(14, 22, 38, 0.95);
+    border-bottom: 1px solid var(--border-subtle);
+    position: sticky;
+    top: 57px;
+    z-index: 999;
+}
+
+.sol-nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.sol-nav-tabs {
+    display: flex;
+    list-style: none;
+    gap: 0.2rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.sol-nav-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.sol-tab-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.85rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-bottom: 2.5px solid transparent;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.sol-tab-item:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.sol-tab-item.active {
+    color: var(--accent-amber);
+    border-bottom-color: var(--accent-amber);
+    background: rgba(245, 158, 11, 0.06);
+    font-weight: 600;
+}
+
+.sol-hero {
+    padding: 4.5rem 0 3rem;
+    text-align: center;
+}
+
+.sol-hero__badge {
+    margin-bottom: 1.25rem;
+}
+
+.sol-hero__title {
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 4.5vw, 3.25rem);
+    font-weight: 800;
+    line-height: 1.2;
+    color: #ffffff;
+    max-width: 900px;
+    margin: 0 auto 1.25rem;
+    letter-spacing: -0.4px;
+}
+
+.sol-hero__title .highlight {
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 45%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.sol-hero__desc {
+    font-size: clamp(0.95rem, 1.8vw, 1.05rem);
+    color: var(--text-secondary);
+    max-width: 680px;
+    margin: 0 auto 2.25rem;
+    line-height: 1.65;
+}
+
+.sol-hero__actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.sol-metrics-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-top: 3.5rem;
+}
+
+.sol-metric-card {
+    padding: 1.4rem 1.25rem;
+    text-align: left;
+}
+
+.sol-metric-card__value {
+    font-family: var(--font-heading);
+    font-size: 2rem;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1;
+    margin-bottom: 0.35rem;
+}
+
+.sol-metric-card__value .unit {
+    color: var(--accent-amber);
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.sol-metric-card__label {
+    font-size: 0.825rem;
+    color: var(--text-secondary);
+}
+
+.sol-section {
+    padding: 3.5rem 0;
+}
+
+.sol-section-header {
+    text-align: center;
+    max-width: 620px;
+    margin: 0 auto 2.5rem;
+}
+
+.sol-section-header__tag {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    color: var(--accent-amber);
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+    display: block;
+}
+
+.sol-section-header__title {
+    font-family: var(--font-heading);
+    font-size: 2rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 0.6rem;
+}
+
+.sol-section-header__desc {
+    color: var(--text-secondary);
+    font-size: 0.925rem;
+}
+
+.sol-solutions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.25rem;
+}
+
+.sol-solution-card {
+    padding: 2rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.sol-solution-card__title {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0.85rem 0 0.5rem;
+}
+
+.sol-solution-card__desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.25rem;
+    line-height: 1.55;
+}
+
+.sol-solution-card__features {
+    list-style: none;
+    margin-bottom: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sol-solution-card__features li {
+    font-size: 0.825rem;
+    color: #cbd5e1;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.sol-solution-card__features li::before {
+    content: "✓";
+    color: var(--accent-amber);
+    font-weight: 700;
+}
+
+.sol-calculator-widget {
+    background: linear-gradient(135deg, rgba(14, 22, 38, 0.95) 0%, rgba(10, 18, 30, 0.9) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: var(--radius-xl);
+    padding: 2.75rem 2.25rem;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+    margin: 2rem 0;
+}
+
+.sol-slider-track {
+    width: 100%;
+    height: 7px;
+    border-radius: 4px;
+    background: #152238;
+    outline: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+}
+
+.sol-slider-track::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent-amber);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+    cursor: pointer;
+    border: 2px solid #ffffff;
+    transition: transform 0.15s ease;
+}
+
+.sol-slider-track::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+}
+
+.sol-calc-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    background: rgba(8, 12, 20, 0.6);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    margin-top: 1.75rem;
+}
+
+.sol-calc-stat-val {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent-gold);
+}
+
+.sol-calc-stat-lbl {
+    font-size: 0.775rem;
+    color: var(--text-secondary);
+}
+
+.sol-workflow-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 1rem;
+}
+
+.sol-workflow-step {
+    padding: 1.5rem 1rem;
+    text-align: center;
+}
+
+.sol-workflow-step__num {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid var(--accent-amber);
+    color: var(--accent-gold);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 0.95rem;
+}
+
+.sol-workflow-step__title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 0.35rem;
+}
+
+.sol-workflow-step__desc {
+    font-size: 0.775rem;
+    color: var(--text-muted);
+}
+
+.sol-footer {
+    background: #05080e;
+    border-top: 1px solid var(--border-subtle);
+    padding: 3.5rem 0 1.75rem;
+    margin-top: 4rem;
+}
+
+.sol-footer__grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 2.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.sol-footer__desc {
+    font-size: 0.825rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-top: 0.75rem;
+    max-width: 300px;
+}
+
+.sol-footer__col-title {
+    font-family: var(--font-heading);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.sol-footer__links {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sol-footer__links a {
+    color: var(--text-muted);
+    font-size: 0.825rem;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.sol-footer__links a:hover {
+    color: var(--accent-amber);
+    padding-left: 3px;
+}
+
+.sol-footer__bottom {
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.775rem;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+@media (max-width: 860px) {
+    .sol-footer__grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 580px) {
+    .sol-footer__grid {
+        grid-template-columns: 1fr;
+    }
+    .sol-footer__bottom {
+        flex-direction: column;
+        text-align: center;
+    }
+}
