@@ -97,7 +97,6 @@ document.addEventListener('DOMContentLoaded', function () {
     carousel.classList.add('is-ready');
     carousel.querySelector('.tv4-coverflow-controls').hidden = false;
     carousel.querySelector('.tv4-coverflow-dots').hidden = false;
-    carousel.querySelector('.tv4-coverflow-hint').hidden = false;
 });
 
 document.addEventListener('DOMContentLoaded', function () {

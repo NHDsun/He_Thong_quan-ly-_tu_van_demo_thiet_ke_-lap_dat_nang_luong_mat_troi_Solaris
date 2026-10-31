@@ -74,12 +74,12 @@ final class InstallationController
             }
         } catch (PDOException $error) {
             error_log('Installation database: ' . $error->getMessage());
-            $view['error'] = 'Chưa kết nối được dữ liệu lắp đặt. Hãy import database/tv4-installation.sql và kiểm tra cấu hình kết nối theo tài liệu TV4.';
+            $view['error'] = 'Chưa kết nối được dữ liệu lắp đặt. Vui lòng thử lại sau.';
         } catch (RuntimeException $error) {
             $view['error'] = $error->getMessage();
         } catch (Throwable $error) {
             error_log('Installation: ' . $error->getMessage());
-            $view['error'] = 'Không thể xử lý yêu cầu. Vui lòng tải lại trang hoặc xem nhật ký máy chủ.';
+            $view['error'] = 'Không thể xử lý yêu cầu. Vui lòng thử lại.';
         }
         return $view;
     }
@@ -95,7 +95,7 @@ final class InstallationController
     private function login(InstallationWorkflow $workflow): void
     {
         if (getenv('SOLARIS_INSTALLATION_LOGIN') === '0') {
-            throw new RuntimeException('Hãy đăng nhập qua hệ thống xác thực TV1.');
+            throw new RuntimeException('Vui lòng đăng nhập từ trang đăng nhập của hệ thống.');
         }
         if (($_SESSION['installation_login_blocked_until'] ?? 0) > time()) {
             throw new RuntimeException('Đã thử quá nhiều lần. Vui lòng thử lại sau 5 phút.');

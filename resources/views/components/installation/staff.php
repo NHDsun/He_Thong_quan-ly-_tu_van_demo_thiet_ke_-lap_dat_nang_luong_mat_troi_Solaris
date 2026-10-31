@@ -33,7 +33,7 @@ $availability = $viewData['availability'];
         <?php UI::component('button', 'Xem mức rảnh', ['type' => 'submit', 'variant' => 'outline', 'size' => 'sm']); ?>
     </form>
     <p class="tv4-muted">
-        % rảnh = thời gian còn lại / thời gian làm việc trong khoảng đang xem. Số dự án là toàn bộ dự án đang thực hiện. Lịch chưa phản ánh ngày nghỉ cá nhân; có thể phân công chồng lịch nếu vẫn đủ năng lực.
+        % rảnh theo khoảng ngày đang xem · Tổng số dự án đang làm
     </p>
     <form method="post" id="tv4-assignment-form" data-project="<?= $project['id'] ?>">
         <?php UI::form('assign'); ?>
@@ -96,7 +96,7 @@ $availability = $viewData['availability'];
             <?php UI::component('button', 'Phân công & bắt đầu dự án', ['type' => 'submit']); ?>
         </div>
         <p class="tv4-muted">
-            Khoảng ngày trên sẽ dùng làm lịch dự án, tối thiểu 6 ngày làm việc. Sáu giai đoạn được chia đều trên ngày làm việc; nhóm giữ nguyên cho toàn bộ dự án.
+            Lịch dự án tối thiểu 6 ngày làm việc.
         </p>
     </form>
 </section>

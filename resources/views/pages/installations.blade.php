@@ -29,7 +29,6 @@ if ($admin) {
         <div>
             <span class="tv4-eyebrow">SOLARIS / VẬN HÀNH DỰ ÁN</span>
             <h1><?= !$actor ? 'Đồng hành cùng dự án điện mặt trời' : ($customer ? 'Dự án của tôi' : 'Quản lý lắp đặt') ?></h1>
-            <p><?= !$actor ? 'Tìm hiểu quy trình lắp đặt và cách theo dõi dự án cùng SOLARIS.' : ($customer ? 'Theo dõi lịch triển khai và kết quả từng giai đoạn của dự án thuộc tài khoản của bạn.' : 'Theo dõi từng giai đoạn, phối hợp đội ngũ và quản lý hồ sơ thi công.') ?></p>
         </div>
         <?php if ($actor): ?>
             <div class="tv4-account">
@@ -57,7 +56,6 @@ if ($admin) {
         <?php require __DIR__ . '/../components/installation/guest.php'; ?>
         <form method="post" class="sol-glass-card tv4-panel tv4-login" id="installation-login">
             <h2>Đăng nhập theo dõi dự án</h2>
-            <p>Dành cho khách hàng, quản lý và kỹ thuật viên.</p>
             <?php UI::form('login'); ?>
             <label>
                 Tên đăng nhập
@@ -120,9 +118,6 @@ if ($admin) {
                 <?php if (!$viewData['listing']['projects']): ?>
                     <div class="tv4-empty sol-glass-card">
                         <h3>Chưa có dự án trong danh sách này</h3>
-                        <p>
-                            <?= $customer ? 'Dự án sẽ xuất hiện khi báo giá được chấp thuận và dự án được tạo gắn với tài khoản của bạn.' : ($admin ? 'Dự án mới xuất hiện sau khi báo giá được chấp thuận và TV3 khởi tạo dự án.' : 'Dự án sẽ xuất hiện khi quản lý phân công bạn vào nhóm thực hiện.') ?>
-                        </p>
                     </div>
                 <?php endif; ?>
             </div>

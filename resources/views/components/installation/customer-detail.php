@@ -39,7 +39,6 @@ $stageLabels = ['locked' => 'Chưa triển khai', 'in_progress' => 'Đang thực
     <?php endif; ?>
     <?php if ($project['completed_at']): ?><p>Hoàn tất dự án: <?= UI::escape($project['completed_at']) ?></p><?php endif; ?>
 </article>
-<p class="tv4-notice tv4-public-section">Bạn đang xem tiến độ dự án của mình. Thông tin được cập nhật khi đội kỹ thuật và quản lý xử lý các giai đoạn.</p>
 <ol class="tv4-steps" aria-label="Quy trình dự án của bạn">
     <?php foreach ($detail['stages'] as $stage): ?>
         <li class="<?= $stage['status'] === 'approved' ? 'done' : ($stage['stage'] === $project['current_stage'] && $project['status'] === 'in_progress' ? 'current' : '') ?>">
@@ -56,7 +55,7 @@ $stageLabels = ['locked' => 'Chưa triển khai', 'in_progress' => 'Đang thực
         <article class="sol-glass-card tv4-panel" id="customer-stage-<?= (int) $stage['position'] ?>">
             <div class="tv4-stage-heading">
                 <span class="tv4-stage-number"><?= (int) $stage['position'] ?></span>
-                <div><h3><?= UI::escape(Workflow::STAGES[$stage['stage']]) ?></h3><p><?= UI::escape($stageLabels[$stage['status']]) ?></p></div>
+                <div><h3><?= UI::escape(Workflow::STAGES[$stage['stage']]) ?></h3></div>
                 <?php UI::component('badge', $stageLabels[$stage['status']], ['variant' => $stage['status'] === 'approved' ? 'emerald' : 'amber']); ?>
             </div>
             <div class="tv4-meta">

@@ -73,7 +73,6 @@ $images = [
             <button type="button" data-coverflow-step="<?= $step - 1 ?>" aria-label="Giai đoạn <?= $step ?>: <?= UI::escape($label) ?>" aria-controls="installation-process-slides"><span></span></button>
         <?php endforeach; ?>
     </div>
-    <p class="tv4-coverflow-hint" hidden>Chọn thẻ hai bên, dùng phím ← → hoặc vuốt để khám phá từng giai đoạn.</p>
     </div>
 </section>
 <section class="tv4-public-section" aria-labelledby="customer-benefits-title">
@@ -85,7 +84,7 @@ $images = [
                     <rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18m-13 5 2 2 4-4"/>
                 </svg>
             </span>
-            <div><h3>Nắm rõ lịch triển khai</h3><p>Xem thời gian dự kiến và các mốc bắt đầu, hoàn thành đã được cập nhật cho từng giai đoạn.</p></div>
+            <div><h3>Nắm rõ lịch triển khai</h3><p>Lịch dự kiến và các mốc bắt đầu, hoàn thành của từng giai đoạn.</p></div>
         </article>
         <article class="sol-glass-card tv4-panel tv4-benefit">
             <span class="tv4-benefit-icon" aria-hidden="true">
@@ -93,7 +92,7 @@ $images = [
                     <path d="m3 6 1.5 1.5L7 4m-4 8 1.5 1.5L7 10m-4 8 1.5 1.5L7 16M11 6h10m-10 6h10m-10 6h10"/>
                 </svg>
             </span>
-            <div><h3>Theo dõi kết quả từng bước</h3><p>Phân biệt bước chưa mở, đang thực hiện, chờ xác nhận và đã hoàn thành để chủ động giám sát công trình.</p></div>
+            <div><h3>Theo dõi kết quả từng bước</h3><p>Cập nhật trạng thái và kết quả triển khai của từng giai đoạn.</p></div>
         </article>
         <article class="sol-glass-card tv4-panel tv4-benefit">
             <span class="tv4-benefit-icon" aria-hidden="true">
@@ -101,7 +100,7 @@ $images = [
                     <circle cx="9" cy="8" r="3"/><path d="M3 21v-2a6 6 0 0 1 12 0v2m2-16a3 3 0 0 1 0 6m1 4a5 5 0 0 1 3 4v2"/>
                 </svg>
             </span>
-            <div><h3>Biết đội ngũ phụ trách</h3><p>Xem tên các kỹ thuật viên đang được phân công cho dự án của bạn.</p></div>
+            <div><h3>Biết đội ngũ phụ trách</h3><p>Danh sách kỹ thuật viên phụ trách dự án.</p></div>
         </article>
         <article class="sol-glass-card tv4-panel tv4-benefit">
             <span class="tv4-benefit-icon" aria-hidden="true">
@@ -109,8 +108,7 @@ $images = [
                     <rect x="3" y="3" width="18" height="5" rx="1"/><path d="M5 8v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8m-10 6 2 2 4-4"/>
                 </svg>
             </span>
-            <div><h3>Xem lại dự án đã bàn giao</h3><p>Dự án thuộc tài khoản vẫn có thể được xem sau khi hoàn tất. Thông tin riêng của bạn chỉ hiển thị sau khi đăng nhập.</p></div>
+            <div><h3>Xem lại dự án đã bàn giao</h3><p>Xem tiến độ và các mốc hoàn thành sau khi dự án được bàn giao.</p></div>
         </article>
     </div>
-    <p class="tv4-muted">Trang theo dõi dành cho khách hàng chỉ cung cấp thông tin. Các thay đổi tiến độ, lịch và nhân sự được đội kỹ thuật gửi yêu cầu và quản lý xử lý.</p>
 </section>

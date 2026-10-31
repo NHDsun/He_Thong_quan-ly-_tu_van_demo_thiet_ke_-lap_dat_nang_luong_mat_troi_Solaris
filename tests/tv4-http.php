@@ -85,7 +85,7 @@ try {
     $check(str_contains($body,'cùng nội dung'),'Chống trùng theo hash nội dung');
     $http('&project=2',['action'=>'submit_stage','csrf'=>$token]);
     [, $body]=$http('&project=2');
-    $check(str_contains($body,'Đã gửi minh chứng'),'Gửi duyệt giai đoạn qua HTTP');
+    $check($db->query("SELECT status FROM project_stages WHERE project_id=2 AND stage='survey'")->fetchColumn()==='pending_approval' && str_contains($body,'Chờ duyệt'),'Gửi duyệt giai đoạn qua HTTP');
     $http('', ['action'=>'logout','csrf'=>$csrf($body)]);
     [, $body]=$http();
     $http('', ['action'=>'login','csrf'=>$csrf($body),'username'=>'kythuat.dung','password'=>'Solaris@2026']);
