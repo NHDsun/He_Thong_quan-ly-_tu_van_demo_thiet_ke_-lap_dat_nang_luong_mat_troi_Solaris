@@ -14,12 +14,13 @@ namespace App\Modules\Member3_Simulator;
 
 class SolarDemoController
 {
-    public function index()
+    public function index(array $cartProducts = [])
     {
         return [
             'status' => 'ready_for_development',
             'member' => 'Thành viên 3',
-            'page' => 'Tư vấn & Demo Thiết kế (Solar Calculator)'
+            'page' => 'Tư vấn & Demo Thiết kế (Solar Calculator)',
+            'cart_products' => $cartProducts,
         ];
     }
 }

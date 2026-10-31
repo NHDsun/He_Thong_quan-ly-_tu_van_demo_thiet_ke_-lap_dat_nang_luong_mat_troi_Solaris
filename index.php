@@ -1,6 +1,10 @@
 <?php
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start(['cookie_httponly' => true, 'cookie_samesite' => 'Lax']);
+}
+require_once __DIR__ . '/app/Modules/Member2_Products/ProductController.php';
 $page = $_GET['page'] ?? 'home';
-$validPages = ['home', 'products', 'calculator', 'installations', 'exercises', 'profile'];
+$validPages = ['home', 'products', 'cart', 'calculator', 'installations', 'exercises', 'profile'];
 if (!in_array($page, $validPages)) {
     $page = 'home';
 }
@@ -8,6 +12,7 @@ if (!in_array($page, $validPages)) {
 $pageTitles = [
     'home' => 'SOLARIS - Năng Lượng Mặt Trời Thông Minh',
     'products' => 'Giải Pháp & Sản Phẩm - SOLARIS',
+    'cart' => 'Giỏ hàng - SOLARIS',
     'calculator' => 'Tư Vấn & Demo Thiết Kế - SOLARIS',
     'installations' => 'Quản Lý Lắp Đặt & Khảo Sát - SOLARIS',
     'exercises' => 'Portal 24 Bài Tập Thực Hành - SOLARIS',
@@ -16,6 +21,31 @@ $pageTitles = [
 $title = $pageTitles[$page] ?? 'SOLARIS';
 if ($page === 'installations') {
     require __DIR__ . '/app/Modules/Member4_Installation/bootstrap.php';
+}
+if ($page === 'products') {
+    require_once __DIR__ . '/app/Hooks/UsePaginationState.php';
+    require_once __DIR__ . '/app/Modules/Member2_Products/ProductController.php';
+    $productController = new \App\Modules\Member2_Products\ProductController();
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $productController->handleCart((string) ($_POST['cart_action'] ?? ''));
+        $anchor = (($_POST['cart_action'] ?? '') === 'add' && !empty($_POST['product_id'])) ? '#product-' . (int) $_POST['product_id'] : '';
+        header('Location: index.php?page=' . (($_POST['cart_action'] ?? '') === 'add' ? 'products' : 'cart') . $anchor); exit;
+    }
+    $productView = isset($_GET['product']) ? $productController->detail((int) $_GET['product']) : $productController->index();
+}
+if ($page === 'cart') {
+    require_once __DIR__ . '/app/Modules/Member2_Products/ProductController.php';
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $cartAction = (string) ($_POST['cart_action'] ?? '');
+        (new \App\Modules\Member2_Products\ProductController())->handleCart($cartAction);
+        header('Location: index.php?page=' . ($cartAction === 'demo_selected' ? 'calculator' : 'cart')); exit;
+    }
+    $cartItems = \App\Modules\Member2_Products\ProductController::cartItems();
+}
+if ($page === 'calculator') {
+    require_once __DIR__ . '/app/Modules/Member2_Products/ProductController.php';
+    require_once __DIR__ . '/app/Modules/Member3_Simulator/SolarDemoController.php';
+    $calculatorView = (new \App\Modules\Member3_Simulator\SolarDemoController())->index(\App\Modules\Member2_Products\ProductController::demoItems());
 }
 ?>
 <!DOCTYPE html>
@@ -333,23 +363,10 @@ if ($page === 'installations') {
             </section>
 
         <?php elseif ($page === 'products'): ?>
-            <div class="sol-container" style="padding: 4.5rem 1.5rem; text-align: center;">
-                <div class="sol-glass-card" style="max-width: 720px; margin: 0 auto; padding: 3rem 2rem;">
-                    <span class="sol-badge sol-badge--emerald" style="margin-bottom: 1rem;">Khu Vực 2 • Thành Viên 2</span>
-                    <h2 style="color: #ffffff; font-size: 2rem; margin-bottom: 0.75rem;">Giải Pháp & Sản Phẩm Thiết Bị Pin</h2>
-                    <p style="color: var(--text-secondary); margin-bottom: 1.75rem; line-height: 1.6; font-size: 0.95rem;">
-                        Phân vùng dành cho Thành viên 2 phát triển Catalog Tấm pin 550W, Biến tần Inverter hòa lưới/hybrid, và bộ lọc sản phẩm có phân trang (>20 dòng).
-                    </p>
-                    <div style="background: rgba(8, 12, 20, 0.7); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem; text-align: left; margin-bottom: 1.75rem;">
-                        <div style="color: var(--accent-amber); font-weight: 600; font-size: 0.85rem; margin-bottom: 0.35rem;">File phụ trách của Thành viên 2:</div>
-                        <code style="color: #38bdf8; font-family: var(--font-mono); font-size: 0.85rem;">
-                            • app/Modules/Member2_Products/ProductController.php<br>
-                            • resources/views/pages/products.blade.php
-                        </code>
-                    </div>
-                    <a href="index.php?page=home" class="sol-btn sol-btn--solar">⬅ Quay Về Trang Chủ</a>
-                </div>
-            </div>
+            <?php require __DIR__ . '/resources/views/pages/products.blade.php'; ?>
+
+        <?php elseif ($page === 'cart'): ?>
+            <?php require __DIR__ . '/resources/views/pages/cart.blade.php'; ?>
 
         <?php elseif ($page === 'calculator'): ?>
             <div class="sol-container" style="padding: 4.5rem 1.5rem; text-align: center;">
@@ -368,6 +385,7 @@ if ($page === 'installations') {
                         </code>
                     </div>
                     <a href="index.php?page=home" class="sol-btn sol-btn--solar">⬅ Quay Về Trang Chủ</a>
+                    <?php if (!empty($calculatorView['cart_products'])): ?><div class="sol-glass-card cart-handoff"><strong>Sản phẩm đã chuyển từ giỏ hàng sang member3:</strong><?php foreach ($calculatorView['cart_products'] as $item): ?><div><?= htmlspecialchars($item['name']) ?> × <?= (int) $item['quantity'] ?></div><?php endforeach; ?></div><?php endif; ?>
                 </div>
             </div>
 
