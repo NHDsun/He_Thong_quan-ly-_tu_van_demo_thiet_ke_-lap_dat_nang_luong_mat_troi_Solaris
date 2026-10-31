@@ -28,8 +28,15 @@ if ($page === 'products') {
     $productController = new \App\Modules\Member2_Products\ProductController();
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $productController->handleCart((string) ($_POST['cart_action'] ?? ''));
-        $anchor = (($_POST['cart_action'] ?? '') === 'add' && !empty($_POST['product_id'])) ? '#product-' . (int) $_POST['product_id'] : '';
-        header('Location: index.php?page=' . (($_POST['cart_action'] ?? '') === 'add' ? 'products' : 'cart') . $anchor); exit;
+        if (($_POST['cart_action'] ?? '') === 'add') {
+            $returnParams = ['page' => 'products'];
+            foreach (['p', 'q', 'category', 'min_price', 'max_price'] as $key) {
+                if (isset($_GET[$key]) && $_GET[$key] !== '') $returnParams[$key] = $_GET[$key];
+            }
+            $anchor = !empty($_POST['product_id']) ? '#product-' . (int) $_POST['product_id'] : '';
+            header('Location: index.php?' . http_build_query($returnParams) . $anchor); exit;
+        }
+        header('Location: index.php?page=cart'); exit;
     }
     $productView = isset($_GET['product']) ? $productController->detail((int) $_GET['product']) : $productController->index();
 }

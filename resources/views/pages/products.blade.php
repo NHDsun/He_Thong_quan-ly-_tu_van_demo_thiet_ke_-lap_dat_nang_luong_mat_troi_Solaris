@@ -43,7 +43,59 @@ $visiblePages = array_values(array_unique($visiblePages));
     <form class="sol-glass-card products-filter" method="get"><input type="hidden" name="page" value="products"><label>Tìm kiếm<input class="products-input" type="search" name="q" value="<?= htmlspecialchars($filters['search'], ENT_QUOTES, 'UTF-8') ?>" placeholder="Tên hoặc mã sản phẩm"></label><label>Giá từ<input class="products-input" type="number" name="min_price" min="0" value="<?= $filters['min_price'] ?? '' ?>" placeholder="VNĐ"></label><label>Giá đến<input class="products-input" type="number" name="max_price" min="0" value="<?= $filters['max_price'] ?? '' ?>" placeholder="VNĐ"></label><button class="sol-btn sol-btn--secondary products-search-button" type="submit">Tìm kiếm <span>⌕</span></button><button class="sol-btn sol-btn--solar" type="submit">Lọc sản phẩm</button><a class="sol-btn sol-btn--outline" href="index.php?page=products">Xóa lọc</a></form>
     <div class="products-category-dropdown"><button type="button" class="products-category-trigger">Danh mục sản phẩm <span>⌄</span></button><div class="products-category-menu"><a href="<?= $query(['category' => '', 'p' => 1]) ?>">Tất cả danh mục</a><?php foreach ($viewData['categories'] as $category): ?><a class="<?= $filters['category'] === $category['slug'] ? 'active' : '' ?>" href="<?= $query(['category' => $category['slug'], 'p' => 1]) ?>"><?= htmlspecialchars($category['name'], ENT_QUOTES, 'UTF-8') ?></a><?php endforeach; ?></div></div>
     <div class="products-results"><div class="products-results-head"><span><?= $pager['total'] ?> sản phẩm</span><span>Trang <?= $pager['page'] ?> / <?= $pager['pages'] ?></span></div>
-        <?php if (!$viewData['products']): ?><div class="sol-glass-card products-empty">Không tìm thấy sản phẩm phù hợp.</div><?php else: ?><div class="products-grid"><?php foreach ($viewData['products'] as $product): $image = $resolveImage($product); ?><article id="product-<?= (int) $product['id'] ?>" class="sol-glass-card product-card"><div class="product-visual"><?php if ($image): ?><img src="<?= htmlspecialchars($image, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') ?>" loading="lazy"><?php else: ?><span>☀</span><?php endif; ?></div><div class="product-card-body"><span class="sol-badge sol-badge--emerald"><?= htmlspecialchars($product['category_name'], ENT_QUOTES, 'UTF-8') ?></span><h2><?= htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') ?></h2><p class="product-code"><?= htmlspecialchars($product['product_code'], ENT_QUOTES, 'UTF-8') ?></p><div class="product-meta"><span><?= $product['capacity_watts'] ? htmlspecialchars((string) $product['capacity_watts']) . ' W' : 'Thiết bị phụ trợ' ?></span><span><?= htmlspecialchars((string) $product['warranty_years']) ?> năm</span></div><strong class="product-price"><?= number_format((float) $product['price'], 0, ',', '.') ?> VNĐ</strong><div class="product-actions"><a class="sol-btn sol-btn--outline" href="<?= $query(['product' => (int) $product['id']]) ?>">Chi tiết</a><form method="post" action="index.php?page=products#product-<?= (int) $product['id'] ?>"><input type="hidden" name="cart_action" value="add"><input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>"><button class="sol-btn sol-btn--solar" type="submit">Thêm vào giỏ</button></form></div></div></article><?php endforeach; ?></div><?php endif; ?>
+        <?php if (!$viewData['products']): ?><div class="sol-glass-card products-empty">Không tìm thấy sản phẩm phù hợp.</div><?php else: ?><div class="products-grid"><?php foreach ($viewData['products'] as $product): $image = $resolveImage($product); ?><article id="product-<?= (int) $product['id'] ?>" class="sol-glass-card product-card"><div class="product-visual"><?php if ($image): ?><img src="<?= htmlspecialchars($image, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') ?>" loading="lazy"><?php else: ?><span>☀</span><?php endif; ?></div><div class="product-card-body"><span class="sol-badge sol-badge--emerald"><?= htmlspecialchars($product['category_name'], ENT_QUOTES, 'UTF-8') ?></span><h2><?= htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') ?></h2><p class="product-code"><?= htmlspecialchars($product['product_code'], ENT_QUOTES, 'UTF-8') ?></p><div class="product-meta"><span><?= $product['capacity_watts'] ? htmlspecialchars((string) $product['capacity_watts']) . ' W' : 'Thiết bị phụ trợ' ?></span><span><?= htmlspecialchars((string) $product['warranty_years']) ?> năm</span></div><strong class="product-price"><?= number_format((float) $product['price'], 0, ',', '.') ?> VNĐ</strong><div class="product-actions"><a class="sol-btn sol-btn--outline" href="<?= $query(['product' => (int) $product['id']]) ?>">Chi tiết</a><form method="post" action="<?= $query(['p' => $pager['page']]) ?>#product-<?= (int) $product['id'] ?>"><input type="hidden" name="cart_action" value="add"><input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>"><button class="sol-btn sol-btn--solar" type="submit">Thêm vào giỏ</button></form></div></div></article><?php endforeach; ?></div><?php endif; ?>
         <nav class="products-pager" aria-label="Phân trang"><?php $previous = 0; foreach ($visiblePages as $pageNumber): ?><?php if ($previous && $pageNumber > $previous + 1): ?><span>…</span><?php endif; ?><a class="<?= $pageNumber === $pager['page'] ? 'active' : '' ?>" href="<?= $query(['p' => $pageNumber]) ?>"><?= $pageNumber ?></a><?php $previous = $pageNumber; endforeach; ?></nav>
     </div>
 </section>
+<script>
+(() => {
+    const key = 'solaris-products-return-position';
+    document.querySelectorAll('form[action*="#product-"]').forEach(form => {
+        form.addEventListener('submit', () => {
+            const id = form.querySelector('input[name="product_id"]')?.value;
+            if (id) sessionStorage.setItem(key, JSON.stringify({ id, top: window.scrollY }));
+        });
+    });
+    const saved = sessionStorage.getItem(key);
+    if (!saved) return;
+    try {
+        const position = JSON.parse(saved);
+        const product = document.getElementById('product-' + position.id);
+        if (product) {
+            window.setTimeout(() => {
+                product.scrollIntoView({ behavior: 'instant', block: 'center' });
+                sessionStorage.removeItem(key);
+            }, 120);
+        }
+    } catch (error) {
+        sessionStorage.removeItem(key);
+    }
+})();
+</script>
+<script>
+(() => {
+    const forms = document.querySelectorAll('form[action*="#product-"]');
+    const count = document.querySelector('.cart-page-button span');
+    forms.forEach(form => form.addEventListener('submit', async event => {
+        event.preventDefault();
+        const button = form.querySelector('button[type="submit"]');
+        if (!button || form.dataset.submitting === '1') return;
+        form.dataset.submitting = '1';
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.textContent = 'Đang thêm...';
+        try {
+            const response = await fetch(form.action, { method: 'POST', body: new FormData(form), credentials: 'same-origin' });
+            if (!response.ok) throw new Error('Không thể thêm sản phẩm');
+            if (count) count.textContent = String((Number.parseInt(count.textContent, 10) || 0) + 1);
+            button.textContent = 'Đã thêm ✓';
+            sessionStorage.removeItem('solaris-products-return-position');
+            window.setTimeout(() => { button.textContent = originalText; button.disabled = false; form.dataset.submitting = '0'; }, 900);
+        } catch (error) {
+            button.textContent = 'Thử lại';
+            button.disabled = false;
+            form.dataset.submitting = '0';
+        }
+    }));
+})();
+</script>
