@@ -14,6 +14,9 @@ $pageTitles = [
     'profile' => 'Thông Tin Cá Nhân 4 Thành Viên - SOLARIS'
 ];
 $title = $pageTitles[$page] ?? 'SOLARIS';
+if ($page === 'installations') {
+    require __DIR__ . '/app/Modules/Member4_Installation/bootstrap.php';
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -369,25 +372,7 @@ $title = $pageTitles[$page] ?? 'SOLARIS';
             </div>
 
         <?php elseif ($page === 'installations'): ?>
-            <div class="sol-container" style="padding: 4.5rem 1.5rem; text-align: center;">
-                <div class="sol-glass-card" style="max-width: 720px; margin: 0 auto; padding: 3rem 2rem;">
-                    <span class="sol-badge sol-badge--amber" style="margin-bottom: 1rem;">Khu Vực 4 • Thành Viên 4</span>
-                    <h2 style="color: #ffffff; font-size: 2rem; margin-bottom: 0.75rem;">Quản Lý Lắp Đặt & Khảo Sát Mái</h2>
-                    <p style="color: var(--text-secondary); margin-bottom: 1.75rem; line-height: 1.6; font-size: 0.95rem;">
-                        Phân vùng dành cho Thành viên 4 phát triển Module Tra cứu tiến độ lắp đặt, Upload file bản vẽ/ảnh khảo sát mặt bằng mái (<code>UseFileUpload.php</code>).
-                    </p>
-                    <div style="background: rgba(8, 12, 20, 0.7); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem; text-align: left; margin-bottom: 1.75rem;">
-                        <div style="color: var(--accent-amber); font-weight: 600; font-size: 0.85rem; margin-bottom: 0.35rem;">File phụ trách của Thành viên 4:</div>
-                        <code style="color: #38bdf8; font-family: var(--font-mono); font-size: 0.85rem;">
-                            • app/Hooks/UseFileUpload.php<br>
-                            • app/Modules/Member4_Installation/InstallationController.php<br>
-                            • resources/views/pages/installations.blade.php
-                        </code>
-                    </div>
-                    <a href="index.php?page=home" class="sol-btn sol-btn--solar">⬅ Quay Về Trang Chủ</a>
-                </div>
-            </div>
-
+            <?php require __DIR__ . '/resources/views/pages/installations.blade.php'; ?>
         <?php elseif ($page === 'exercises'): ?>
             <div class="sol-container" style="padding: 3rem 0 4rem;">
                 <div class="sol-section-header">
