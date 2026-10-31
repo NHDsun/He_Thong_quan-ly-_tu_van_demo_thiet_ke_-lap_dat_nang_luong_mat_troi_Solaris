@@ -1,4 +1,21 @@
 <?php
+declare(strict_types=1);
+
+// Autoloader chuẩn PSR-4 cho namespace App
+spl_autoload_register(function (string $class): void {
+    $prefix = "App" . chr(92);
+    $baseDir = __DIR__ . "/app/";
+    $len = strlen($prefix);
+    if (strncmp($prefix, $class, $len) !== 0) {
+        return;
+    }
+    $relativeClass = substr($class, $len);
+    $file = $baseDir . str_replace(chr(92), "/", $relativeClass) . ".php";
+    if (is_file($file)) {
+        require_once $file;
+    }
+});
+
 $page = $_GET['page'] ?? 'home';
 $validPages = ['home', 'products', 'calculator', 'installations', 'exercises', 'profile'];
 if (!in_array($page, $validPages)) {
