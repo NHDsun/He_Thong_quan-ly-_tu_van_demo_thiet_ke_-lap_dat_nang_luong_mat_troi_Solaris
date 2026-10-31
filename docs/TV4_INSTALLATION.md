@@ -1,5 +1,47 @@
 # TV4 — Quản lý lắp đặt SOLARIS
 
+Tài liệu giải thích chi tiết các thay đổi, chức năng và hàm xử lý: [TV4_THAY_DOI_CHUC_NANG_LUONG_CODE.md](TV4_THAY_DOI_CHUC_NANG_LUONG_CODE.md).
+
+## Đọc code theo một chức năng
+
+Phân hệ dùng PHP thuần, PDO và JavaScript thông thường. Không cần cài framework hoặc thư viện giao diện. Đợt chỉnh sửa này giữ nguyên cấu trúc database và các chức năng; nếu đã import database trước đó thì không cần import lại.
+
+Nên đọc theo thứ tự:
+
+1. `index.php` chọn trang `installations`, gọi `bootstrap.php` để nạp các class và khởi tạo session.
+2. `InstallationController::index()` nhận GET/POST, kiểm tra đăng nhập và chuyển thao tác cho hook. GET dùng để xem trang; POST dùng để lưu thay đổi.
+3. `UseInstallationWorkflow` chứa truy vấn SQL và điều kiện nghiệp vụ. Bắt đầu bằng `act()`: đây là một `switch` theo giá trị `action` từ form.
+4. `installations.blade.php` nhận mảng dữ liệu, hiển thị danh sách hoặc include trang chi tiết. Đuôi file giữ theo cấu trúc nhóm, nội dung là PHP thuần.
+5. `detail.php` hiển thị tiến độ và các yêu cầu; `staff.php` hiển thị danh sách nhân viên và lịch. `atomic.php` là HTML của button, input và badge; `View.php` có các hàm hỗ trợ xuất HTML.
+6. `installation.css` chỉ định giao diện. `installation.js` lưu lựa chọn nhân viên khi chuyển trang và cập nhật dòng “Đã chọn … người”.
+
+Component được nạp bằng `require`, nên nhận biến trong phạm vi của nơi gọi. `detail.php` và `staff.php` nhận `$viewData`; `atomic.php` nhận `$name`, `$text`, `$attrs` từ `View::component()`. Chú thích `@var` đầu file giúp IDE nhận biết kiểu biến, không tạo giá trị cho biến. Các file kiểm tra dữ liệu đầu vào và trả HTTP 404 nếu mở trực tiếp, thay vì cố hiển thị khi thiếu dữ liệu.
+
+Ví dụ: để giải thích chức năng **gửi duyệt giai đoạn**, lần theo luồng:
+
+```text
+Form trong detail.php (action = submit_stage)
+    -> InstallationController::index()
+    -> UseInstallationWorkflow::act(): case 'submit_stage'
+    -> submitStage(): kiểm tra ảnh, cảnh báo hoãn, UPDATE trạng thái, INSERT nhật ký
+    -> chuyển về trang chi tiết để đọc và hiển thị dữ liệu mới
+```
+
+Các hàm nghiệp vụ chính:
+
+| Hàm | Công việc |
+| --- | --- |
+| `listing()` / `detail()` | Đọc danh sách / thông tin chi tiết dự án |
+| `availability()` | Đếm dự án và tính % thời gian rảnh của nhân viên |
+| `assign()` | Thêm các phân công và mở giai đoạn khảo sát |
+| `uploadDocument()` | Kiểm tra file rồi lưu file và thông tin tài liệu |
+| `submitStage()` | Kỹ thuật viên gửi yêu cầu duyệt giai đoạn |
+| `reviewStage()` | Quản lý duyệt hoặc trả về bổ sung; mở bước tiếp theo |
+| `request()` / `reviewRequest()` | Gửi / xử lý yêu cầu hoãn, thay người |
+| `createFromApprovedQuote()` | Tạo dự án từ báo giá được chấp thuận |
+
+Những khái niệm cần hiểu khi trình bày: **Session** giữ ID người đăng nhập; **PDO + dấu `?`** truyền dữ liệu an toàn vào SQL; **CSRF token** kiểm tra form thuộc phiên hiện tại; **transaction** giúp các câu UPDATE/INSERT của một thao tác cùng thành công hoặc cùng hủy. Đây là các kiểm tra cơ bản được giữ lại khi đơn giản hóa cách viết.
+
 ## Khởi chạy bằng XAMPP
 
 1. Bật Apache và MySQL trong XAMPP, mở phpMyAdmin.
@@ -72,7 +114,7 @@ TV3 nên gọi điểm tích hợp như một phần của luồng phê duyệt,
 
 `UseInstallationWorkflow`, `UseFileUpload`, `UsePaginationState` → `InstallationController` → page view → components. CSS riêng `resources/css/installation.css` kế thừa các biến thực tế của `solaris-theme.css`; không sửa file theme hay code TV2. Trang chi tiết chia 75/25 trên desktop, một cột trên mobile; bảng chọn nhân viên chia 20/80, dòng nhân viên và lịch đồng bộ.
 
-Repository có template Blade nhưng chưa có Composer/Blade engine. `View.php` là adapter giới hạn ở ba template nội bộ `base/button`, `base/input`, `base/badge`, hỗ trợ `@props` và biểu thức `{{ }}` cần thiết để tái sử dụng trực tiếp component hiện có. Không phải Blade engine đầy đủ; không nhận đường dẫn template từ người dùng. Các view TV4 dùng PHP thuần dù page giữ đuôi `.blade.php` theo cấu trúc dự án. Khi nhóm tích hợp Blade đầy đủ, thay adapter bằng renderer chung.
+Repository có template Blade nhưng chưa có Composer/Blade engine. TV4 dùng `require` để hiển thị component PHP trong `components/installation/atomic.php`, không dùng `eval`, không tự dịch Blade và không có lớp mô phỏng `$attributes`. Component PHP dùng cùng class CSS và biến thể với Design System. Đây là bản tương thích PHP thuần trong phạm vi TV4; không sửa hay trực tiếp render các template Blade của TV2. Khi nhóm tích hợp Blade đầy đủ, có thể chuyển sang renderer và component chung. Các page TV4 vẫn giữ đuôi `.blade.php` theo cấu trúc thư mục nhóm.
 
 Danh sách dự án, nhân viên, tài liệu, lịch sử yêu cầu và nhật ký dùng `UsePaginationState`, tối đa 20 bản ghi/trang. Yêu cầu chờ tối đa hai loại/giai đoạn, không có phân trang vì luôn ít hơn 20. Danh sách nhóm thành viên là thông tin của một dự án, không phải bảng dữ liệu quản trị riêng.
 

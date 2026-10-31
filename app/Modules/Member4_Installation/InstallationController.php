@@ -19,30 +19,11 @@ final class InstallationController
             $workflow = new InstallationWorkflow(Config::database());
             $post = $_SERVER['REQUEST_METHOD'] === 'POST';
             $action = (string) ($_POST['action'] ?? '');
-            if ($post && !hash_equals($_SESSION['installation_csrf'], (string) ($_POST['csrf'] ?? ''))) {
-                throw new RuntimeException('Phiên biểu mẫu hết hạn. Hãy tải lại trang.');
+            if ($post) {
+                $this->checkCsrf();
             }
             if ($post && $action === 'login') {
-                if (getenv('SOLARIS_INSTALLATION_LOGIN') === '0') {
-                    throw new RuntimeException('Hãy đăng nhập qua hệ thống xác thực TV1.');
-                }
-                if (($_SESSION['installation_login_blocked_until'] ?? 0) > time()) {
-                    throw new RuntimeException('Đã thử quá nhiều lần. Vui lòng thử lại sau 5 phút.');
-                }
-                $user = $workflow->rows("SELECT * FROM users WHERE username=? AND role IN ('admin','technician')", [trim((string) ($_POST['username'] ?? ''))])[0] ?? null;
-                if (!$user || !password_verify((string) ($_POST['password'] ?? ''), $user['password_hash'])) {
-                    $_SESSION['installation_login_attempts'] = ($_SESSION['installation_login_attempts'] ?? 0) + 1;
-                    if ($_SESSION['installation_login_attempts'] >= 5) {
-                        $_SESSION['installation_login_blocked_until'] = time() + 300;
-                        $_SESSION['installation_login_attempts'] = 0;
-                    }
-                    throw new RuntimeException('Tên đăng nhập hoặc mật khẩu không đúng.');
-                }
-                session_regenerate_id(true);
-                $_SESSION['installation_user_id'] = (int) $user['id'];
-                $_SESSION['installation_login_attempts'] = 0;
-                $_SESSION['installation_csrf'] = bin2hex(random_bytes(32));
-                $this->redirect();
+                $this->login($workflow);
             }
             // TV1 có thể dùng session user_id; vai trò luôn được đọc lại từ CSDL.
             $userId = (int) ($_SESSION['user_id'] ?? $_SESSION['installation_user_id'] ?? 0);
@@ -96,13 +77,45 @@ final class InstallationController
         return $view;
     }
 
-    private function redirect(int $id = 0): never
+    private function checkCsrf(): void
+    {
+        $token = (string) ($_POST['csrf'] ?? '');
+        if (!hash_equals($_SESSION['installation_csrf'], $token)) {
+            throw new RuntimeException('Phiên biểu mẫu hết hạn. Hãy tải lại trang.');
+        }
+    }
+
+    private function login(InstallationWorkflow $workflow): void
+    {
+        if (getenv('SOLARIS_INSTALLATION_LOGIN') === '0') {
+            throw new RuntimeException('Hãy đăng nhập qua hệ thống xác thực TV1.');
+        }
+        if (($_SESSION['installation_login_blocked_until'] ?? 0) > time()) {
+            throw new RuntimeException('Đã thử quá nhiều lần. Vui lòng thử lại sau 5 phút.');
+        }
+        $user = $workflow->rows("SELECT * FROM users WHERE username=? AND role IN ('admin','technician')", [trim((string) ($_POST['username'] ?? ''))])[0] ?? null;
+        if (!$user || !password_verify((string) ($_POST['password'] ?? ''), $user['password_hash'])) {
+            $_SESSION['installation_login_attempts'] = ($_SESSION['installation_login_attempts'] ?? 0) + 1;
+            if ($_SESSION['installation_login_attempts'] >= 5) {
+                $_SESSION['installation_login_blocked_until'] = time() + 300;
+                $_SESSION['installation_login_attempts'] = 0;
+            }
+            throw new RuntimeException('Tên đăng nhập hoặc mật khẩu không đúng.');
+        }
+        session_regenerate_id(true);
+        $_SESSION['installation_user_id'] = (int) $user['id'];
+        $_SESSION['installation_login_attempts'] = 0;
+        $_SESSION['installation_csrf'] = bin2hex(random_bytes(32));
+        $this->redirect();
+    }
+
+    private function redirect(int $id = 0): void
     {
         header('Location: index.php?page=installations' . ($id ? '&project=' . $id : ''), true, 303);
         exit;
     }
 
-    private function download(InstallationWorkflow $workflow, array $actor, int $id): never
+    private function download(InstallationWorkflow $workflow, array $actor, int $id): void
     {
         $document = $workflow->rows('SELECT * FROM project_documents WHERE id=?', [$id])[0] ?? null;
         if (!$document) {

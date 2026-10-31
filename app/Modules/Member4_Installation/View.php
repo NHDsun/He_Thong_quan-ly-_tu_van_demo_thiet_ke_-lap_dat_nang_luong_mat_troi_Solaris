@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Member4_Installation;
 
-/** Adapter nhỏ cho ba atomic Blade hiện có trong ứng dụng PHP thuần. */
+/** Các hàm dùng chung khi hiển thị trang lắp đặt. */
 final class View
 {
     public static function escape(mixed $value): string
@@ -19,26 +19,61 @@ final class View
 
     public static function component(string $name, string $text = '', array $props = [], array $attrs = []): void
     {
-        if (!in_array($name, ['button', 'badge', 'input'], true)) {
-            throw new \LogicException('Unsupported atomic component.');
+        // PHP thuần dùng include; không cần tự biên dịch cú pháp Blade.
+        switch ($name) {
+            case 'button':
+                $variant = $props['variant'] ?? 'solar';
+                $size = $props['size'] ?? 'md';
+                $classes = 'sol-btn sol-btn--' . $variant;
+                if ($size === 'sm' || $size === 'lg') {
+                    $classes .= ' sol-btn--' . $size;
+                }
+                $attrs['type'] = $props['type'] ?? 'button';
+                break;
+            case 'badge':
+                $classes = 'sol-badge sol-badge--' . ($props['variant'] ?? 'amber');
+                break;
+            case 'input':
+                $classes = 'sol-input';
+                if (!empty($props['hasError'])) {
+                    $classes .= ' sol-input--error';
+                }
+                $attrs['type'] = $props['type'] ?? 'text';
+                break;
+            default:
+                throw new \InvalidArgumentException('Component không hợp lệ.');
         }
-        $template = file_get_contents(dirname(__DIR__, 3) . '/resources/views/components/base/' . $name . '.blade.php');
-        $template = preg_replace_callback('/@props\((\[.*?\])\)/s', static fn($match) => '<?php extract(array_merge(' . $match[1] . ', $props), EXTR_SKIP); ?>', $template);
-        $template = preg_replace('/\{\{\s*(.*?)\s*\}\}/s', '<?php echo \\App\\Modules\\Member4_Installation\\View::output($1); ?>', $template);
-        $attributes = new Attributes($attrs);
-        $slot = $text;
-        // Chỉ biên dịch template nội bộ trong allowlist; dữ liệu người dùng luôn được escape.
-        eval('?>' . $template);
+        $attrs['class'] = trim($classes . ' ' . ($attrs['class'] ?? ''));
+        require dirname(__DIR__, 3) . '/resources/views/components/installation/atomic.php';
     }
 
-    public static function output(mixed $value): string
+    public static function attributes(array $attributes): string
     {
-        return $value instanceof Attributes ? (string) $value : self::escape($value);
+        $html = '';
+        foreach ($attributes as $name => $value) {
+            if ($value === false || $value === null) {
+                continue;
+            }
+            if (!preg_match('/^[a-zA-Z][a-zA-Z0-9_-]*$/', $name) || str_starts_with(strtolower($name), 'on')) {
+                continue;
+            }
+            if ($value === true) {
+                $value = $name;
+            }
+            $html .= self::escape($name) . '="' . self::escape($value) . '" ';
+        }
+        return $html;
     }
 
     public static function csrf(): void
     {
         echo '<input type="hidden" name="csrf" value="' . self::escape($_SESSION['installation_csrf']) . '">';
+    }
+
+    public static function form(string $action): void
+    {
+        self::csrf();
+        echo '<input type="hidden" name="action" value="' . self::escape($action) . '">';
     }
 
     public static function pager(array $pager, string $key): void
@@ -81,29 +116,5 @@ final class View
             'technical_drawing' => 'Bản vẽ kỹ thuật', 'procurement_invoice' => 'Hóa đơn vật tư',
             'installation_photo' => 'Ảnh thi công', 'testing_photo' => 'Ảnh kiểm thử',
             'evn_permit' => 'Hồ sơ EVN', 'handover_report' => 'Biên bản bàn giao'][$type] ?? $type;
-    }
-}
-
-final class Attributes
-{
-    public function __construct(private array $values) {}
-
-    public function merge(array $defaults): self
-    {
-        $values = array_merge($defaults, $this->values);
-        $values['class'] = trim(($defaults['class'] ?? '') . ' ' . ($this->values['class'] ?? ''));
-        return new self($values);
-    }
-
-    public function __toString(): string
-    {
-        $result = '';
-        foreach ($this->values as $name => $value) {
-            if (!preg_match('/^[a-zA-Z][a-zA-Z0-9_-]*$/D', $name) || str_starts_with(strtolower($name), 'on') || $value === false || $value === null) {
-                continue;
-            }
-            $result .= View::escape($name) . '="' . View::escape($value === true ? $name : $value) . '" ';
-        }
-        return $result;
     }
 }

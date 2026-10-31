@@ -3,8 +3,6 @@ declare(strict_types=1);
 
 namespace App\Hooks;
 
-use App\Hooks\UseFileUpload;
-use App\Hooks\UsePaginationState;
 use DateTimeImmutable;
 use PDO;
 use RuntimeException;
@@ -21,8 +19,14 @@ final class UseInstallationWorkflow
         'handover' => 'Bàn giao & nghiệm thu',
     ];
 
-    public function __construct(public readonly PDO $db) {}
+    public PDO $db;
 
+    public function __construct(PDO $db)
+    {
+        $this->db = $db;
+    }
+
+    // Truy vấn SELECT: truyền giá trị riêng qua dấu ? để tránh nối dữ liệu vào SQL.
     public function rows(string $sql, array $params = []): array
     {
         $query = $this->db->prepare($sql);
@@ -68,7 +72,10 @@ final class UseInstallationWorkflow
             (SELECT COUNT(*) FROM project_assignments a WHERE a.project_id=p.id AND a.ended_at IS NULL) crew_count,
             (SELECT COUNT(*) FROM project_requests r WHERE r.project_id=p.id AND r.status='pending') request_count
             FROM projects p WHERE {$where} ORDER BY FIELD(p.status,'new','in_progress','completed','cancelled'), p.created_at DESC, p.id DESC LIMIT {$pager['limit']} OFFSET {$pager['offset']}", $params);
-        return compact('projects', 'pager');
+        return [
+            'projects' => $projects,
+            'pager' => $pager,
+        ];
     }
 
     public function detail(int $id, array $actor, int $logPage = 1, int $requestPage = 1): array
@@ -88,7 +95,17 @@ final class UseInstallationWorkflow
             JOIN users u ON u.id=r.requested_by LEFT JOIN users reviewer ON reviewer.id=r.reviewed_by
             LEFT JOIN users old ON old.id=r.old_technician_id LEFT JOIN users next ON next.id=r.proposed_technician_id
             WHERE r.project_id=? AND r.status<>'pending' ORDER BY r.id DESC LIMIT {$requestPager['limit']} OFFSET {$requestPager['offset']}", [$id]);
-        return compact('project', 'stages', 'documents', 'crew', 'requests', 'logs', 'logPager', 'requestPager', 'requestHistory');
+        return [
+            'project' => $project,
+            'stages' => $stages,
+            'documents' => $documents,
+            'crew' => $crew,
+            'requests' => $requests,
+            'logs' => $logs,
+            'logPager' => $logPager,
+            'requestPager' => $requestPager,
+            'requestHistory' => $requestHistory,
+        ];
     }
 
     public static function date(string $value): DateTimeImmutable
@@ -109,7 +126,9 @@ final class UseInstallationWorkflow
         }
         $count = 0;
         for ($day = $from; $day <= $until; $day = $day->modify('+1 day')) {
-            $count += (int) ($day->format('N') <= 5);
+            if ($day->format('N') <= 5) {
+                $count++;
+            }
         }
         return $count;
     }
@@ -119,7 +138,7 @@ final class UseInstallationWorkflow
         $days = self::workdays($start, $end);
         $pager = UsePaginationState::make((int) $this->rows("SELECT COUNT(*) n FROM users WHERE role='technician'")[0]['n'], $page);
         $technicians = $this->rows("SELECT id,full_name FROM users WHERE role='technician' ORDER BY full_name,id LIMIT {$pager['limit']} OFFSET {$pager['offset']}");
-        foreach ($technicians as &$tech) {
+        foreach ($technicians as $index => $tech) {
             $tech['bookings'] = $this->rows("SELECT a.*,p.project_name,p.contract_code FROM project_assignments a JOIN projects p ON p.id=a.project_id
                 WHERE a.technician_id=? AND a.ended_at IS NULL AND p.status='in_progress' AND a.planned_start<=? AND a.planned_end>=? AND (? IS NULL OR p.id<>?) ORDER BY a.planned_start", [$tech['id'], $end, $start, $excludeProject, $excludeProject]);
             $tech['project_count'] = (int) $this->rows("SELECT COUNT(DISTINCT a.project_id) n FROM project_assignments a JOIN projects p ON p.id=a.project_id WHERE a.technician_id=? AND a.ended_at IS NULL AND p.status='in_progress' AND (? IS NULL OR p.id<>?)", [$tech['id'], $excludeProject, $excludeProject])[0]['n'];
@@ -129,10 +148,23 @@ final class UseInstallationWorkflow
             }
             $tech['free_percent'] = $days > 0 ? max(0, (int) round(100 * (1 - $hours / ($days * 8)))) : null;
             $tech['booked_hours'] = $hours;
+            $technicians[$index] = $tech;
         }
-        unset($tech);
-        usort($technicians, fn($a, $b) => ($b['free_percent'] <=> $a['free_percent']) ?: ($a['project_count'] <=> $b['project_count']));
-        return compact('technicians', 'pager', 'start', 'end', 'days');
+        // Trong mỗi trang, ưu tiên người rảnh hơn; bằng nhau thì xét số dự án.
+        usort($technicians, function ($first, $second) {
+            $difference = ($second['free_percent'] ?? 0) - ($first['free_percent'] ?? 0);
+            if ($difference !== 0) {
+                return $difference;
+            }
+            return $first['project_count'] - $second['project_count'];
+        });
+        return [
+            'technicians' => $technicians,
+            'pager' => $pager,
+            'start' => $start,
+            'end' => $end,
+            'days' => $days,
+        ];
     }
 
     private function note(array $data, string $key = 'reason'): string
@@ -150,83 +182,60 @@ final class UseInstallationWorkflow
             [$project['id'], $project['current_stage'], $to, $actor['id'], $action, $from, $to, $note]);
     }
 
+    // Một lần gửi form tương ứng với một nhánh xử lý bên dưới.
     public function act(array $actor, int $id, string $action, array $data, array $files = []): void
     {
         $stored = null;
         $this->db->beginTransaction();
+
         try {
+            // Khóa dự án trong lúc ghi để tránh hai người duyệt cùng một lúc.
             $project = $this->project($id, $actor, true);
-            if (in_array($project['status'], ['completed', 'cancelled'], true)) {
+            if ($project['status'] === 'completed' || $project['status'] === 'cancelled') {
                 throw new RuntimeException('Dự án đã kết thúc, không thể thay đổi.');
             }
-            $stage = $this->rows('SELECT * FROM project_stages WHERE project_id=? AND stage=?', [$id, $project['current_stage']])[0] ?? null;
+
+            $stages = $this->rows(
+                'SELECT * FROM project_stages WHERE project_id=? AND stage=?',
+                [$id, $project['current_stage']]
+            );
+            $stage = $stages[0] ?? null;
             if (!$stage) {
                 throw new RuntimeException('Dự án chưa được khởi tạo đủ giai đoạn.');
             }
-            if ($action === 'assign') {
-                $this->admin($actor);
-                $this->assign($project, $actor, $data);
-            } elseif (in_array($action, ['approve_stage', 'reject_stage'], true)) {
-                $this->admin($actor);
-                if ($stage['status'] !== 'pending_approval') {
-                    throw new RuntimeException('Giai đoạn không còn chờ duyệt.');
-                }
-                $approved = $action === 'approve_stage';
-                $note = $approved ? trim((string) ($data['review_note'] ?? '')) : $this->note($data, 'review_note');
-                $nextStatus = $approved ? 'approved' : 'revision_required';
-                $this->run('UPDATE project_stages SET status=?,reviewed_at=NOW(),reviewed_by=?,review_note=?,completed_at=IF(?="approved",NOW(),NULL) WHERE id=?', [$nextStatus, $actor['id'], $note, $nextStatus, $stage['id']]);
-                $this->log($project, $actor, $action, $stage['status'], $nextStatus, $note);
-                if ($approved) {
-                    $this->closeRequests($project, $actor, (int) $stage['id'], 'Giai đoạn đã hoàn thành.');
-                    $next = $this->rows('SELECT * FROM project_stages WHERE project_id=? AND position=?', [$id, $stage['position'] + 1])[0] ?? null;
-                    if ($next) {
-                        $this->run("UPDATE project_stages SET status='in_progress',started_at=NOW() WHERE id=?", [$next['id']]);
-                        $this->run('UPDATE projects SET current_stage=? WHERE id=?', [$next['stage'], $id]);
-                        $project['current_stage'] = $next['stage'];
-                        $this->log($project, $actor, 'stage_started', 'locked', 'in_progress');
-                    } else {
-                        $this->run("UPDATE projects SET status='completed',completion_date=CURDATE(),completed_at=NOW() WHERE id=?", [$id]);
-                        $this->run('UPDATE project_assignments SET ended_at=NOW() WHERE project_id=? AND ended_at IS NULL', [$id]);
-                        $this->log($project, $actor, 'project_completed', 'in_progress', 'completed');
-                    }
-                }
-            } elseif (in_array($action, ['approve_request', 'reject_request'], true)) {
-                $this->admin($actor);
-                $this->reviewRequest($project, $stage, $actor, $action, $data);
-            } else {
-                if ($actor['role'] !== 'technician' || $project['status'] !== 'in_progress') {
-                    throw new RuntimeException('Chỉ kỹ thuật viên được phân công mới được gửi cập nhật.');
-                }
-                if ($action === 'upload') {
-                    if (!in_array($stage['status'], ['in_progress', 'revision_required'], true)) {
-                        throw new RuntimeException('Chỉ upload khi giai đoạn đang làm hoặc cần bổ sung.');
-                    }
-                    $file = UseFileUpload::inspect($files['document'] ?? [], (string) ($data['document_type'] ?? ''));
-                    if ($this->rows('SELECT id FROM project_documents WHERE stage_id=? AND file_hash=?', [$stage['id'], $file['file_hash']])) {
-                        throw new RuntimeException('Giai đoạn này đã có tài liệu cùng nội dung.');
-                    }
-                    $stored = UseFileUpload::store($file);
-                    $this->run('INSERT INTO project_documents (project_id,stage_id,document_type,file_name,file_hash,file_path,file_size_kb,file_type,uploaded_by) VALUES (?,?,?,?,?,?,?,?,?)', [$id, $stage['id'], $file['document_type'], $file['file_name'], $file['file_hash'], $stored, $file['file_size_kb'], $file['file_type'], $actor['id']]);
-                    $this->log($project, $actor, 'document_uploaded', null, null, $file['file_name']);
-                } elseif ($action === 'submit_stage') {
-                    if (!in_array($stage['status'], ['in_progress', 'revision_required'], true)) {
-                        throw new RuntimeException('Giai đoạn này không thể gửi duyệt.');
-                    }
-                    if (!$this->rows("SELECT id FROM project_documents WHERE stage_id=? AND file_type IN ('image/jpeg','image/png') LIMIT 1", [$stage['id']])) {
-                        throw new RuntimeException('Cần ít nhất một ảnh minh chứng của giai đoạn trước khi gửi duyệt.');
-                    }
-                    $pending = $this->rows("SELECT id FROM project_requests WHERE stage_id=? AND request_type='postpone' AND status='pending'", [$stage['id']]);
-                    if ($pending && ($data['acknowledge_postpone'] ?? '') !== '1') {
-                        throw new RuntimeException('Có yêu cầu hoãn đang chờ duyệt. Hãy xác nhận đã tiếp tục công việc trước khi gửi duyệt giai đoạn.');
-                    }
-                    $this->run("UPDATE project_stages SET status='pending_approval',submitted_at=NOW(),submitted_by=?,review_note=NULL,reviewed_at=NULL,reviewed_by=NULL WHERE id=?", [$actor['id'], $stage['id']]);
-                    $this->log($project, $actor, 'stage_submitted', $stage['status'], 'pending_approval', $pending ? 'Đã xác nhận tiếp tục công việc trong khi yêu cầu hoãn còn chờ.' : '');
-                } elseif (in_array($action, ['postpone', 'replacement'], true)) {
+
+            switch ($action) {
+                case 'assign':
+                    $this->admin($actor);
+                    $this->assign($project, $actor, $data);
+                    break;
+                case 'approve_stage':
+                case 'reject_stage':
+                    $this->admin($actor);
+                    $this->reviewStage($project, $stage, $actor, $action, $data);
+                    break;
+                case 'approve_request':
+                case 'reject_request':
+                    $this->admin($actor);
+                    $this->reviewRequest($project, $stage, $actor, $action, $data);
+                    break;
+                case 'upload':
+                    $this->requireTechnician($project, $actor);
+                    $stored = $this->uploadDocument($project, $stage, $actor, $data, $files);
+                    break;
+                case 'submit_stage':
+                    $this->requireTechnician($project, $actor);
+                    $this->submitStage($project, $stage, $actor, $data);
+                    break;
+                case 'postpone':
+                case 'replacement':
+                    $this->requireTechnician($project, $actor);
                     $this->request($project, $stage, $actor, $action, $data);
-                } else {
+                    break;
+                default:
                     throw new RuntimeException('Thao tác không hợp lệ.');
-                }
             }
+
             $this->db->commit();
         } catch (Throwable $error) {
             if ($this->db->inTransaction()) {
@@ -237,6 +246,79 @@ final class UseInstallationWorkflow
             }
             throw $error;
         }
+    }
+
+    private function requireTechnician(array $project, array $actor): void
+    {
+        if ($actor['role'] !== 'technician' || $project['status'] !== 'in_progress') {
+            throw new RuntimeException('Chỉ kỹ thuật viên được phân công mới được gửi cập nhật.');
+        }
+    }
+
+    // Quản lý duyệt hoặc yêu cầu bổ sung giai đoạn hiện tại.
+    private function reviewStage(array $project, array $stage, array $actor, string $action, array $data): void
+    {
+        $id = (int) $project['id'];
+        if ($stage['status'] !== 'pending_approval') {
+            throw new RuntimeException('Giai đoạn không còn chờ duyệt.');
+        }
+        $approved = $action === 'approve_stage';
+        $note = $approved ? trim((string) ($data['review_note'] ?? '')) : $this->note($data, 'review_note');
+        $nextStatus = $approved ? 'approved' : 'revision_required';
+        $this->run('UPDATE project_stages SET status=?,reviewed_at=NOW(),reviewed_by=?,review_note=?,completed_at=IF(?="approved",NOW(),NULL) WHERE id=?', [$nextStatus, $actor['id'], $note, $nextStatus, $stage['id']]);
+        $this->log($project, $actor, $action, $stage['status'], $nextStatus, $note);
+        if ($approved) {
+            $this->closeRequests($project, $actor, (int) $stage['id'], 'Giai đoạn đã hoàn thành.');
+            $next = $this->rows('SELECT * FROM project_stages WHERE project_id=? AND position=?', [$id, $stage['position'] + 1])[0] ?? null;
+            if ($next) {
+                $this->run("UPDATE project_stages SET status='in_progress',started_at=NOW() WHERE id=?", [$next['id']]);
+                $this->run('UPDATE projects SET current_stage=? WHERE id=?', [$next['stage'], $id]);
+                $project['current_stage'] = $next['stage'];
+                $this->log($project, $actor, 'stage_started', 'locked', 'in_progress');
+            } else {
+                $this->run("UPDATE projects SET status='completed',completion_date=CURDATE(),completed_at=NOW() WHERE id=?", [$id]);
+                $this->run('UPDATE project_assignments SET ended_at=NOW() WHERE project_id=? AND ended_at IS NULL', [$id]);
+                $this->log($project, $actor, 'project_completed', 'in_progress', 'completed');
+            }
+        }
+    }
+
+    private function uploadDocument(array $project, array $stage, array $actor, array $data, array $files): string
+    {
+        $id = (int) $project['id'];
+        if (!in_array($stage['status'], ['in_progress', 'revision_required'], true)) {
+            throw new RuntimeException('Chỉ upload khi giai đoạn đang làm hoặc cần bổ sung.');
+        }
+        $file = UseFileUpload::inspect($files['document'] ?? [], (string) ($data['document_type'] ?? ''));
+        if ($this->rows('SELECT id FROM project_documents WHERE stage_id=? AND file_hash=?', [$stage['id'], $file['file_hash']])) {
+            throw new RuntimeException('Giai đoạn này đã có tài liệu cùng nội dung.');
+        }
+        $stored = UseFileUpload::store($file);
+        try {
+            $this->run('INSERT INTO project_documents (project_id,stage_id,document_type,file_name,file_hash,file_path,file_size_kb,file_type,uploaded_by) VALUES (?,?,?,?,?,?,?,?,?)', [$id, $stage['id'], $file['document_type'], $file['file_name'], $file['file_hash'], $stored, $file['file_size_kb'], $file['file_type'], $actor['id']]);
+            $this->log($project, $actor, 'document_uploaded', null, null, $file['file_name']);
+        } catch (Throwable $error) {
+            unlink(dirname(__DIR__, 2) . '/' . $stored);
+            throw $error;
+        }
+        return $stored;
+    }
+
+    // Gửi duyệt chỉ khi đã có ảnh và đã xác nhận yêu cầu hoãn còn chờ.
+    private function submitStage(array $project, array $stage, array $actor, array $data): void
+    {
+        if (!in_array($stage['status'], ['in_progress', 'revision_required'], true)) {
+            throw new RuntimeException('Giai đoạn này không thể gửi duyệt.');
+        }
+        if (!$this->rows("SELECT id FROM project_documents WHERE stage_id=? AND file_type IN ('image/jpeg','image/png') LIMIT 1", [$stage['id']])) {
+            throw new RuntimeException('Cần ít nhất một ảnh minh chứng của giai đoạn trước khi gửi duyệt.');
+        }
+        $pending = $this->rows("SELECT id FROM project_requests WHERE stage_id=? AND request_type='postpone' AND status='pending'", [$stage['id']]);
+        if ($pending && ($data['acknowledge_postpone'] ?? '') !== '1') {
+            throw new RuntimeException('Có yêu cầu hoãn đang chờ duyệt. Hãy xác nhận đã tiếp tục công việc trước khi gửi duyệt giai đoạn.');
+        }
+        $this->run("UPDATE project_stages SET status='pending_approval',submitted_at=NOW(),submitted_by=?,review_note=NULL,reviewed_at=NULL,reviewed_by=NULL WHERE id=?", [$actor['id'], $stage['id']]);
+        $this->log($project, $actor, 'stage_submitted', $stage['status'], 'pending_approval', $pending ? 'Đã xác nhận tiếp tục công việc trong khi yêu cầu hoãn còn chờ.' : '');
     }
 
     private function admin(array $actor): void
@@ -256,32 +338,39 @@ final class UseInstallationWorkflow
         if (self::workdays($start, $end) < 6) {
             throw new RuntimeException('Lịch dự án cần ít nhất 6 ngày làm việc (thứ Hai đến thứ Sáu).');
         }
-        $ids = array_values(array_unique(array_map('intval', (array) ($data['technicians'] ?? []))));
-        if (!$ids || count($ids) > 100) {
+        $technicianIds = [];
+        foreach ((array) ($data['technicians'] ?? []) as $value) {
+            $technicianId = (int) $value;
+            if (!in_array($technicianId, $technicianIds, true)) {
+                $technicianIds[] = $technicianId;
+            }
+        }
+        if (!$technicianIds || count($technicianIds) > 100) {
             throw new RuntimeException('Chọn từ 1 đến 100 kỹ thuật viên.');
         }
         $hours = filter_var($data['hours_per_day'] ?? null, FILTER_VALIDATE_FLOAT);
         if ($hours === false || $hours <= 0 || $hours > 8) {
             throw new RuntimeException('Giờ dự kiến của mỗi người phải lớn hơn 0 và tối đa 8 giờ/ngày.');
         }
-        foreach ($ids as $tech) {
+        foreach ($technicianIds as $tech) {
             $this->technician($tech);
             $this->run('INSERT INTO project_assignments (project_id,technician_id,planned_start,planned_end,hours_per_day,assigned_by) VALUES (?,?,?,?,?,?)', [$project['id'], $tech, $start, $end, $hours, $actor['id']]);
         }
-        $dates = [];
+        // Chia đều số ngày làm việc của dự án cho sáu giai đoạn.
+        $workingDates = [];
         for ($day = self::date($start); $day <= self::date($end); $day = $day->modify('+1 day')) {
             if ($day->format('N') <= 5) {
-                $dates[] = $day->format('Y-m-d');
+                $workingDates[] = $day->format('Y-m-d');
             }
         }
-        $count = count($dates);
-        foreach (array_keys(self::STAGES) as $i => $key) {
-            $a = (int) floor($i * $count / 6);
-            $b = (int) floor(($i + 1) * $count / 6) - 1;
-            $this->run('UPDATE project_stages SET planned_start=?,planned_end=?,status=?,started_at=IF(?=0,NOW(),NULL) WHERE project_id=? AND stage=?', [$dates[$a], $dates[$b], $i === 0 ? 'in_progress' : 'locked', $i, $project['id'], $key]);
+        $totalDays = count($workingDates);
+        foreach (array_keys(self::STAGES) as $stageIndex => $stageCode) {
+            $startIndex = (int) floor($stageIndex * $totalDays / 6);
+            $endIndex = (int) floor(($stageIndex + 1) * $totalDays / 6) - 1;
+            $this->run('UPDATE project_stages SET planned_start=?,planned_end=?,status=?,started_at=IF(?=0,NOW(),NULL) WHERE project_id=? AND stage=?', [$workingDates[$startIndex], $workingDates[$endIndex], $stageIndex === 0 ? 'in_progress' : 'locked', $stageIndex, $project['id'], $stageCode]);
         }
-        $this->run("UPDATE projects SET status='in_progress',technician_id=?,start_date=?,planned_end_date=? WHERE id=?", [$ids[0], $start, $end, $project['id']]);
-        $this->log($project, $actor, 'crew_assigned', 'new', 'in_progress', 'Nhóm: ' . implode(', ', $ids) . '; ' . $hours . ' giờ/người/ngày.');
+        $this->run("UPDATE projects SET status='in_progress',technician_id=?,start_date=?,planned_end_date=? WHERE id=?", [$technicianIds[0], $start, $end, $project['id']]);
+        $this->log($project, $actor, 'crew_assigned', 'new', 'in_progress', 'Nhóm: ' . implode(', ', $technicianIds) . '; ' . $hours . ' giờ/người/ngày.');
     }
 
     private function technician(int $id): void

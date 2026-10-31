@@ -85,7 +85,7 @@ try {
     $check(UsePaginationState::make(21,2)['offset']===20, 'Phân trang hơn 20 bản ghi');
     $reject(fn() => Workflow::date('2026-02-31'), 'Từ chối ngày không tồn tại');
     ob_start(); View::component('button','<script>', ['type'=>'submit']); $html=ob_get_clean();
-    $check(str_contains($html,'type="submit"') && str_contains($html,'&lt;script&gt;') && !str_contains($html,'@props'), 'Tái sử dụng atomic Blade và escape dữ liệu');
+    $check(str_contains($html,'type="submit"') && str_contains($html,'&lt;script&gt;') && !str_contains($html,'@props'), 'Component PHP hiển thị đúng và escape dữ liệu');
     $check($w->detail($id,$admin)['logPager']['pages']>1 && count($w->detail($id,$admin)['logs'])===20, 'Nhật ký thực tế phân trang khi quá 20 dòng');
     for ($i=2;$i<=23;$i++) {
         $w->run("INSERT INTO solar_quotes (id,user_id,customer_name,customer_phone,address,monthly_electric_bill,roof_area_sqm,estimated_system_kwp,panel_count,estimated_total_cost,payback_years,status) VALUES (?,5,'Khách','090','Địa chỉ',3000000,100,7,14,100000000,4,'approved')",[$i]);
