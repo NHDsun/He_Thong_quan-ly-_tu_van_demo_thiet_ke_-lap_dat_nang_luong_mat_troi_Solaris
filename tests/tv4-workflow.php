@@ -37,6 +37,16 @@ try {
     $id = $w->createFromApprovedQuote(1, 1);
     $check($w->createFromApprovedQuote(1,1) === $id, 'Báo giá sinh duy nhất một dự án');
     $check(count($w->detail($id,$admin)['stages']) === 6, 'Khởi tạo đủ sáu giai đoạn');
+    $customer = ['id'=>5,'role'=>'customer'];
+    $otherCustomer = ['id'=>999,'role'=>'customer'];
+    $check($w->listing($customer,'all',1)['pager']['total']===1, 'Khách hàng thấy dự án mới thuộc tài khoản');
+    $check($w->listing($otherCustomer,'all',1)['pager']['total']===0, 'Khách hàng không thấy dự án người khác trong danh sách');
+    $reject(fn() => $w->detail($id,$otherCustomer), 'Chặn đổi ID để xem chi tiết dự án người khác');
+    $customerDetail = $w->detail($id,$customer);
+    $check(count($customerDetail['stages'])===6 && !isset($customerDetail['logs'],$customerDetail['requests'],$customerDetail['documents']), 'Chi tiết khách hàng chỉ chứa thông tin giám sát');
+    foreach (['assign','upload','submit_stage','approve_stage','reject_stage','postpone','replacement','approve_request','reject_request'] as $forgedAction) {
+        $reject(fn() => $w->act($customer,$id,$forgedAction,[]), 'Chặn khách hàng gửi thao tác '.$forgedAction);
+    }
     $reject(fn() => $w->createFromApprovedQuote(1,2), 'Kỹ thuật viên không tạo dự án từ báo giá');
     $reject(fn() => $w->project($id,$tech), 'Chặn kỹ thuật viên chưa được phân công');
     $reject(fn() => $w->act($admin,$id,'assign',['start_date'=>'2026-11-02','end_date'=>'2026-11-03','technicians'=>[2]]), 'Từ chối kế hoạch thiếu sáu ngày làm việc');
@@ -80,6 +90,7 @@ try {
         $w->act($tech,$id,'submit_stage',[]); $w->act($admin,$id,'approve_stage',[]);
     }
     $check($w->detail($id,$admin)['project']['status']==='completed', 'Duyệt bước sáu hoàn tất dự án');
+    $check($w->detail($id,$customer)['project']['status']==='completed', 'Khách hàng vẫn xem được dự án đã hoàn tất');
     $check(!$w->detail($id,$admin)['crew'], 'Giải phóng lịch nhân viên khi hoàn thành');
     $reject(fn() => $w->act($admin,$id,'approve_stage',[]), 'Không sửa dự án đã hoàn tất');
     $check(UsePaginationState::make(21,2)['offset']===20, 'Phân trang hơn 20 bản ghi');

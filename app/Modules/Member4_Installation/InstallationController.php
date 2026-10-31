@@ -15,6 +15,11 @@ final class InstallationController
         $_SESSION['installation_csrf'] ??= bin2hex(random_bytes(32));
         $view = ['actor' => null, 'error' => null, 'flash' => $_SESSION['installation_flash'] ?? null];
         unset($_SESSION['installation_flash']);
+        $userId = (int) ($_SESSION['user_id'] ?? $_SESSION['installation_user_id'] ?? 0);
+        // Trang giới thiệu công khai không cần kết nối database.
+        if (!$userId && $_SERVER['REQUEST_METHOD'] === 'GET') {
+            return $view;
+        }
         try {
             $workflow = new InstallationWorkflow(Config::database());
             $post = $_SERVER['REQUEST_METHOD'] === 'POST';
@@ -28,10 +33,8 @@ final class InstallationController
             // TV1 có thể dùng session user_id; vai trò luôn được đọc lại từ CSDL.
             $userId = (int) ($_SESSION['user_id'] ?? $_SESSION['installation_user_id'] ?? 0);
             $actor = $workflow->rows('SELECT id,full_name,role FROM users WHERE id=?', [$userId])[0] ?? null;
-            if ($actor && in_array($actor['role'], ['admin', 'technician'], true)) {
+            if ($actor && in_array($actor['role'], ['admin', 'technician', 'customer'], true)) {
                 $view['actor'] = $actor;
-            } elseif ($actor) {
-                throw new RuntimeException('Trang quản lý lắp đặt dành cho quản lý và kỹ thuật viên.');
             } else {
                 return $view;
             }
@@ -53,10 +56,14 @@ final class InstallationController
                 }
                 $this->redirect($id);
             }
-            $view['filter'] = (string) ($_GET['filter'] ?? ($actor['role'] === 'admin' ? 'new' : 'in_progress'));
+            $defaultFilter = $actor['role'] === 'admin' ? 'new' : ($actor['role'] === 'customer' ? 'all' : 'in_progress');
+            $view['filter'] = (string) ($_GET['filter'] ?? $defaultFilter);
             $view['listing'] = $workflow->listing($actor, $view['filter'], (int) ($_GET['p'] ?? 1));
             if ($id) {
                 $view['detail'] = $workflow->detail($id, $actor, (int) ($_GET['log_page'] ?? 1), (int) ($_GET['request_page'] ?? 1));
+                if ($actor['role'] === 'customer') {
+                    return $view;
+                }
                 $project = $view['detail']['project'];
                 $start = (string) ($_GET['from'] ?? $project['start_date'] ?? date('Y-m-d'));
                 $end = (string) ($_GET['to'] ?? $project['planned_end_date'] ?? date('Y-m-d', strtotime('+20 days')));
@@ -93,7 +100,7 @@ final class InstallationController
         if (($_SESSION['installation_login_blocked_until'] ?? 0) > time()) {
             throw new RuntimeException('Đã thử quá nhiều lần. Vui lòng thử lại sau 5 phút.');
         }
-        $user = $workflow->rows("SELECT * FROM users WHERE username=? AND role IN ('admin','technician')", [trim((string) ($_POST['username'] ?? ''))])[0] ?? null;
+        $user = $workflow->rows("SELECT * FROM users WHERE username=? AND role IN ('admin','technician','customer')", [trim((string) ($_POST['username'] ?? ''))])[0] ?? null;
         if (!$user || !password_verify((string) ($_POST['password'] ?? ''), $user['password_hash'])) {
             $_SESSION['installation_login_attempts'] = ($_SESSION['installation_login_attempts'] ?? 0) + 1;
             if ($_SESSION['installation_login_attempts'] >= 5) {
@@ -117,6 +124,9 @@ final class InstallationController
 
     private function download(InstallationWorkflow $workflow, array $actor, int $id): void
     {
+        if ($actor['role'] === 'customer') {
+            throw new RuntimeException('Tài liệu này thuộc khu vực xử lý nội bộ.');
+        }
         $document = $workflow->rows('SELECT * FROM project_documents WHERE id=?', [$id])[0] ?? null;
         if (!$document) {
             throw new RuntimeException('Không tìm thấy tài liệu.');
