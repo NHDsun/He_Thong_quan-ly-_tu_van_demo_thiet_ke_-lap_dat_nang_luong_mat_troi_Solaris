@@ -45,40 +45,21 @@
                 </ul>
             </div>
 
-            <!-- Thành viên 3: 3 Bài Mảng/Chuỗi + 3 Bài MySQL -->
-            <div class="solar-glass-card" style="padding: 1.75rem;">
+            <!-- Thành viên 3: 3 Bài Mảng/Chuỗi + 3 Bài MySQL (Đã hoàn thành) -->
+            <div class="solar-glass-card" style="padding: 1.75rem; border: 1px solid rgba(56, 189, 248, 0.35); box-shadow: 0 0 15px rgba(56, 189, 248, 0.08);">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
-                    <span class="sol-badge sol-badge--ocean">🧮 Thành Viên 3</span>
-                    <span style="font-size: 0.75rem; color: var(--text-muted);">3 Mảng + 3 MySQL</span>
+                    <span class="sol-badge sol-badge--ocean">🧮 Thành Viên 3 (Hoàn thành)</span>
+                    <span style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 700;">6 Bài Hoàn Chỉnh</span>
                 </div>
                 <h3 style="font-size: 1.15rem; color: #ffffff; margin-bottom: 1rem;">Mảng (P2) & MySQL</h3>
-                <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem;">
-                    <li><a href="#" style="color: var(--text-secondary);">5. Chuỗi: Ma trận số 2 chiều</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">6. Chuỗi: Tìm kiếm nhị phân</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">7. Chuỗi: Ghép và chuẩn hóa</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">1. MySQL: Hiển thị lưới hãng sữa</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">2. MySQL: Lưới khách hàng</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">3. MySQL: Lưới sữa kẻ sọc</a></li>
+                <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.65rem; font-size: 0.85rem;">
+                    <li><a href="index.php?page=exercises&exercise=13" style="color: #38bdf8; text-decoration: none; display: flex; justify-content: space-between;"><span>13. Mảng 5: Thay thế & Ma trận</span><span style="font-size: 0.75rem;">➔</span></a></li>
+                    <li><a href="index.php?page=exercises&exercise=14" style="color: #38bdf8; text-decoration: none; display: flex; justify-content: space-between;"><span>14. Mảng 6: Sắp xếp & Nhị phân</span><span style="font-size: 0.75rem;">➔</span></a></li>
+                    <li><a href="index.php?page=exercises&exercise=15" style="color: #38bdf8; text-decoration: none; display: flex; justify-content: space-between;"><span>15. Mảng 7: Ghép mảng & Chuẩn hóa</span><span style="font-size: 0.75rem;">➔</span></a></li>
+                    <li><a href="index.php?page=exercises&exercise=16" style="color: #38bdf8; text-decoration: none; display: flex; justify-content: space-between;"><span>16. MySQL 1: Lưới hãng sữa</span><span style="font-size: 0.75rem;">➔</span></a></li>
+                    <li><a href="index.php?page=exercises&exercise=17" style="color: #38bdf8; text-decoration: none; display: flex; justify-content: space-between;"><span>17. MySQL 2: Lưới khách hàng</span><span style="font-size: 0.75rem;">➔</span></a></li>
+                    <li><a href="index.php?page=exercises&exercise=18" style="color: #38bdf8; text-decoration: none; display: flex; justify-content: space-between;"><span>18. MySQL 3: Lưới tùy biến kẻ sọc</span><span style="font-size: 0.75rem;">➔</span></a></li>
                 </ul>
             </div>
-
-            <!-- Thành viên 4: 6 Bài PHP & MySQL (Quản lý bán sữa...) -->
-            <div class="solar-glass-card" style="padding: 1.75rem;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
-                    <span class="sol-badge sol-badge--corona">📋 Thành Viên 4</span>
-                    <span style="font-size: 0.75rem; color: var(--text-muted);">6 Bài MySQL</span>
-                </div>
-                <h3 style="font-size: 1.15rem; color: #ffffff; margin-bottom: 1rem;">PHP & MySQL (P2)</h3>
-                <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem;">
-                    <li><a href="#" style="color: var(--text-secondary);">4. MySQL: Lưới sữa có phân trang (>20 dòng)</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">5. MySQL: Lưới sản phẩm kèm ảnh</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">6. MySQL: Chi tiết sản phẩm sữa</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">7. MySQL: Thêm mới sản phẩm sữa</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">8. MySQL: Tìm kiếm sản phẩm</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">9. MySQL: Tìm kiếm nâng cao</a></li>
-                </ul>
-            </div>
-
-        </div>
     </div>
 </x-layouts.master>

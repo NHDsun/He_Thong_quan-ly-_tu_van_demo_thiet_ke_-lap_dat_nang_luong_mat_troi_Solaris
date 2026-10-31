@@ -1,4 +1,17 @@
 <?php
+// Tự động nạp cấu hình CSDL và các Hook/Controller (Phân hệ Thành viên 3)
+require_once __DIR__ . '/app/Config/Database.php';
+require_once __DIR__ . '/app/Hooks/UseSolarCalculator.php';
+require_once __DIR__ . '/app/Hooks/UsePaginationState.php';
+require_once __DIR__ . '/app/Modules/Member3_Simulator/SolarDemoController.php';
+
+if (empty($_GET) && !empty($_SERVER['QUERY_STRING'])) {
+    parse_str($_SERVER['QUERY_STRING'], $_GET);
+}
+if (empty($_POST) && !empty($_SERVER['POST_DATA'])) {
+    parse_str($_SERVER['POST_DATA'], $_POST);
+}
+
 $page = $_GET['page'] ?? 'home';
 $validPages = ['home', 'products', 'calculator', 'installations', 'exercises', 'profile'];
 if (!in_array($page, $validPages)) {
@@ -349,24 +362,17 @@ $title = $pageTitles[$page] ?? 'SOLARIS';
             </div>
 
         <?php elseif ($page === 'calculator'): ?>
-            <div class="sol-container" style="padding: 4.5rem 1.5rem; text-align: center;">
-                <div class="sol-glass-card" style="max-width: 720px; margin: 0 auto; padding: 3rem 2rem;">
-                    <span class="sol-badge sol-badge--cyan" style="margin-bottom: 1rem;">Khu Vực 3 • Thành Viên 3</span>
-                    <h2 style="color: #ffffff; font-size: 2rem; margin-bottom: 0.75rem;">Tư Vấn & Demo Thiết Kế Solar</h2>
-                    <p style="color: var(--text-secondary); margin-bottom: 1.75rem; line-height: 1.6; font-size: 0.95rem;">
-                        Phân vùng dành cho Thành viên 3 phát triển Công cụ tính toán điện mặt trời (kWp, số pin 550W, chi phí, hoàn vốn) kết nối Hook <code>UseSolarCalculator.php</code>.
-                    </p>
-                    <div style="background: rgba(8, 12, 20, 0.7); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem; text-align: left; margin-bottom: 1.75rem;">
-                        <div style="color: var(--accent-amber); font-weight: 600; font-size: 0.85rem; margin-bottom: 0.35rem;">File phụ trách của Thành viên 3:</div>
-                        <code style="color: #38bdf8; font-family: var(--font-mono); font-size: 0.85rem;">
-                            • app/Hooks/UseSolarCalculator.php<br>
-                            • app/Modules/Member3_Simulator/SolarDemoController.php<br>
-                            • resources/views/pages/demo-design.blade.php
-                        </code>
-                    </div>
-                    <a href="index.php?page=home" class="sol-btn sol-btn--solar">⬅ Quay Về Trang Chủ</a>
-                </div>
-            </div>
+            <?php
+            $solarCtrl = new \App\Modules\Member3_Simulator\SolarDemoController();
+            $solarData = $solarCtrl->handleRequest();
+            $calc = $solarData['calc'];
+            $alert = $solarData['alert'];
+            $quotes_list = $solarData['quotes_list'];
+            $pagination = $solarData['pagination'];
+            $db_connected = $solarData['db_connected'];
+            $db_error = $solarData['db_error'];
+            include __DIR__ . '/resources/views/pages/calculator.blade.php';
+            ?>
 
         <?php elseif ($page === 'installations'): ?>
             <div class="sol-container" style="padding: 4.5rem 1.5rem; text-align: center;">
@@ -389,6 +395,34 @@ $title = $pageTitles[$page] ?? 'SOLARIS';
             </div>
 
         <?php elseif ($page === 'exercises'): ?>
+            <?php 
+            $ex = $_GET['exercise'] ?? null;
+            if ($ex == 13):
+                echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
+                include __DIR__ . '/resources/views/pages/exercises/member3/exercise13_matrix_replace.php';
+                echo '</div>';
+            elseif ($ex == 14):
+                echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
+                include __DIR__ . '/resources/views/pages/exercises/member3/exercise14_sort_binary_search.php';
+                echo '</div>';
+            elseif ($ex == 15):
+                echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
+                include __DIR__ . '/resources/views/pages/exercises/member3/exercise15_merge_normalize.php';
+                echo '</div>';
+            elseif ($ex == 16):
+                echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
+                include __DIR__ . '/resources/views/pages/exercises/member3/exercise16_mysql_hang_sua.php';
+                echo '</div>';
+            elseif ($ex == 17):
+                echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
+                include __DIR__ . '/resources/views/pages/exercises/member3/exercise17_mysql_khach_hang.php';
+                echo '</div>';
+            elseif ($ex == 18):
+                echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
+                include __DIR__ . '/resources/views/pages/exercises/member3/exercise18_mysql_custom_grid.php';
+                echo '</div>';
+            else:
+            ?>
             <div class="sol-container" style="padding: 3rem 0 4rem;">
                 <div class="sol-section-header">
                     <span class="sol-badge sol-badge--amber" style="margin-bottom: 0.6rem;">Khu Vực 5 • Dùng Chung</span>
@@ -431,19 +465,20 @@ $title = $pageTitles[$page] ?? 'SOLARIS';
                         </ul>
                     </div>
 
-                    <div class="sol-glass-card" style="padding: 1.65rem;">
+                    <!-- Thành viên 3 (Hoàn thành đầy đủ 6 bài tập) -->
+                    <div class="sol-glass-card" style="padding: 1.65rem; border-color: rgba(56, 189, 248, 0.4); box-shadow: 0 0 16px rgba(56, 189, 248, 0.1);">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem;">
-                            <span class="sol-badge sol-badge--cyan">Thành Viên 3</span>
-                            <span style="font-size: 0.75rem; color: var(--text-muted);">3 Mảng + 3 MySQL</span>
+                            <span class="sol-badge sol-badge--cyan">Thành Viên 3 (Hoàn thành)</span>
+                            <span style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 700;">6 Bài Hoàn Chỉnh</span>
                         </div>
                         <h3 style="font-size: 1.1rem; color: #ffffff; margin-bottom: 0.85rem;">Mảng (P2) & MySQL</h3>
-                        <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.55rem; font-size: 0.825rem;">
-                            <li><span style="color: var(--accent-cyan);">5.</span> Chuỗi: Ma trận số 2 chiều</li>
-                            <li><span style="color: var(--accent-cyan);">6.</span> Chuỗi: Tìm kiếm nhị phân</li>
-                            <li><span style="color: var(--accent-cyan);">7.</span> Chuỗi: Ghép và chuẩn hóa</li>
-                            <li><span style="color: var(--accent-cyan);">1.</span> MySQL: Hiển thị lưới hãng sữa</li>
-                            <li><span style="color: var(--accent-cyan);">2.</span> MySQL: Lưới khách hàng</li>
-                            <li><span style="color: var(--accent-cyan);">3.</span> MySQL: Lưới sữa kẻ sọc</li>
+                        <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.65rem; font-size: 0.825rem;">
+                            <li><a href="index.php?page=exercises&exercise=13" style="color: #38bdf8; text-decoration: none; display: flex; align-items: center; justify-content: space-between;"><span style="color: #cbd5e1;"><strong style="color: var(--accent-cyan);">13.</strong> Mảng 5: Thay thế & Ma trận</span><span style="color: var(--accent-cyan); font-size: 0.75rem;">Mở bài ➔</span></a></li>
+                            <li><a href="index.php?page=exercises&exercise=14" style="color: #38bdf8; text-decoration: none; display: flex; align-items: center; justify-content: space-between;"><span style="color: #cbd5e1;"><strong style="color: var(--accent-cyan);">14.</strong> Mảng 6: Sắp xếp & Nhị phân</span><span style="color: var(--accent-cyan); font-size: 0.75rem;">Mở bài ➔</span></a></li>
+                            <li><a href="index.php?page=exercises&exercise=15" style="color: #38bdf8; text-decoration: none; display: flex; align-items: center; justify-content: space-between;"><span style="color: #cbd5e1;"><strong style="color: var(--accent-cyan);">15.</strong> Mảng 7: Ghép & Chuẩn hóa</span><span style="color: var(--accent-cyan); font-size: 0.75rem;">Mở bài ➔</span></a></li>
+                            <li><a href="index.php?page=exercises&exercise=16" style="color: #38bdf8; text-decoration: none; display: flex; align-items: center; justify-content: space-between;"><span style="color: #cbd5e1;"><strong style="color: var(--accent-cyan);">16.</strong> MySQL 1: Lưới hãng sữa</span><span style="color: var(--accent-cyan); font-size: 0.75rem;">Mở bài ➔</span></a></li>
+                            <li><a href="index.php?page=exercises&exercise=17" style="color: #38bdf8; text-decoration: none; display: flex; align-items: center; justify-content: space-between;"><span style="color: #cbd5e1;"><strong style="color: var(--accent-cyan);">17.</strong> MySQL 2: Lưới khách hàng</span><span style="color: var(--accent-cyan); font-size: 0.75rem;">Mở bài ➔</span></a></li>
+                            <li><a href="index.php?page=exercises&exercise=18" style="color: #38bdf8; text-decoration: none; display: flex; align-items: center; justify-content: space-between;"><span style="color: #cbd5e1;"><strong style="color: var(--accent-cyan);">18.</strong> MySQL 3: Lưới tùy biến kẻ sọc</span><span style="color: var(--accent-cyan); font-size: 0.75rem;">Mở bài ➔</span></a></li>
                         </ul>
                     </div>
 
@@ -464,6 +499,7 @@ $title = $pageTitles[$page] ?? 'SOLARIS';
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
 
         <?php elseif ($page === 'profile'): ?>
             <div class="sol-container" style="padding: 3rem 0 5rem;">
