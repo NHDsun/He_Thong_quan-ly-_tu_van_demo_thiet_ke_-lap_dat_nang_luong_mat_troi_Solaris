@@ -21,7 +21,10 @@ INSERT INTO `users` (`id`, `username`, `password_hash`, `full_name`, `email`, `p
 (6, 'kythuat.dung', '$2y$10$tsxq5r3F0X9FthiMHAtTseampqPy9M8GscvTcVgDD1KkKdPf.et7m', 'Vũ Anh Dũng', 'dung.va@solaris.vn', '0909777004', 'technician'),
 (7, 'khachhang.demo', '$2y$10$tsxq5r3F0X9FthiMHAtTseampqPy9M8GscvTcVgDD1KkKdPf.et7m', 'Nguyễn Văn Hải', 'hai.nv@gmail.com', '0912345678', 'customer'),
 (8, 'khachhang.mai', '$2y$10$tsxq5r3F0X9FthiMHAtTseampqPy9M8GscvTcVgDD1KkKdPf.et7m', 'Trần Thị Mai', 'mai.tt@gmail.com', '0987654321', 'customer'),
-(9, 'khachhang.tuan', '$2y$10$tsxq5r3F0X9FthiMHAtTseampqPy9M8GscvTcVgDD1KkKdPf.et7m', 'Đặng Quốc Tuấn', 'tuan.dq@gmail.com', '0933221100', 'customer');
+(9, 'khachhang.tuan', '$2y$10$tsxq5r3F0X9FthiMHAtTseampqPy9M8GscvTcVgDD1KkKdPf.et7m', 'Đặng Quốc Tuấn', 'tuan.dq@gmail.com', '0933221100', 'customer'),
+(10, 'admin_pro', '$2y$10$tsxq5r3F0X9FthiMHAtTseampqPy9M8GscvTcVgDD1KkKdPf.et7m', 'Quản Trị Viên Cấp Cao (Admin Level)', 'admin.pro@solaris.vn', '0901888001', 'admin'),
+(11, 'tech_pro', '$2y$10$tsxq5r3F0X9FthiMHAtTseampqPy9M8GscvTcVgDD1KkKdPf.et7m', 'Kỹ Thuật Viên Trưởng (Technician Level)', 'tech.pro@solaris.vn', '0902888002', 'technician'),
+(12, 'customer_pro', '$2y$10$tsxq5r3F0X9FthiMHAtTseampqPy9M8GscvTcVgDD1KkKdPf.et7m', 'Khách Hàng Trải Nghiệm (Customer Level)', 'customer.pro@gmail.com', '0903888003', 'customer');
 
 -- -----------------------------------------------------------------------------
 -- 2. BẢNG CATEGORIES
