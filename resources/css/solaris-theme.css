@@ -272,41 +272,60 @@ body {
     gap: 0.85rem;
 }
 
-.sol-header-cart {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.4rem 0.85rem;
-    background: rgba(21, 34, 56, 0.85);
-    border: 1px solid rgba(245, 158, 11, 0.4);
-    border-radius: var(--radius-sm);
-    color: var(--text-primary);
-    text-decoration: none;
-    font-size: 0.825rem;
-    font-weight: 600;
-    transition: var(--transition);
+.sol-header-cart,
+a.sol-header-cart,
+a.sol-header-cart:visited {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.55rem !important;
+    padding: 0.45rem 0.95rem !important;
+    background: rgba(17, 24, 39, 0.9) !important;
+    border: 1px solid rgba(245, 158, 11, 0.45) !important;
+    border-radius: var(--radius-sm) !important;
+    color: #ffffff !important;
+    text-decoration: none !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+    transition: var(--transition) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
 }
 
 .sol-header-cart:hover,
+a.sol-header-cart:hover,
 .sol-header-cart.active {
-    background: rgba(30, 48, 78, 0.95);
-    border-color: var(--accent-amber);
-    box-shadow: 0 0 14px rgba(245, 158, 11, 0.25);
-    color: #ffffff;
-    transform: translateY(-1px);
+    background: rgba(245, 158, 11, 0.15) !important;
+    border-color: var(--accent-gold) !important;
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.3) !important;
+    color: #ffffff !important;
+    transform: translateY(-1.5px) !important;
+}
+
+.sol-header-cart__icon {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.sol-header-cart__text {
+    color: #ffffff !important;
+    font-size: 0.85rem;
+    font-weight: 600;
 }
 
 .sol-header-cart__badge {
-    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
-    color: #080c14;
-    font-weight: 800;
-    font-size: 0.725rem;
-    padding: 0.12rem 0.5rem;
-    border-radius: var(--radius-full);
-    min-width: 1.25rem;
-    text-align: center;
-    line-height: 1.2;
-    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.35);
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%) !important;
+    color: #080c14 !important;
+    font-weight: 800 !important;
+    font-size: 0.75rem !important;
+    min-width: 20px !important;
+    height: 20px !important;
+    padding: 0 6px !important;
+    border-radius: 999px !important;
+    line-height: 1 !important;
+    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4) !important;
 }
 
 .sol-nav-wrapper {

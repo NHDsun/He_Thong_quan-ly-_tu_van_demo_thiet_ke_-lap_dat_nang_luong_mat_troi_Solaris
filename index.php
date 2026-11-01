@@ -100,7 +100,7 @@ if ($page === 'calculator') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($title) ?></title>
     <link rel="icon" type="image/svg+xml" href="assets/solar-logo.svg">
-    <link rel="stylesheet" href="resources/css/solaris-theme.css">
+    <link rel="stylesheet" href="resources/css/solaris-theme.css?v=<?= file_exists(__DIR__ . '/resources/css/solaris-theme.css') ? filemtime(__DIR__ . '/resources/css/solaris-theme.css') : '2.2' ?>">
 </head>
 <body class="solar-bg-grid">
     <div class="glow-ambient-1"></div>
@@ -124,11 +124,11 @@ if ($page === 'calculator') {
                     <span>Hotline: <strong style="color: #ffffff;">0909.888.SOLAR</strong></span>
                 </div>
 
-                <!-- Nút Giỏ Hàng được chuyển lên Header cạnh nút Khảo Sát Báo Giá -->
-                <a href="index.php?page=cart" class="sol-header-cart <?= $page === 'cart' ? 'active' : '' ?>" title="Xem giỏ hàng thiết bị">
-                    <span>🛒</span>
-                    <span>Giỏ Hàng</span>
-                    <span class="sol-header-cart__badge"><?= class_exists(\App\Modules\Member2_Products\ProductController::class) ? \App\Modules\Member2_Products\ProductController::cartCount() : 0 ?></span>
+                <!-- Nút Giỏ Hàng nổi bật bên cạnh nút Khảo Sát Báo Giá -->
+                <a href="index.php?page=cart" class="sol-header-cart <?= $page === 'cart' ? 'active' : '' ?>" title="Xem giỏ hàng thiết bị" style="display: inline-flex; align-items: center; gap: 0.55rem; padding: 0.45rem 0.95rem; background: rgba(17, 24, 39, 0.9); border: 1px solid rgba(245, 158, 11, 0.45); border-radius: 6px; color: #ffffff !important; text-decoration: none !important; font-size: 0.85rem; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.35);">
+                    <span class="sol-header-cart__icon" style="font-size: 1.05rem; line-height: 1;">🛒</span>
+                    <span class="sol-header-cart__text" style="color: #ffffff !important; font-weight: 600;">Giỏ Hàng</span>
+                    <span class="sol-header-cart__badge" style="display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); color: #080c14; font-weight: 800; font-size: 0.75rem; min-width: 22px; height: 20px; padding: 0 6px; border-radius: 999px; line-height: 1; box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);"><?= class_exists(\App\Modules\Member2_Products\ProductController::class) ? \App\Modules\Member2_Products\ProductController::cartCount() : 0 ?></span>
                 </a>
 
                 <a href="index.php?page=calculator" class="sol-btn sol-btn--solar sol-btn--sm">
