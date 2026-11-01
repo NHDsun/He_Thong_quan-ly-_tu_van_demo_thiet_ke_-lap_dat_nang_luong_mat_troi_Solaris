@@ -169,39 +169,39 @@ if ($page === 'profile') {
         <div class="sol-container sol-nav-inner">
             <ul class="sol-nav-tabs">
                 <li>
-                    <a href="index.php?page=home" class="sol-tab-item <?= $page === 'home' ? 'active' : '' ?>">
-                        <span>🏠 Home (Trang Chủ)</span>
+                    <a href="index.php?page=home" class="sol-tab-item <?= $page === 'home' ? 'active' : '' ?>" title="Trang chủ Solaris">
+                        <span>🏠 Trang Chủ</span>
                     </a>
                 </li>
                 <li>
-                    <a href="index.php?page=products" class="sol-tab-item <?= $page === 'products' ? 'active' : '' ?>">
-                        <span>☀️ Giải pháp & Sản phẩm</span>
+                    <a href="index.php?page=products" class="sol-tab-item <?= $page === 'products' ? 'active' : '' ?>" title="Danh mục thiết bị quang điện">
+                        <span>☀️ Sản Phẩm</span>
                     </a>
                 </li>
                 <li>
-                    <a href="index.php?page=calculator" class="sol-tab-item <?= $page === 'calculator' ? 'active' : '' ?>">
-                        <span>🧮 Tư vấn & Demo Thiết kế</span>
+                    <a href="index.php?page=calculator" class="sol-tab-item <?= $page === 'calculator' ? 'active' : '' ?>" title="Mô phỏng thiết kế & tính toán hoàn vốn">
+                        <span>🧮 Demo Thiết Kế</span>
                     </a>
                 </li>
                 <li>
-                    <a href="index.php?page=installations" class="sol-tab-item <?= $page === 'installations' ? 'active' : '' ?>">
-                        <span>📋 Quản lý Lắp đặt</span>
+                    <a href="index.php?page=installations" class="sol-tab-item <?= $page === 'installations' ? 'active' : '' ?>" title="Quản lý lắp đặt & thi công">
+                        <span>📋 Lắp Đặt</span>
                     </a>
                 </li>
                 <li>
-                    <a href="index.php?page=exercises" class="sol-tab-item <?= $page === 'exercises' ? 'active' : '' ?>">
+                    <a href="index.php?page=exercises" class="sol-tab-item <?= $page === 'exercises' ? 'active' : '' ?>" title="Portal 24 bài tập thực hành">
                         <span>📚 Bài Tập (24 Bài)</span>
                     </a>
                 </li>
                 <li>
-                    <a href="index.php?page=profile" class="sol-tab-item <?= $page === 'profile' ? 'active' : '' ?>">
-                        <span>👤 Thông Tin Cá Nhân</span>
+                    <a href="index.php?page=profile" class="sol-tab-item <?= $page === 'profile' ? 'active' : '' ?>" title="Hồ sơ 4 thành viên & Quản trị tài khoản">
+                        <span>👤 Hồ Sơ & Profile</span>
                     </a>
                 </li>
             </ul>
 
             <div class="sol-nav-badge-wrap">
-                <span class="sol-badge sol-badge--amber">Solaris v2.1</span>
+                <span class="sol-badge sol-badge--amber" style="font-size: 0.725rem; padding: 0.2rem 0.55rem; letter-spacing: 0.5px; white-space: nowrap;">SOLARIS V2.1</span>
             </div>
         </div>
     </nav>
