@@ -4,6 +4,260 @@
     --tv4-muted:var(--text-secondary);
 }
 
+.tv4-public-section { margin-top: 2rem; }
+.tv4-public-intro { display: flex; align-items: center; gap: 2rem; justify-content: space-between; }
+.tv4-public-intro > div { max-width: 700px; }
+.tv4-public-intro h2 { margin: .6rem 0; }
+.tv4-process-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; list-style: none; padding: 0; }
+.tv4-process-card {
+    padding: 0;
+    overflow: hidden;
+}
+.tv4-process-media {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+}
+.tv4-process-backdrop {
+    display: none;
+}
+.tv4-coverflow.is-ready .tv4-process-backdrop {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(16px) brightness(.7);
+    transform: scale(1.12);
+    pointer-events: none;
+}
+.tv4-coverflow.is-ready .tv4-process-media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, var(--bg-card), transparent 30%, transparent 70%, var(--bg-card));
+    pointer-events: none;
+}
+.tv4-coverflow.is-ready .tv4-process-image {
+    z-index: 1;
+}
+.tv4-process-image {
+    position: relative;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-subtle);
+}
+.tv4-process-image img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1376 / 768;
+    object-fit: cover;
+}
+.tv4-process-image .tv4-stage-number {
+    position: absolute;
+    top: .85rem;
+    left: .85rem;
+    background: var(--bg-surface);
+    color: var(--accent-gold);
+    border: 1px solid var(--accent-gold);
+}
+.tv4-process-content {
+    padding: 1.25rem;
+}
+.tv4-coverflow {
+    min-width: 0;
+    --tv4-coverflow-card-width: 52%;
+    --tv4-coverflow-gutter: 3.75rem;
+}
+.tv4-coverflow-viewport {
+    position: relative;
+}
+.tv4-process-heading {
+    max-width: 760px;
+    margin: 0 auto;
+    text-align: center;
+}
+.tv4 .tv4-process-heading h2 {
+    font-size: calc(1.3rem + 10px);
+    margin: 0 0 .75rem;
+}
+.tv4-process-description {
+    min-height: 3.4em;
+    margin: .5rem 0 1rem;
+}
+.tv4-coverflow.is-ready .tv4-process-content p {
+    display: none;
+}
+.tv4-coverflow.is-ready .tv4-process-image {
+    margin: 0 var(--tv4-coverflow-gutter);
+}
+.tv4-coverflow.is-ready .tv4-process-cards {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 1.5rem 0 2rem;
+    margin: 0;
+    overflow: hidden;
+    perspective: 1100px;
+    touch-action: pan-y;
+}
+.tv4-coverflow.is-ready .tv4-process-card {
+    grid-area: 1 / 1;
+    width: var(--tv4-coverflow-card-width);
+    max-width: 560px;
+    min-width: 0;
+    margin: 0 auto;
+    background: var(--bg-surface);
+    cursor: pointer;
+    user-select: none;
+    transform: translateX(calc(var(--offset) * 68%)) translateZ(calc(var(--depth) * -180px)) rotateY(calc(var(--direction) * -42deg));
+    opacity: 1;
+    filter: brightness(.6);
+    transition: transform .5s ease, opacity .5s ease, filter .5s ease, border-color .5s ease;
+}
+.tv4-coverflow.is-ready .tv4-process-card.is-active {
+    cursor: default;
+    opacity: 1;
+    filter: brightness(1);
+    border-color: var(--border-hover);
+    box-shadow: 0 12px 30px var(--accent-glow);
+}
+.tv4-coverflow.is-ready .tv4-process-card.is-distant {
+    opacity: 0;
+    pointer-events: none;
+}
+.tv4-coverflow-controls {
+    position: absolute;
+    top: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: var(--tv4-coverflow-card-width);
+    max-width: 560px;
+    box-sizing: border-box;
+    z-index: 10;
+    display: grid;
+    grid-template-columns: var(--tv4-coverflow-gutter) minmax(0, 1fr) var(--tv4-coverflow-gutter);
+    align-items: center;
+    justify-items: center;
+    pointer-events: none;
+}
+.tv4-coverflow-controls::before {
+    content: '';
+    grid-area: 1 / 2;
+    width: 100%;
+    aspect-ratio: 1376 / 768;
+}
+.tv4-coverflow-arrow:first-child {
+    grid-area: 1 / 1;
+}
+.tv4-coverflow-arrow:last-child {
+    grid-area: 1 / 3;
+}
+.tv4-coverflow-controls[hidden], .tv4-coverflow-dots[hidden] {
+    display: none;
+}
+.tv4-coverflow-arrow {
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    background: var(--bg-card);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: var(--accent-gold);
+    font-size: 1.3rem;
+    cursor: pointer;
+    pointer-events: auto;
+}
+.tv4-coverflow-arrow:hover {
+    border-color: var(--accent-gold);
+}
+.tv4-coverflow-dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.tv4-coverflow-dots button {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+.tv4-coverflow-dots span {
+    width: 7px;
+    height: 7px;
+    border-radius: var(--radius-full);
+    background: var(--text-muted);
+    transition: width .25s ease, background .25s ease;
+}
+.tv4-coverflow-dots button[aria-current="step"] span {
+    width: 23px;
+    background: var(--accent-gold);
+}
+.tv4 .tv4-coverflow-status {
+    text-align: center;
+    color: var(--accent-gold);
+    margin: .75rem 0 .25rem;
+}
+.tv4-coverflow:focus-visible {
+    outline: 2px solid var(--accent-gold);
+    outline-offset: 4px;
+    border-radius: var(--radius-md);
+}
+@media (prefers-reduced-motion: reduce) {
+    .tv4-coverflow.is-ready .tv4-process-card, .tv4-coverflow-dots span {
+        transition: none;
+    }
+}
+.tv4-benefits { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0; }
+.tv4 #customer-benefits-title {
+    font-size: calc(1.3rem + 10px);
+}
+.tv4-benefit {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+.tv4-benefit > div {
+    min-width: 0;
+}
+.tv4 .tv4-benefit h3 {
+    margin-top: 0;
+}
+.tv4-benefit-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    color: var(--accent-gold);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+}
+.tv4-benefit-icon svg {
+    display: block;
+    width: 24px;
+    height: 24px;
+}
+@media (max-width: 760px) {
+    .tv4-public-intro { flex-direction: column; align-items: flex-start; }
+    .tv4-public-intro .sol-btn { white-space: normal; }
+    .tv4-process-cards, .tv4-benefits { grid-template-columns: 1fr; }
+    .tv4-coverflow {
+        --tv4-coverflow-card-width: 80%;
+        --tv4-coverflow-gutter: 2.75rem;
+    }
+    .tv4-coverflow-dots button { width: 28px; }
+    .tv4-process-content { padding: 1rem; }
+    .tv4-process-heading .tv4-coverflow-status { min-height: 3.4em; }
+    .tv4-process-description { min-height: 5.1em; }
+}
+
 .tv4 h1,.tv4 h2,.tv4 h3,.tv4 h4 {
     font-family:var(--font-heading);
     color:var(--text-primary);

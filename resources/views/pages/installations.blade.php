@@ -3,6 +3,7 @@ use App\Modules\Member4_Installation\View as UI;
 $viewData = $installationView;
 $actor = $viewData['actor'];
 $admin = $actor && $actor['role'] === 'admin';
+$customer = $actor && $actor['role'] === 'customer';
 
 if ($admin) {
     $filters = [
@@ -12,6 +13,9 @@ if ($admin) {
         'completed' => 'Hoàn tất',
         'all' => 'Tất cả',
     ];
+} elseif ($customer) {
+    $filters = ['all' => 'Tất cả dự án của tôi', 'new' => 'Chờ triển khai',
+        'in_progress' => 'Đang thực hiện', 'completed' => 'Đã hoàn tất'];
 } else {
     $filters = [
         'in_progress' => 'Đang thực hiện',
@@ -24,13 +28,12 @@ if ($admin) {
     <div class="tv4-heading">
         <div>
             <span class="tv4-eyebrow">SOLARIS / VẬN HÀNH DỰ ÁN</span>
-            <h1>Quản lý lắp đặt</h1>
-            <p>Theo dõi từng giai đoạn, phối hợp đội ngũ và quản lý hồ sơ thi công.</p>
+            <h1><?= !$actor ? 'Đồng hành cùng dự án điện mặt trời' : ($customer ? 'Dự án của tôi' : 'Quản lý lắp đặt') ?></h1>
         </div>
         <?php if ($actor): ?>
             <div class="tv4-account">
                 <strong><?= UI::escape($actor['full_name']) ?></strong>
-                <span><?= $admin ? 'Quản lý' : 'Kỹ thuật viên' ?></span>
+                <span><?= $admin ? 'Quản lý' : ($customer ? 'Khách hàng' : 'Kỹ thuật viên') ?></span>
                 <?php if (!isset($_SESSION['user_id'])): ?>
                     <form method="post">
                         <?php UI::form('logout'); UI::component('button', 'Đăng xuất', ['variant' => 'outline', 'size' => 'sm', 'type' => 'submit']); ?>
@@ -50,9 +53,9 @@ if ($admin) {
         </div>
     <?php endif; ?>
     <?php if (!$actor): ?>
-        <form method="post" class="sol-glass-card tv4-panel tv4-login">
-            <h2>Đăng nhập đội ngũ</h2>
-            <p>Dành cho quản lý và kỹ thuật viên được phân công.</p>
+        <?php require __DIR__ . '/../components/installation/guest.php'; ?>
+        <form method="post" class="sol-glass-card tv4-panel tv4-login" id="installation-login">
+            <h2>Đăng nhập theo dõi dự án</h2>
             <?php UI::form('login'); ?>
             <label>
                 Tên đăng nhập
@@ -66,7 +69,11 @@ if ($admin) {
         </form>
     <?php elseif ($actor && !$viewData['error']): ?>
         <?php if (isset($viewData['detail'])): ?>
-            <?php require __DIR__ . '/../components/installation/detail.php'; ?>
+            <?php if ($customer): ?>
+                <?php require __DIR__ . '/../components/installation/customer-detail.php'; ?>
+            <?php else: ?>
+                <?php require __DIR__ . '/../components/installation/detail.php'; ?>
+            <?php endif; ?>
         <?php else: ?>
             <nav class="tv4-tabs" aria-label="Lọc dự án">
                 <?php foreach ($filters as $key => $label): ?>
@@ -101,7 +108,7 @@ if ($admin) {
                                 <span style="width:<?= $progress ?>%"></span>
                             </div>
                             <span><?= $progress ?> % · <?= $project['approved_count'] ?> /6 giai đoạn</span>
-                            <?php if ($project['request_count']): ?>
+                            <?php if (!$customer && $project['request_count']): ?>
                                 <small><?= $project['request_count'] ?> yêu cầu chờ xử lý</small>
                             <?php endif; ?>
                         </div>
@@ -111,9 +118,6 @@ if ($admin) {
                 <?php if (!$viewData['listing']['projects']): ?>
                     <div class="tv4-empty sol-glass-card">
                         <h3>Chưa có dự án trong danh sách này</h3>
-                        <p>
-                            <?= $admin ? 'Dự án mới xuất hiện sau khi báo giá được chấp thuận và TV3 khởi tạo dự án.' : 'Dự án sẽ xuất hiện khi quản lý phân công bạn vào nhóm thực hiện.' ?>
-                        </p>
                     </div>
                 <?php endif; ?>
             </div>

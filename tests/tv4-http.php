@@ -49,7 +49,7 @@ file_put_contents($png,base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HA
 file_put_contents($bad,'<?php echo "bad";');
 file_put_contents($large,str_repeat('x',5*1024*1024+1));
 try {
-    [$code,$body]=$http(); $check($code===200 && str_contains($body,'Đăng nhập đội ngũ'),'Hiển thị đăng nhập');
+    [$code,$body]=$http(); $check($code===200 && str_contains($body,'Đăng nhập theo dõi dự án') && str_contains($body,'Quyền lợi khi theo dõi dự án'),'Khách chưa đăng nhập xem quy trình, quyền lợi và form đăng nhập');
     $token=$csrf($body);
     [$code,$body]=$http('', ['action'=>'login','csrf'=>'wrong','username'=>'admin.tv4','password'=>'Solaris@2026']);
     $check(str_contains($body,'Phiên biểu mẫu hết hạn'),'Chặn CSRF sai');
@@ -85,11 +85,35 @@ try {
     $check(str_contains($body,'cùng nội dung'),'Chống trùng theo hash nội dung');
     $http('&project=2',['action'=>'submit_stage','csrf'=>$token]);
     [, $body]=$http('&project=2');
-    $check(str_contains($body,'Đã gửi minh chứng'),'Gửi duyệt giai đoạn qua HTTP');
+    $check($db->query("SELECT status FROM project_stages WHERE project_id=2 AND stage='survey'")->fetchColumn()==='pending_approval' && str_contains($body,'Chờ duyệt'),'Gửi duyệt giai đoạn qua HTTP');
     $http('', ['action'=>'logout','csrf'=>$csrf($body)]);
     [, $body]=$http();
     $http('', ['action'=>'login','csrf'=>$csrf($body),'username'=>'kythuat.dung','password'=>'Solaris@2026']);
     [, $body]=$http('&document='.$id);
     $check(str_contains($body,'không còn được phân công'),'Chặn tải tài liệu dự án người khác');
+    $http('', ['action'=>'logout','csrf'=>$csrf($body)]);
+    [, $body]=$http();
+    [$code]=$http('', ['action'=>'login','csrf'=>$csrf($body),'username'=>'khachhang.demo','password'=>'Solaris@2026']);
+    $check($code===303,'Đăng nhập bằng tài khoản khách hàng');
+    [, $body]=$http();
+    $check(str_contains($body,'Dự án của tôi') && str_contains($body,'SOLAR-2026-001') && str_contains($body,'SOLAR-2026-003'),'Khách hàng xem danh sách dự án của mình');
+    [, $body]=$http('&project=2');
+    $token=$csrf($body);
+    $check(str_contains($body,'customer-stage-6') && !str_contains($body,'name="document"') && !str_contains($body,'Yêu cầu duyệt giai đoạn') && !str_contains($body,'Nhật ký dự án'),'Chi tiết khách hàng có sáu bước và không có điều khiển nội bộ');
+    $before=$db->query('SELECT status FROM project_stages WHERE id=7')->fetchColumn();
+    foreach (['assign','upload','submit_stage','approve_stage','reject_stage','postpone','replacement','approve_request','reject_request'] as $action) {
+        $http('&project=2',['action'=>$action,'csrf'=>$token]);
+        [, $body]=$http('&project=2');
+        $check(str_contains($body,'chỉ có quyền xem'),'Máy chủ từ chối POST khách hàng: '.$action);
+    }
+    $check($db->query('SELECT status FROM project_stages WHERE id=7')->fetchColumn()===$before,'POST giả không đổi trạng thái giai đoạn');
+    [, $body]=$http('&document='.$id);
+    $check(str_contains($body,'khu vực xử lý nội bộ'),'Khách hàng không tải hồ sơ nội bộ bằng URL trực tiếp');
+    $db->exec("INSERT INTO projects (contract_code,user_id,project_name,capacity_kwp,total_amount,installation_address) VALUES ('PRIVATE-OTHER',1,'Du an rieng',5,50000000,'Dia chi rieng')");
+    $otherId=(int)$db->lastInsertId();
+    [, $body]=$http();
+    $check(!str_contains($body,'PRIVATE-OTHER'),'Danh sách khách hàng không lộ dự án chủ sở hữu khác');
+    [, $body]=$http('&project='.$otherId);
+    $check(str_contains($body,'không có quyền xem') && !str_contains($body,'Dia chi rieng'),'Chặn IDOR qua URL chi tiết khách hàng');
     echo "Kiểm tra HTTP hoàn thành. Chạy cleanup sau khi kiểm tra trình duyệt.\n";
 } finally { curl_close($curl); unlink($cookies); unlink($png); unlink($bad); unlink($large); }
