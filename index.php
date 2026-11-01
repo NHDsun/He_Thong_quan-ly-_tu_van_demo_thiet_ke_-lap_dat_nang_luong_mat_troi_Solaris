@@ -118,11 +118,19 @@ if ($page === 'calculator') {
                 </div>
             </a>
 
-            <div style="display: flex; align-items: center; gap: 1.25rem;">
+            <div class="sol-header__actions">
                 <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary); font-size: 0.825rem;">
                     <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #10b981; box-shadow: 0 0 6px #10b981;"></span>
                     <span>Hotline: <strong style="color: #ffffff;">0909.888.SOLAR</strong></span>
                 </div>
+
+                <!-- Nút Giỏ Hàng được chuyển lên Header cạnh nút Khảo Sát Báo Giá -->
+                <a href="index.php?page=cart" class="sol-header-cart <?= $page === 'cart' ? 'active' : '' ?>" title="Xem giỏ hàng thiết bị">
+                    <span>🛒</span>
+                    <span>Giỏ Hàng</span>
+                    <span class="sol-header-cart__badge"><?= class_exists(\App\Modules\Member2_Products\ProductController::class) ? \App\Modules\Member2_Products\ProductController::cartCount() : 0 ?></span>
+                </a>
+
                 <a href="index.php?page=calculator" class="sol-btn sol-btn--solar sol-btn--sm">
                     ⚡ Khảo Sát Báo Giá
                 </a>
@@ -141,11 +149,6 @@ if ($page === 'calculator') {
                 <li>
                     <a href="index.php?page=products" class="sol-tab-item <?= $page === 'products' ? 'active' : '' ?>">
                         <span>☀️ Giải pháp & Sản phẩm</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="index.php?page=cart" class="sol-tab-item <?= $page === 'cart' ? 'active' : '' ?>">
-                        <span>🛒 Giỏ hàng (<?= class_exists(\App\Modules\Member2_Products\ProductController::class) ? \App\Modules\Member2_Products\ProductController::cartCount() : 0 ?>)</span>
                     </a>
                 </li>
                 <li>
@@ -170,7 +173,7 @@ if ($page === 'calculator') {
                 </li>
             </ul>
 
-            <div style="display: flex; align-items: center;">
+            <div class="sol-nav-badge-wrap">
                 <span class="sol-badge sol-badge--amber">Solaris v2.1</span>
             </div>
         </div>
