@@ -1,84 +1,82 @@
-<x-layouts.master title="SOLARIS - Portal 24 Bài Tập Thực Hành" activeTab="exercises">
-    <div class="sol-container" style="padding-top: 2.5rem; padding-bottom: 4rem;">
-        <div class="sol-section-header">
-            <span class="sol-badge sol-badge--corona" style="margin-bottom: 0.75rem;">KHU VỰC DÙNG CHUNG</span>
-            <h2 class="sol-section-header__title">Cổng Tích Hợp 24 Bài Tập Thực Hành</h2>
-            <p class="sol-section-header__desc">
-                Hệ thống bài tập chia đều cho 4 thành viên (mỗi người 6 bài), tuân thủ kiến trúc phân tầng Atomic và chuẩn giao diện Solaris.
-            </p>
+<div class="sol-container" style="padding: 3rem 1.5rem 5rem;">
+    <div class="sol-section-header" style="text-align: center; margin-bottom: 3rem;">
+        <span class="sol-badge sol-badge--amber" style="margin-bottom: 0.75rem;">Phân Hệ Học Thuật</span>
+        <h1 style="color: #ffffff; font-size: 2.25rem; font-weight: 700; margin-bottom: 0.75rem;">
+            Cổng 24 Bài Tập Thực Hành Lập Trình Web PHP
+        </h1>
+        <p style="color: var(--text-secondary); max-width: 680px; margin: 0 auto; line-height: 1.6; font-size: 0.95rem;">
+            Không gian tích hợp toàn diện 24 bài tập thực hành theo đề cương chuẩn của môn học. 
+            Được phân bổ đồng đều cho 4 thành viên (mỗi thành viên phụ trách 6 bài), kế thừa trọn vẹn kiến trúc Obsidian & Solar Gold.
+        </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+        <!-- Thành viên 1: 6 Bài Căn bản & Chuỗi -->
+        <div class="sol-glass-card" style="padding: 1.65rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem;">
+                <span class="sol-badge sol-badge--amber">Thành Viên 1</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">6 Bài Căn Bản</span>
+            </div>
+            <h3 style="font-size: 1.1rem; color: #ffffff; margin-bottom: 0.85rem;">PHP Căn Bản & Biểu Thức</h3>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.55rem; font-size: 0.825rem;">
+                <li><span style="color: var(--accent-gold);">1.</span> Diện tích & chu vi hình chữ nhật</li>
+                <li><span style="color: var(--accent-gold);">2.</span> Diện tích & chu vi hình tròn</li>
+                <li><span style="color: var(--accent-gold);">3.</span> Tính toán thanh toán tiền điện</li>
+                <li><span style="color: var(--accent-gold);">4.</span> Tính cạnh huyền tam giác vuông</li>
+                <li><span style="color: var(--accent-gold);">5.</span> Tính tiền phòng nghỉ khách sạn</li>
+                <li><span style="color: var(--accent-gold);">6.</span> Xử lý chuỗi và đếm từ căn bản</li>
+            </ul>
         </div>
 
-        <!-- 4 Cột hiển thị 4 Thành viên và 24 bài tập -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
-            
-            <!-- Thành viên 1: 6 Bài PHP & Form -->
-            <div class="solar-glass-card" style="padding: 1.75rem;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
-                    <span class="sol-badge sol-badge--corona">👤 Thành Viên 1 (Lead)</span>
-                    <span style="font-size: 0.75rem; color: var(--text-muted);">6 Bài Form</span>
-                </div>
-                <h3 style="font-size: 1.15rem; color: #ffffff; margin-bottom: 1rem;">Phần PHP & FORM</h3>
-                <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem;">
-                    <li><a href="#" style="color: var(--text-secondary);">1. Diện tích hình chữ nhật</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">2. Diện tích & chu vi hình tròn</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">3. Thanh toán tiền điện</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">4. Cạnh huyền tam giác vuông</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">5. Tính tiền Karaoke</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">6. Phép tính trên 2 số</a></li>
-                </ul>
+        <!-- Thành viên 2: 6 Bài Mảng & Form -->
+        <div class="sol-glass-card" style="padding: 1.65rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem;">
+                <span class="sol-badge sol-badge--emerald">Thành Viên 2</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">6 Bài Mảng & Form</span>
             </div>
+            <h3 style="font-size: 1.1rem; color: #ffffff; margin-bottom: 0.85rem;">Mảng & Xử Lý Form</h3>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.55rem; font-size: 0.825rem;">
+                <li><span style="color: #10b981;">1.</span> Khởi tạo và hiển thị mảng số</li>
+                <li><span style="color: #10b981;">2.</span> Tính tổng dãy số nhập từ Form</li>
+                <li><span style="color: #10b981;">3.</span> Tìm Min/Max & tính trung bình mảng</li>
+                <li><span style="color: #10b981;">4.</span> Tìm kiếm phần tử trong mảng</li>
+                <li><span style="color: #10b981;">5.</span> Thay thế phần tử mảng theo điều kiện</li>
+                <li><span style="color: #10b981;">6.</span> Sắp xếp mảng tăng dần / giảm dần</li>
+            </ul>
+        </div>
 
-            <!-- Thành viên 2: 2 Bài Form + 4 Bài Mảng/Chuỗi -->
-            <div class="solar-glass-card" style="padding: 1.75rem;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
-                    <span class="sol-badge sol-badge--emerald">☀️ Thành Viên 2</span>
-                    <span style="font-size: 0.75rem; color: var(--text-muted);">2 Form + 4 Mảng</span>
-                </div>
-                <h3 style="font-size: 1.15rem; color: #ffffff; margin-bottom: 1rem;">Mảng & Chuỗi (P1)</h3>
-                <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem;">
-                    <li><a href="#" style="color: var(--text-secondary);">7. Xử lý Form tính toán</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">8. Form tổng hợp nâng cao</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">1. Mảng: Thao tác số nguyên</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">2. Mảng: Tính năm âm lịch</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">3. Mảng: Đếm & Thay thế</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">4. Mảng: Sắp xếp tăng/giảm</a></li>
-                </ul>
+        <!-- Thành viên 3: 3 Bài Mảng + 3 Bài MySQL (Đã hoàn thành 100%) -->
+        <div class="sol-glass-card" style="padding: 1.65rem; border-color: rgba(56, 189, 248, 0.4); box-shadow: 0 0 16px rgba(56, 189, 248, 0.1);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem;">
+                <span class="sol-badge sol-badge--cyan">Thành Viên 3 (Đã xong)</span>
+                <span style="font-size: 0.75rem; color: #38bdf8; font-weight: 700;">6 Bài Hoàn Chỉnh</span>
             </div>
+            <h3 style="font-size: 1.1rem; color: #ffffff; margin-bottom: 0.85rem;">Mảng Nâng Cao & MySQL</h3>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.65rem; font-size: 0.825rem;">
+                <li><a href="index.php?page=exercises&exercise=13" style="color: #38bdf8; text-decoration: none; display: flex; align-items: center; justify-content: space-between;"><span style="color: #cbd5e1;"><strong style="color: #38bdf8;">13.</strong> Mảng 5: Thay thế & Ma trận</span><span style="color: #38bdf8; font-size: 0.75rem;">Mở bài ➔</span></a></li>
+                <li><a href="index.php?page=exercises&exercise=14" style="color: #38bdf8; text-decoration: none; display: flex; align-items: center; justify-content: space-between;"><span style="color: #cbd5e1;"><strong style="color: #38bdf8;">14.</strong> Mảng 6: Sắp xếp & Nhị phân</span><span style="color: #38bdf8; font-size: 0.75rem;">Mở bài ➔</span></a></li>
+                <li><a href="index.php?page=exercises&exercise=15" style="color: #38bdf8; text-decoration: none; display: flex; align-items: center; justify-content: space-between;"><span style="color: #cbd5e1;"><strong style="color: #38bdf8;">15.</strong> Mảng 7: Ghép & Chuẩn hóa</span><span style="color: #38bdf8; font-size: 0.75rem;">Mở bài ➔</span></a></li>
+                <li><a href="index.php?page=exercises&exercise=16" style="color: #38bdf8; text-decoration: none; display: flex; align-items: center; justify-content: space-between;"><span style="color: #cbd5e1;"><strong style="color: #38bdf8;">16.</strong> MySQL 1: Lưới hãng sữa</span><span style="color: #38bdf8; font-size: 0.75rem;">Mở bài ➔</span></a></li>
+                <li><a href="index.php?page=exercises&exercise=17" style="color: #38bdf8; text-decoration: none; display: flex; align-items: center; justify-content: space-between;"><span style="color: #cbd5e1;"><strong style="color: #38bdf8;">17.</strong> MySQL 2: Lưới khách hàng</span><span style="color: #38bdf8; font-size: 0.75rem;">Mở bài ➔</span></a></li>
+                <li><a href="index.php?page=exercises&exercise=18" style="color: #38bdf8; text-decoration: none; display: flex; align-items: center; justify-content: space-between;"><span style="color: #cbd5e1;"><strong style="color: #38bdf8;">18.</strong> MySQL 3: Lưới tùy biến kẻ sọc</span><span style="color: #38bdf8; font-size: 0.75rem;">Mở bài ➔</span></a></li>
+            </ul>
+        </div>
 
-            <!-- Thành viên 3: 3 Bài Mảng/Chuỗi + 3 Bài MySQL -->
-            <div class="solar-glass-card" style="padding: 1.75rem;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
-                    <span class="sol-badge sol-badge--ocean">🧮 Thành Viên 3</span>
-                    <span style="font-size: 0.75rem; color: var(--text-muted);">3 Mảng + 3 MySQL</span>
-                </div>
-                <h3 style="font-size: 1.15rem; color: #ffffff; margin-bottom: 1rem;">Mảng (P2) & MySQL</h3>
-                <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem;">
-                    <li><a href="#" style="color: var(--text-secondary);">5. Chuỗi: Ma trận số 2 chiều</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">6. Chuỗi: Tìm kiếm nhị phân</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">7. Chuỗi: Ghép và chuẩn hóa</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">1. MySQL: Hiển thị lưới hãng sữa</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">2. MySQL: Lưới khách hàng</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">3. MySQL: Lưới sữa kẻ sọc</a></li>
-                </ul>
+        <!-- Thành viên 4: 6 Bài MySQL Quản lý bán sữa -->
+        <div class="sol-glass-card" style="padding: 1.65rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem;">
+                <span class="sol-badge sol-badge--amber">Thành Viên 4</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">6 Bài Bán Sữa Nâng Cao</span>
             </div>
-
-            <!-- Thành viên 4: 6 Bài PHP & MySQL (Quản lý bán sữa...) -->
-            <div class="solar-glass-card" style="padding: 1.75rem;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
-                    <span class="sol-badge sol-badge--corona">📋 Thành Viên 4</span>
-                    <span style="font-size: 0.75rem; color: var(--text-muted);">6 Bài MySQL</span>
-                </div>
-                <h3 style="font-size: 1.15rem; color: #ffffff; margin-bottom: 1rem;">PHP & MySQL (P2)</h3>
-                <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem;">
-                    <li><a href="#" style="color: var(--text-secondary);">4. MySQL: Lưới sữa có phân trang (>20 dòng)</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">5. MySQL: Lưới sản phẩm kèm ảnh</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">6. MySQL: Chi tiết sản phẩm sữa</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">7. MySQL: Thêm mới sản phẩm sữa</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">8. MySQL: Tìm kiếm sản phẩm</a></li>
-                    <li><a href="#" style="color: var(--text-secondary);">9. MySQL: Tìm kiếm nâng cao</a></li>
-                </ul>
-            </div>
-
+            <h3 style="font-size: 1.1rem; color: #ffffff; margin-bottom: 0.85rem;">MySQL Nâng Cao & Bán Sữa</h3>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.55rem; font-size: 0.825rem;">
+                <li><span style="color: var(--accent-gold);">19.</span> Lưới sữa phân trang tự động (> 20 dòng)</li>
+                <li><span style="color: var(--accent-gold);">20.</span> Lưới sản phẩm sữa kèm ảnh sản phẩm</li>
+                <li><span style="color: var(--accent-gold);">21.</span> Xem chi tiết thông tin sản phẩm sữa</li>
+                <li><span style="color: var(--accent-gold);">22.</span> Form thêm mới sản phẩm vào CSDL</li>
+                <li><span style="color: var(--accent-gold);">23.</span> Tìm kiếm sản phẩm sữa đơn giản</li>
+                <li><span style="color: var(--accent-gold);">24.</span> Tìm kiếm nâng cao đa tiêu chí</li>
+            </ul>
         </div>
     </div>
-</x-layouts.master>
+</div>

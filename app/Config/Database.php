@@ -10,6 +10,7 @@ use RuntimeException;
 final class Database
 {
     private static ?PDO $instance = null;
+    private static ?string $lastError = null;
 
     /**
      * Lấy đối tượng kết nối PDO duy nhất (Singleton).
@@ -38,8 +39,10 @@ final class Database
 
         try {
             self::$instance = new PDO($dsn, $config['user'], $config['pass'], $options);
+            self::$lastError = null;
             return self::$instance;
         } catch (PDOException $e) {
+            self::$lastError = $e->getMessage();
             error_log('Database Connection Error: ' . $e->getMessage());
             throw new RuntimeException(
                 'Không thể kết nối đến cơ sở dữ liệu MySQL. Vui lòng kiểm tra dịch vụ MySQL trên XAMPP và chắc chắn CSDL `' . $config['dbname'] . '` đã được tạo.',
@@ -55,6 +58,24 @@ final class Database
     public static function connection(): PDO
     {
         return self::getConnection();
+    }
+
+    /**
+     * Phương thức an toàn trả về null thay vì ném exception (cho TV3 offline fallback).
+     */
+    public static function getPdo(): ?PDO
+    {
+        try {
+            return self::getConnection();
+        } catch (\Throwable $e) {
+            self::$lastError = $e->getMessage();
+            return null;
+        }
+    }
+
+    public static function getLastError(): ?string
+    {
+        return self::$lastError;
     }
 
     /**
@@ -94,5 +115,6 @@ final class Database
     public static function reset(): void
     {
         self::$instance = null;
+        self::$lastError = null;
     }
 }
