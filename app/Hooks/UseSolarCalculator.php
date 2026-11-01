@@ -50,7 +50,375 @@ class UseSolarCalculator
         ]
     ];
 
+        /**
+     * Phân tích tương thích và quy tắc ghép đôi thiết bị (System Pairing & Compatibility Advisor)
+     * Trả về bảng trạng thái thiết bị, tỷ lệ DC/AC, cảnh báo kỹ thuật và gợi ý thiết bị cần phối ghép.
+     *
+     * @param array $cartItems Danh sách thiết bị trong kế hoạch dự định ($_SESSION['solar_cart'])
+     * @return array Kết quả phân tích ghép đôi chuyên sâu
+     */
+    public static function analyzeCompatibility(array $cartItems): array
+    {
+        $panels = [];
+        $inverters = [];
+        $batteries = [];
+        $accessories = [];
+
+        foreach ($cartItems as $item) {
+            $catName = mb_strtolower((string)($item['category_name'] ?? ''));
+            $name = mb_strtolower((string)($item['name'] ?? ''));
+            $qty = max(1, (int)($item['quantity'] ?? 1));
+            $watts = (float)($item['capacity_watts'] ?? 0);
+            $price = (float)($item['price'] ?? 0);
+
+            $itemData = [
+                'id' => (int)($item['id'] ?? 0),
+                'product_code' => (string)($item['product_code'] ?? ''),
+                'name' => (string)($item['name'] ?? ''),
+                'category_name' => (string)($item['category_name'] ?? ''),
+                'quantity' => $qty,
+                'capacity_watts' => $watts,
+                'price' => $price,
+                'total_watts' => $watts * $qty,
+                'total_price' => $price * $qty,
+                'image_url' => $item['image_url'] ?? null
+            ];
+
+            if (str_contains($catName, 'tấm pin') || str_contains($catName, 'tam-pin') || str_contains($name, 'tấm pin') || str_contains($name, 'solar panel')) {
+                $panels[] = $itemData;
+            } elseif (str_contains($catName, 'biến tần') || str_contains($catName, 'inverter') || str_contains($name, 'biến tần') || str_contains($name, 'inverter')) {
+                $inverters[] = $itemData;
+            } elseif (str_contains($catName, 'pin lưu trữ') || str_contains($catName, 'lithium') || str_contains($catName, 'bess') || str_contains($name, 'pin lưu trữ') || str_contains($name, 'lithium')) {
+                $batteries[] = $itemData;
+            } else {
+                $accessories[] = $itemData;
+            }
+        }
+
+        // Thống kê tấm pin
+        $totalPanels = array_sum(array_column($panels, 'quantity'));
+        $totalPanelWatts = array_sum(array_column($panels, 'total_watts'));
+        $totalPanelKwp = round($totalPanelWatts / 1000, 2);
+
+        // Thống kê inverter
+        $totalInverters = array_sum(array_column($inverters, 'quantity'));
+        $totalInverterWatts = array_sum(array_column($inverters, 'total_watts'));
+        $totalInverterKw = round($totalInverterWatts / 1000, 2);
+        $hasHybridInverter = false;
+        foreach ($inverters as $inv) {
+            if (str_contains(mb_strtolower($inv['name']), 'hybrid')) {
+                $hasHybridInverter = true;
+                break;
+            }
+        }
+
+        // Thống kê pin lưu trữ
+        $totalBatteries = array_sum(array_column($batteries, 'quantity'));
+        $totalBatteryKwh = round(array_sum(array_column($batteries, 'total_watts')) / 1000, 2);
+
+        // Thống kê phụ kiện & tủ điện
+        $hasProtectionBox = false;
+        $hasMountingRail = false;
+        $hasSmartMeter = false;
+        foreach ($accessories as $acc) {
+            $accName = mb_strtolower($acc['name']);
+            if (str_contains($accName, 'tủ điện') || str_contains($accName, 'đóng cắt') || str_contains($accName, 'box')) {
+                $hasProtectionBox = true;
+            }
+            if (str_contains($accName, 'rail') || str_contains($accName, 'nhôm') || str_contains($accName, 'kẹp')) {
+                $hasMountingRail = true;
+            }
+            if (str_contains($accName, 'meter') || str_contains($accName, 'đồng hồ')) {
+                $hasSmartMeter = true;
+            }
+        }
+
+        // Đánh giá tỷ lệ DC/AC giữa Tấm pin và Biến tần
+        $dcAcRatio = null;
+        if ($totalInverterKw > 0 && $totalPanelKwp > 0) {
+            $dcAcRatio = round($totalPanelKwp / $totalInverterKw, 2);
+        }
+
+        // Phân tích trạng thái ghép đôi & quy tắc khuyến nghị
+        $rules = [];
+
+        // 1. Kiểm tra cặp Tấm pin - Inverter
+        if ($totalPanels > 0 && $totalInverters > 0) {
+            if ($dcAcRatio >= 0.9 && $dcAcRatio <= 1.30) {
+                $rules[] = [
+                    'type' => 'success',
+                    'icon' => '✅',
+                    'title' => "Ghép đôi Tấm pin & Inverter hoàn hảo (Tỷ lệ DC/AC: {$dcAcRatio})",
+                    'detail' => "Giàn pin {$totalPanelKwp} kWp phối hợp tối ưu với Biến tần Inverter {$totalInverterKw} kW. Tỷ lệ 1.0 - 1.25 giúp hệ thống đạt hiệu suất chuyển đổi cao nhất cả vào đầu giờ sáng và cuối giờ chiều."
+                ];
+            } elseif ($dcAcRatio > 1.30) {
+                $rules[] = [
+                    'type' => 'warning',
+                    'icon' => '⚠️',
+                    'title' => "Giàn pin lớn hơn Inverter đáng kể (Tỷ lệ DC/AC: {$dcAcRatio})",
+                    'detail' => "Giàn pin {$totalPanelKwp} kWp có thể bị cắt giảm công suất đỉnh (clipping) vào giữa trưa nắng to khi qua Inverter {$totalInverterKw} kW. Bạn có thể cân nhắc nâng cấp Inverter lên khoảng " . round($totalPanelKwp * 0.9, 1) . " - " . ceil($totalPanelKwp) . " kW."
+                ];
+            } else {
+                $rules[] = [
+                    'type' => 'info',
+                    'icon' => '💡',
+                    'title' => "Inverter dư công suất so với giàn pin (Tỷ lệ DC/AC: {$dcAcRatio})",
+                    'detail' => "Inverter {$totalInverterKw} kW hiện chỉ sử dụng {$totalPanelKwp} kWp pin. Bạn có thể bổ sung thêm khoảng " . ceil(($totalInverterKw * 1.15 - $totalPanelKwp) * 1000 / 550) . " tấm pin 550W để tận dụng tối đa công suất biến tần."
+                ];
+            }
+        } elseif ($totalPanels > 0 && $totalInverters === 0) {
+            $suggestedInvKw = round($totalPanelKwp * 0.9, 1);
+            $rules[] = [
+                'type' => 'danger',
+                'icon' => '⚡',
+                'title' => "Cần ghép thêm Biến Tần Inverter!",
+                'detail' => "Bạn đã chọn {$totalPanels} tấm pin ({$totalPanelKwp} kWp). Bắt buộc cần ghép thêm 01 Biến tần Inverter công suất từ {$suggestedInvKw} kW đến " . ceil($totalPanelKwp) . " kW để chuyển đổi điện DC sang điện AC hòa lưới."
+            ];
+        } elseif ($totalPanels === 0 && $totalInverters > 0) {
+            $suggestedPanels = ceil(($totalInverterKw * 1.1) * 1000 / 550);
+            $rules[] = [
+                'type' => 'danger',
+                'icon' => '☀️',
+                'title' => "Cần ghép thêm Tấm Pin Mặt Trời!",
+                'detail' => "Bạn đã chọn Inverter {$totalInverterKw} kW nhưng chưa có tấm pin nào. Cần ghép thêm khoảng {$suggestedPanels} tấm pin mặt trời (khoảng " . round($totalInverterKw * 1.1, 1) . " kWp) để sinh điện."
+            ];
+        } else {
+            $rules[] = [
+                'type' => 'neutral',
+                'icon' => '📋',
+                'title' => "Chưa có thiết bị phát điện & chuyển đổi chính",
+                'detail' => "Vui lòng chọn Tấm pin năng lượng mặt trời và Biến tần Inverter tương ứng để bắt đầu thiết lập hệ thống."
+            ];
+        }
+
+        // 2. Kiểm tra Pin lưu trữ Lithium
+        if ($totalBatteries > 0) {
+            if ($totalInverters > 0 && $hasHybridInverter) {
+                $rules[] = [
+                    'type' => 'success',
+                    'icon' => '🔋',
+                    'title' => "Tương thích Pin lưu trữ & Inverter Hybrid",
+                    'detail' => "Tuyệt vời! Pin lưu trữ ({$totalBatteryKwh} kWh) được phối ghép cùng Inverter Hybrid, hỗ trợ tự động sạc khi nắng to và cấp điện dự phòng ban đêm hoặc khi cúp điện."
+                ];
+            } elseif ($totalInverters > 0 && !$hasHybridInverter) {
+                $rules[] = [
+                    'type' => 'danger',
+                    'icon' => '❌',
+                    'title' => "Xung đột: Pin Lithium cần Inverter HYBRID!",
+                    'detail' => "Bạn đã chọn Pin lưu trữ Lithium ({$totalBatteryKwh} kWh) nhưng Biến tần trong kế hoạch là loại On-Grid hòa lưới thường! Vui lòng chọn Biến tần HYBRID (Deye / GoodWe Hybrid) để quản lý nạp xả pin."
+                ];
+            } else {
+                $rules[] = [
+                    'type' => 'warning',
+                    'icon' => '⚠️',
+                    'title' => "Pin lưu trữ cần kết hợp với Inverter Hybrid",
+                    'detail' => "Pin lưu trữ Lithium cần có Biến tần Inverter Hybrid tương ứng để nạp và phát điện dự phòng."
+                ];
+            }
+        }
+
+        // 3. Kiểm tra Tủ điện đóng cắt & Khung giá
+        if (!$hasProtectionBox) {
+            $boxType = ($totalInverterKw >= 10 || $totalPanelKwp >= 10) ? 'Tủ điện đóng cắt 3 Pha 10kW' : 'Tủ điện đóng cắt DC/AC & Chống Sét 5kW';
+            $rules[] = [
+                'type' => 'warning',
+                'icon' => '🛡️',
+                'title' => "Khuyến nghị bổ sung Tủ điện an toàn AC/DC",
+                'detail' => "Hệ thống cần 01 {$boxType} tích hợp chống sét lan truyền SPD và Aptomat DC/AC chuyên dụng để đảm bảo an toàn PCCC."
+            ];
+        }
+
+        if (!$hasMountingRail && $totalPanels > 0) {
+            $rules[] = [
+                'type' => 'info',
+                'icon' => '🔧',
+                'title' => "Khuyến nghị bổ sung Khung ray nhôm & Kẹp pin",
+                'detail' => "Để lắp đặt {$totalPanels} tấm pin an toàn chịu bão, bạn cần bổ sung Thanh Rail nhôm định hình và Bộ kẹp giữa / kẹp biên tương ứng."
+            ];
+        }
+
+        // Tính điểm hoàn thiện cấu hình (Completion Score 0 - 100%)
+        $score = 0;
+        if ($totalPanels > 0) $score += 35;
+        if ($totalInverters > 0) $score += 35;
+        if ($totalPanels > 0 && $totalInverters > 0 && $dcAcRatio !== null && $dcAcRatio >= 0.8 && $dcAcRatio <= 1.4) $score += 15;
+        if ($hasProtectionBox) $score += 10;
+        if ($hasMountingRail) $score += 5;
+        if ($score > 100) $score = 100;
+
+        return [
+            'panels' => $panels,
+            'inverters' => $inverters,
+            'batteries' => $batteries,
+            'accessories' => $accessories,
+            'total_panels' => $totalPanels,
+            'total_panel_kwp' => $totalPanelKwp,
+            'total_inverters' => $totalInverters,
+            'total_inverter_kw' => $totalInverterKw,
+            'has_hybrid_inverter' => $hasHybridInverter,
+            'total_batteries' => $totalBatteries,
+            'total_battery_kwh' => $totalBatteryKwh,
+            'has_protection_box' => $hasProtectionBox,
+            'has_mounting_rail' => $hasMountingRail,
+            'has_smart_meter' => $hasSmartMeter,
+            'dc_ac_ratio' => $dcAcRatio,
+            'completion_score' => $score,
+            'rules' => $rules
+        ];
+    }
+
     /**
+     * Tính toán năng lượng, số KW điện tạo ra, số tiền tạo ra hàng tháng và thời gian hoàn vốn
+     * trực tiếp từ Kế hoạch dự định thiết bị
+     *
+     * @param array $cartItems Danh sách thiết bị trong kế hoạch ($_SESSION['solar_cart'])
+     * @param float|null $roofArea Diện tích mái nhà người dùng (m2)
+     * @param string $roofType Loại kết cấu mái
+     * @return array Kết quả tính toán chi tiết
+     */
+    public static function calculateFromPlan(
+        array $cartItems,
+        ?float $roofArea = null,
+        string $roofType = 'metal_roof'
+    ): array {
+        $compat = self::analyzeCompatibility($cartItems);
+
+        // Xác định công suất giàn pin (kWp)
+        $actualKwp = $compat['total_panel_kwp'];
+        $panelCount = $compat['total_panels'];
+
+        // Nếu người dùng chưa chọn tấm pin nhưng có chọn Inverter, lấy công suất Inverter để mô phỏng
+        if ($actualKwp <= 0 && $compat['total_inverter_kw'] > 0) {
+            $actualKwp = $compat['total_inverter_kw'];
+            $panelCount = (int) ceil(($actualKwp * 1000) / self::PANEL_WATTAGE);
+        }
+
+        // Nếu giỏ hàng hoàn toàn trống hoặc không có công suất, fallback về cấu hình hộ gia đình 5.5 kWp (10 tấm pin)
+        if ($actualKwp <= 0) {
+            $actualKwp = 5.5;
+            $panelCount = 10;
+        }
+
+        // 1. Số KW điện tạo ra:
+        // - Sản lượng điện tạo ra mỗi ngày (kWh/ngày) = kWp * 4.5h nắng * 0.82 (hiệu suất hệ thống)
+        $dailyKwh = round($actualKwp * self::PEAK_SUN_HOURS * 0.82, 2);
+        // - Sản lượng điện tạo ra trong 1 tháng (kWh/tháng) = kWh/ngày * 30 ngày
+        $monthlyKwh = round($dailyKwh * 30, 1);
+        // - Sản lượng điện tạo ra trong 1 năm (kWh/năm)
+        $yearlyKwh = round($monthlyKwh * 12);
+
+        // 2. Số tiền điện tạo ra trong 1 tháng (VNĐ/tháng):
+        // Giá điện chuẩn: 3.000 VNĐ / kWh
+        $monthlyMoney = round($monthlyKwh * self::ELECTRICITY_PRICE_KWH);
+        $monthlyMoneyFormatted = number_format($monthlyMoney, 0, ',', '.') . ' VNĐ';
+
+        // Số tiền tạo ra trong 1 năm (VNĐ/năm):
+        $yearlyMoney = $monthlyMoney * 12;
+        $yearlyMoneyFormatted = number_format($yearlyMoney, 0, ',', '.') . ' VNĐ';
+
+        // 3. Tính toán tổng chi phí đầu tư thiết bị trong kế hoạch:
+        $deviceCost = 0;
+        foreach ($cartItems as $item) {
+            $deviceCost += ((float)($item['price'] ?? 0)) * max(1, (int)($item['quantity'] ?? 1));
+        }
+
+        // Chi phí nhân công lắp đặt, nghiệm thu trọn gói (ước tính 10% chi phí thiết bị hoặc định mức tối thiểu 4 triệu VNĐ)
+        $installCost = $deviceCost > 0 ? max(4000000, round($deviceCost * 0.10)) : 0;
+        $totalInvestment = $deviceCost + $installCost;
+
+        // Nếu dữ liệu giá = 0 (dữ liệu mock), tính theo suất đầu tư tiêu chuẩn
+        if ($totalInvestment <= 0) {
+            $pkgKey = $compat['has_hybrid_inverter'] ? 'hybrid' : 'residential';
+            $totalInvestment = round($actualKwp * self::PACKAGE_PRICING[$pkgKey]['price_per_kwp']);
+            $deviceCost = round($totalInvestment * 0.88);
+            $installCost = $totalInvestment - $deviceCost;
+        }
+
+        $totalInvestmentFormatted = number_format($totalInvestment, 0, ',', '.') . ' VNĐ';
+
+        // 4. Dự tính bao lâu thì gỡ lại số tiền (Thời gian hoàn vốn ROI):
+        // Số năm = Tổng chi phí đầu tư / Số tiền tạo ra trong 1 năm
+        $paybackYearsDecimal = $yearlyMoney > 0 ? round($totalInvestment / $yearlyMoney, 2) : 0;
+        $paybackYears = (int) floor($paybackYearsDecimal);
+        $paybackMonths = (int) round(($paybackYearsDecimal - $paybackYears) * 12);
+        if ($paybackMonths >= 12) {
+            $paybackYears += 1;
+            $paybackMonths = 0;
+        }
+
+        $paybackText = $paybackYears > 0 ? "{$paybackYears} năm" : "";
+        if ($paybackMonths > 0) {
+            $paybackText .= ($paybackText !== "" ? " " : "") . "{$paybackMonths} tháng";
+        }
+        if ($paybackText === "") {
+            $paybackText = "Chưa xác định";
+        }
+
+        // 5. Lợi ích tài chính 25 năm & ESG:
+        $total25YearSavings = $yearlyMoney * 25;
+        $net25YearProfit = $total25YearSavings - $totalInvestment;
+        $roiPercentage = $totalInvestment > 0 ? round(($net25YearProfit / $totalInvestment) * 100) : 0;
+        $co2SavedKgYearly = round($yearlyKwh * self::CO2_KG_PER_KWH);
+        $treesEquivalentYearly = (int) round($co2SavedKgYearly / 20);
+
+        // 6. Diện tích mái & Ma trận mặt bằng:
+        $requiredRoofArea = round($panelCount * self::SQM_PER_PANEL, 1);
+        $isRoofSufficient = true;
+        $maxPanelsByRoof = null;
+        if ($roofArea !== null && $roofArea > 0) {
+            $maxPanelsByRoof = (int) floor($roofArea / self::SQM_PER_PANEL);
+            if ($requiredRoofArea > $roofArea) {
+                $isRoofSufficient = false;
+            }
+        }
+
+        $layoutMatrix = self::suggestPanelLayout($panelCount);
+        $bom = self::generateBOM($actualKwp, $panelCount, $compat['has_hybrid_inverter'] ? 'hybrid' : 'residential', $roofType);
+
+        return [
+            'is_from_plan'           => true,
+            'source'                 => 'plan',
+            'compatibility'          => $compat,
+            'package_key'            => $compat['has_hybrid_inverter'] ? 'hybrid' : 'residential',
+            'package_name'           => $compat['has_hybrid_inverter'] ? 'Hệ Thống Lưu Trữ Hybrid (Từ Kế Hoạch)' : 'Hệ Thống Điện Mặt Trời (Từ Kế Hoạch)',
+            'roof_type'              => $roofType,
+            'panel_count'            => $panelCount,
+            'estimated_kwp'          => $actualKwp,
+            'daily_kwh'              => $dailyKwh,
+            'monthly_kwh'            => $monthlyKwh,
+            'yearly_kwh_produced'    => $yearlyKwh,
+            'monthly_bill'           => $monthlyMoney,
+            'monthly_bill_formatted' => $monthlyMoneyFormatted,
+            'monthly_money'          => $monthlyMoney,
+            'monthly_money_formatted'=> $monthlyMoneyFormatted,
+            'monthly_savings'        => $monthlyMoney,
+            'monthly_savings_formatted' => $monthlyMoneyFormatted,
+            'yearly_savings'         => $yearlyMoney,
+            'yearly_savings_formatted'  => $yearlyMoneyFormatted,
+            'device_cost'            => $deviceCost,
+            'install_cost'           => $installCost,
+            'estimated_total_cost'   => $totalInvestment,
+            'estimated_total_cost_formatted' => $totalInvestmentFormatted,
+            'payback_years_decimal'  => $paybackYearsDecimal,
+            'payback_years'          => $paybackYears,
+            'payback_months'         => $paybackMonths,
+            'payback_text'           => $paybackText,
+            'total_25yr_savings'     => $total25YearSavings,
+            'net_25yr_profit'        => $net25YearProfit,
+            'net_25yr_profit_formatted' => number_format($net25YearProfit, 0, ',', '.') . ' VNĐ',
+            'roi_percentage'         => $roiPercentage,
+            'required_roof_area'     => $requiredRoofArea,
+            'provided_roof_area'     => $roofArea,
+            'is_roof_sufficient'     => $isRoofSufficient,
+            'max_panels_by_roof'     => $maxPanelsByRoof,
+            'co2_saved_kg_yearly'    => $co2SavedKgYearly,
+            'trees_equivalent_yearly'=> $treesEquivalentYearly,
+            'layout_matrix'          => $layoutMatrix,
+            'bom'                    => $bom
+        ];
+    }
+
+/**
      * Tính toán cấu hình điện mặt trời toàn diện từ Hóa đơn tiền điện hoặc Công suất hoặc Diện tích mái
      *
      * @param float $monthlyBill Tiền điện trung bình hàng tháng (VNĐ)

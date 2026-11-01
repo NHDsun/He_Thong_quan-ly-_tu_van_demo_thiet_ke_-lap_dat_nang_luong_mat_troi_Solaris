@@ -5,8 +5,9 @@
  * =========================================================================
  * Module Controller điều phối nghiệp vụ Phân hệ 3:
  * 1. Tiếp nhận và xử lý yêu cầu tính toán cấu hình điện mặt trời (UseSolarCalculator).
- * 2. Lưu trữ và quản lý dữ liệu Báo giá khảo sát (bảng solar_quotes trong CSDL).
- * 3. Phân trang dữ liệu lịch sử báo giá tự động (> 20 dòng) qua UsePaginationState.
+ * 2. Đồng bộ thiết bị từ Kế hoạch dự định (Session solar_cart) sang bộ tính toán năng lượng.
+ * 3. Lưu trữ và quản lý dữ liệu Báo giá khảo sát (bảng solar_quotes trong CSDL).
+ * 4. Phân trang dữ liệu lịch sử báo giá tự động (> 20 dòng) qua UsePaginationState.
  */
 
 namespace App\Modules\Member3_Simulator;
@@ -19,11 +20,11 @@ use PDO;
 class SolarDemoController
 {
     /**
-     * Điểm vào nhận dữ liệu bàn giao từ giỏ hàng TV2
+     * Điểm vào nhận dữ liệu bàn giao từ Kế hoạch dự định TV2
      */
     public function index(array $cartProducts = []): array
     {
-        $data = $this->handleRequest();
+        $data = $this->handleRequest($cartProducts);
         $data['cart_products'] = $cartProducts;
         return $data;
     }
@@ -64,7 +65,7 @@ class SolarDemoController
     /**
      * Xử lý luồng dữ liệu chính của trang Tư vấn & Demo Thiết kế Solar
      */
-    public function handleRequest(): array
+    public function handleRequest(array $cartProducts = []): array
     {
         $pdo = Database::getPdo();
         self::ensureTableExists($pdo);
@@ -74,7 +75,7 @@ class SolarDemoController
 
         // Xử lý khi người dùng gửi form Đăng ký tư vấn / Lưu báo giá
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'save_quote') {
-            $saveResult = $this->handleSaveQuote($pdo);
+            $saveResult = $this->handleSaveQuote($pdo, $cartProducts);
             $alert = $saveResult['alert'];
             $savedQuoteId = $saveResult['quote_id'] ?? null;
         }
@@ -87,8 +88,22 @@ class SolarDemoController
         $package = isset($_REQUEST['package']) ? trim((string)$_REQUEST['package']) : 'residential';
         $roofType = isset($_REQUEST['roof_type']) ? trim((string)$_REQUEST['roof_type']) : 'metal_roof';
 
-        // Gọi Hook UseSolarCalculator
-        $calcResult = UseSolarCalculator::calculate($bill, $roofArea, $package, $roofType);
+        // Xác định nguồn tính toán: 'plan' (từ Kế hoạch dự định) hoặc 'bill' (từ Hóa đơn tiền điện)
+        $hasCartItems = !empty($cartProducts);
+        $source = isset($_REQUEST['source']) ? trim((string)$_REQUEST['source']) : ($hasCartItems ? 'plan' : 'bill');
+        if (!in_array($source, ['plan', 'bill'], true)) {
+            $source = $hasCartItems ? 'plan' : 'bill';
+        }
+
+        // Phân tích ghép đôi thiết bị từ Kế hoạch dự định
+        $compatibility = UseSolarCalculator::analyzeCompatibility($cartProducts);
+
+        // Tính toán theo cả 2 chế độ để người dùng dễ dàng chuyển đổi
+        $planCalc = $hasCartItems ? UseSolarCalculator::calculateFromPlan($cartProducts, $roofArea, $roofType) : null;
+        $billCalc = UseSolarCalculator::calculate($bill, $roofArea, $package, $roofType);
+
+        // Chọn kết quả tính toán chính theo nguồn đang chọn
+        $calcResult = ($source === 'plan' && $planCalc !== null) ? $planCalc : $billCalc;
 
         // Lấy danh sách lịch sử các gói báo giá kèm phân trang UsePaginationState
         $quotesData = $this->getQuotesList($pdo);
@@ -97,7 +112,12 @@ class SolarDemoController
             'status'         => 'success',
             'member'         => 'Thành viên 3',
             'page'           => 'Tư vấn & Demo Thiết Kế (Solar Calculator)',
+            'source'         => $source,
+            'has_cart_items' => $hasCartItems,
             'calc'           => $calcResult,
+            'plan_calc'      => $planCalc,
+            'bill_calc'      => $billCalc,
+            'compatibility'  => $compatibility,
             'alert'          => $alert,
             'saved_quote_id' => $savedQuoteId,
             'quotes_list'    => $quotesData['list'],
@@ -110,7 +130,7 @@ class SolarDemoController
     /**
      * Xử lý lưu thông tin báo giá vào CSDL
      */
-    private function handleSaveQuote(?PDO $pdo): array
+    private function handleSaveQuote(?PDO $pdo, array $cartProducts = []): array
     {
         $name    = trim($_POST['customer_name'] ?? '');
         $phone   = trim($_POST['customer_phone'] ?? '');
@@ -121,6 +141,7 @@ class SolarDemoController
         $package = trim($_POST['package'] ?? 'residential');
         $roofType= trim($_POST['roof_type'] ?? 'metal_roof');
         $notes   = trim($_POST['notes'] ?? '');
+        $source  = trim($_POST['calc_source'] ?? 'bill');
 
         if (empty($name) || empty($phone) || empty($address)) {
             return [
@@ -132,7 +153,11 @@ class SolarDemoController
         }
 
         // Tính toán lại chính xác từ Hook để đảm bảo tính toàn vẹn dữ liệu
-        $calc = UseSolarCalculator::calculate($bill, $area, $package, $roofType);
+        if ($source === 'plan' && !empty($cartProducts)) {
+            $calc = UseSolarCalculator::calculateFromPlan($cartProducts, $area, $roofType);
+        } else {
+            $calc = UseSolarCalculator::calculate($bill, $area, $package, $roofType);
+        }
 
         if ($pdo === null) {
             return [
@@ -153,7 +178,7 @@ class SolarDemoController
                 $phone,
                 $email,
                 $address,
-                $calc['monthly_bill'],
+                $calc['monthly_bill'] ?? $calc['monthly_money'] ?? 3000000,
                 $calc['required_roof_area'],
                 $calc['estimated_kwp'],
                 $calc['panel_count'],

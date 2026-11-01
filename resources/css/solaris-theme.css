@@ -213,9 +213,7 @@ body {
 }
 
 .sol-header {
-    background: rgba(8, 12, 20, 0.88);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: #080c14;
     border-bottom: 1px solid var(--border-subtle);
     padding: 0.75rem 0;
     position: sticky;
@@ -329,18 +327,19 @@ a.sol-header-cart:hover,
 }
 
 .sol-nav-wrapper {
-    background: rgba(14, 22, 38, 0.95);
+    background: #0a101c;
     border-bottom: 1px solid var(--border-subtle);
     position: sticky;
     top: 57px;
     z-index: 999;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
 }
 
 .sol-nav-inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1.5rem;
+    gap: 1rem;
 }
 
 .sol-nav-tabs {
@@ -357,6 +356,10 @@ a.sol-header-cart:hover,
     -webkit-overflow-scrolling: touch;
 }
 
+.sol-nav-tabs li {
+    flex-shrink: 0;
+}
+
 .sol-nav-tabs::-webkit-scrollbar {
     display: none;
 }
@@ -364,9 +367,9 @@ a.sol-header-cart:hover,
 .sol-tab-item {
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
-    padding: 0.85rem 1.05rem;
-    font-size: 0.85rem;
+    gap: 0.4rem;
+    padding: 0.75rem 0.95rem;
+    font-size: 0.835rem;
     font-weight: 500;
     color: var(--text-secondary);
     text-decoration: none;
@@ -374,28 +377,108 @@ a.sol-header-cart:hover,
     transition: var(--transition);
     white-space: nowrap;
     border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    flex-shrink: 0;
 }
 
 .sol-tab-item:hover {
     color: #ffffff;
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.06);
 }
 
 .sol-tab-item.active {
     color: var(--accent-amber);
     border-bottom-color: var(--accent-amber);
-    background: rgba(245, 158, 11, 0.08);
+    background: rgba(245, 158, 11, 0.12);
     font-weight: 600;
 }
 
-.sol-nav-badge-wrap {
+/* Nút Profile Pill trên Navigation Bar theo chuẩn ảnh người dùng media_1793549011890_ee21422c */
+.sol-nav-profile-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.42rem 1.05rem;
+    background: #f59e0b;
+    border: 1.5px solid #f59e0b;
+    border-radius: 12px;
+    text-decoration: none !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+    white-space: nowrap;
+}
+
+.sol-nav-profile-pill:hover {
+    background: #fbbf24;
+    border-color: #fbbf24;
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.55);
+    transform: translateY(-1.5px);
+}
+
+.sol-nav-profile-pill.active {
+    background: #f59e0b;
+    border-color: #d97706;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.35), 0 6px 20px rgba(245, 158, 11, 0.5);
+}
+
+.sol-nav-profile-pill__icon {
+    font-size: 1.15rem;
+    line-height: 1;
+    color: #4c1d95;
+    filter: drop-shadow(0 0 4px rgba(76, 29, 149, 0.45));
+    display: inline-flex;
+    align-items: center;
+}
+
+.sol-nav-profile-pill__text {
+    font-size: 0.925rem;
+    font-weight: 700;
+    color: #0b1120;
+    letter-spacing: -0.2px;
+}
+
+.sol-nav-profile-pill__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid rgba(2, 132, 199, 0.45);
+    background: rgba(14, 165, 233, 0.28);
+    color: #0284c7;
+    font-weight: 800;
+    font-size: 0.75rem;
+    padding: 2px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+@media (max-width: 860px) {
+    .sol-profile-header-grid {
+        grid-template-columns: 1fr !important;
+        text-align: center;
+    }
+}
+
+.sol-nav-right {
     display: flex;
     align-items: center;
+    gap: 0.75rem;
     flex-shrink: 0;
 }
 
-@media (max-width: 1140px) {
-    .sol-nav-badge-wrap {
+@media (max-width: 1200px) {
+    .sol-nav-version-badge {
+        display: none !important;
+    }
+}
+
+@media (max-width: 900px) {
+    .sol-nav-inner {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    .sol-nav-inner::-webkit-scrollbar {
         display: none;
     }
 }
@@ -732,3 +815,590 @@ a.sol-header-cart:hover,
         text-align: center;
     }
 }
+
+
+/* =========================================================================
+   APP WORKSPACE LAYOUT: TỰ ĐỘNG CHUYỂN THÀNH SIDEBAR DỌC BÊN TRÁI KHI RỜI TRANG CHỦ
+   Animation: 1 giây chuyển tiếp mượt mà
+   ========================================================================= */
+
+@keyframes solSidebarSlideIn {
+    0% {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes solAppContentFadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.sol-app-layout {
+    display: flex;
+    min-height: 100vh;
+    background: transparent;
+    position: relative;
+    width: 100%;
+}
+
+/* Sidebar Menu Dọc Bên Trái */
+.sol-sidebar {
+    width: 285px;
+    min-width: 285px;
+    max-width: 285px;
+    background: #090e18;
+    border-right: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.55);
+    animation: solSidebarSlideIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1), width 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sol-sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+.sol-sidebar::-webkit-scrollbar-thumb {
+    background: rgba(245, 158, 11, 0.25);
+    border-radius: 4px;
+}
+
+.sol-sidebar__header {
+    padding: 1.25rem 1.35rem;
+    border-bottom: 1px solid var(--border-subtle);
+    background: rgba(8, 12, 20, 0.7);
+}
+
+.sol-sidebar__nav-wrapper {
+    padding: 1.25rem 1rem;
+    flex: 1;
+}
+
+.sol-sidebar__section-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.75px;
+    text-transform: uppercase;
+    padding: 0 0.5rem 0.5rem;
+}
+
+.sol-sidebar__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.sol-sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+}
+
+.sol-sidebar-item:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateX(3px);
+}
+
+.sol-sidebar-item.active {
+    color: var(--accent-gold);
+    background: rgba(245, 158, 11, 0.12);
+    border-left-color: var(--accent-amber);
+    font-weight: 700;
+}
+
+.sol-sidebar-item__icon {
+    font-size: 1.15rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+}
+
+.sol-sidebar-item__text {
+    flex: 1;
+}
+
+.sol-sidebar-cart-badge {
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+    color: #080c14;
+    font-weight: 800;
+    font-size: 0.72rem;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);
+}
+
+.sol-sidebar__footer {
+    padding: 1.25rem 1rem;
+    border-top: 1px solid var(--border-subtle);
+    background: rgba(8, 12, 20, 0.85);
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.sol-nav-profile-pill--sidebar {
+    width: 100%;
+    justify-content: space-between;
+    padding: 0.55rem 0.85rem;
+    box-sizing: border-box;
+}
+
+.sol-sidebar__hotline {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.775rem;
+    padding-left: 0.25rem;
+}
+
+/* Phần App Main Content bên phải */
+.sol-app-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    animation: solAppContentFadeIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Top bar gọn gàng trong app layout */
+.sol-app-topbar {
+    background: #090e18;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 0.75rem 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 900;
+}
+
+.sol-app-topbar__left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.sol-sidebar-toggle {
+    display: none;
+    background: rgba(14, 22, 38, 0.85);
+    border: 1px solid var(--border-subtle);
+    color: var(--accent-gold);
+    font-size: 1.25rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.sol-app-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.sol-main-content--app {
+    flex: 1;
+    padding-bottom: 4rem;
+}
+
+.sol-footer--app {
+    margin-top: auto;
+    border-top: 1px solid var(--border-subtle);
+    padding: 1.75rem 0;
+    background: #080c14;
+}
+
+/* Responsive cho Sidebar trên màn hình di động/tablet */
+@media (max-width: 960px) {
+    .sol-sidebar {
+        position: fixed;
+        left: -300px;
+        top: 0;
+        bottom: 0;
+        transform: translateX(0);
+        transition: left 0.4s ease;
+        z-index: 2000;
+    }
+    .sol-sidebar.is-open {
+        left: 0;
+    }
+    .sol-sidebar-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* ==========================================================================
+   SOLARIS MODERN HOMEPAGE, REALTIME SOCKET & ADVANCED INTERACTIVE ANIMATIONS
+   ========================================================================== */
+
+/* 1. Hiệu ứng gợn sóng quang năng (Solar Shockwave Ripple) khi nhấn vào trang chủ */
+.solar-shockwave {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.45) 0%, rgba(251, 191, 36, 0.25) 40%, rgba(245, 158, 11, 0) 70%);
+    box-shadow: 0 0 25px rgba(245, 158, 11, 0.5), inset 0 0 15px rgba(251, 191, 36, 0.3);
+    transform: translate(-50%, -50%) scale(0);
+    animation: solarRippleWave 0.9s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+    z-index: 99999;
+}
+
+@keyframes solarRippleWave {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0.95;
+    }
+    60% {
+        opacity: 0.7;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(3.5);
+        opacity: 0;
+    }
+}
+
+/* 2. Dải Thông Số Trực Tiếp (Live Solar Irradiance Ticker) */
+.sol-live-ticker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding: 0.65rem 1.25rem;
+    background: rgba(14, 22, 38, 0.75);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 999px;
+    backdrop-filter: blur(12px);
+    margin: 0 auto 1.5rem;
+    max-width: 920px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.sol-live-ticker__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.sol-live-ticker__item strong {
+    color: #ffffff;
+}
+
+.sol-live-pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+    animation: solarLivePulse 2s infinite ease-in-out;
+}
+
+@keyframes solarLivePulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.35); opacity: 0.7; box-shadow: 0 0 14px #10b981; }
+}
+
+/* 3. Hero Section Nâng Cấp Hiện Đại với Ánh Sáng Mặt Trời Lơ Lửng */
+.sol-hero--modern {
+    position: relative;
+    padding: 3.5rem 0 4.5rem;
+    overflow: hidden;
+    text-align: center;
+}
+
+.sol-hero-sun-glow {
+    position: absolute;
+    top: -120px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 680px;
+    height: 380px;
+    background: radial-gradient(ellipse at center, rgba(245, 158, 11, 0.22) 0%, rgba(245, 158, 11, 0.05) 50%, transparent 75%);
+    filter: blur(50px);
+    pointer-events: none;
+    z-index: 0;
+    animation: sunGlowFloat 8s ease-in-out infinite alternate;
+}
+
+@keyframes sunGlowFloat {
+    0% { transform: translateX(-50%) scale(0.95); opacity: 0.75; }
+    100% { transform: translateX(-50%) scale(1.08); opacity: 1; }
+}
+
+/* 4. Bộ Slider / Carousel 4 Giải Pháp Năng Lượng Siêu Mượt */
+.sol-carousel-wrapper {
+    position: relative;
+    overflow: hidden;
+    padding: 1rem 0 2.5rem;
+}
+
+.sol-carousel-track {
+    display: flex;
+    transition: transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+}
+
+.sol-carousel-slide {
+    flex: 0 0 100%;
+    max-width: 100%;
+    padding: 0 0.5rem;
+    box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+    .sol-carousel-slide {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+}
+
+@media (min-width: 1100px) {
+    .sol-carousel-slide {
+        flex: 0 0 33.333333%;
+        max-width: 33.333333%;
+    }
+}
+
+.sol-carousel-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.sol-carousel-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(14, 22, 38, 0.85);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: var(--accent-gold);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.sol-carousel-btn:hover {
+    background: #f59e0b;
+    color: #080c14;
+    border-color: #f59e0b;
+    box-shadow: 0 0 18px rgba(245, 158, 11, 0.5);
+    transform: scale(1.08);
+}
+
+.sol-carousel-dots {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sol-carousel-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 0;
+}
+
+.sol-carousel-dot.active {
+    width: 28px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+}
+
+/* 5. Thẻ Giải Pháp Năng Lượng Đẳng Cấp 3D Hover */
+.sol-solution-box {
+    background: rgba(14, 22, 38, 0.65);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 2rem 1.65rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(14px);
+}
+
+.sol-solution-box:hover {
+    border-color: rgba(245, 158, 11, 0.5);
+    transform: translateY(-6px);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 24px rgba(245, 158, 11, 0.15);
+}
+
+.sol-solution-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--accent-amber), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.sol-solution-box:hover::before {
+    opacity: 1;
+}
+
+/* 6. Quy Trình 5 Bước Thi Công Chuẩn Quốc Tế */
+.sol-steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    margin-top: 2rem;
+}
+
+.sol-step-card {
+    background: rgba(14, 22, 38, 0.5);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.5rem 1.25rem;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.sol-step-card:hover {
+    background: rgba(245, 158, 11, 0.05);
+    border-color: rgba(245, 158, 11, 0.4);
+    transform: translateY(-4px);
+}
+
+.sol-step-badge {
+    position: absolute;
+    top: -12px;
+    left: 1.25rem;
+    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    color: #080c14;
+    font-weight: 800;
+    font-size: 0.72rem;
+    padding: 0.15rem 0.65rem;
+    border-radius: 999px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+}
+
+/* 7. Modal Tài Liệu Nghiệm Thu & Hướng Dẫn Kiểm Thử (DOC) - Cuộn Tự Do Không Bị Kẹt */
+.sol-doc-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 10000;
+    display: none;
+    overflow-x: hidden;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding: 2.5rem 1rem;
+    box-sizing: border-box;
+}
+
+.sol-doc-modal.is-active {
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+}
+
+.sol-doc-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(4, 7, 14, 0.88);
+    backdrop-filter: blur(12px);
+    z-index: 1;
+}
+
+.sol-doc-content {
+    position: relative;
+    z-index: 2;
+    background: #090e18;
+    border: 1.5px solid rgba(245, 158, 11, 0.55);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 860px;
+    margin: 1rem auto 3rem;
+    padding: 2rem 2.25rem;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(245, 158, 11, 0.3);
+    animation: solDocZoomIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    box-sizing: border-box;
+}
+
+@keyframes solDocZoomIn {
+    0% { opacity: 0; transform: translateY(-20px) scale(0.96); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* 8. Badge kết nối Realtime Socket.io */
+.sol-realtime-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.25rem 0.65rem;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 999px;
+    font-size: 0.725rem;
+    color: #10b981;
+    font-weight: 600;
+}
+
