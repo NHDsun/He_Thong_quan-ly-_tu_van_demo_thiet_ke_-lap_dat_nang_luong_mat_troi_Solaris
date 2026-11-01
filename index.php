@@ -70,10 +70,11 @@ if ($page === 'cart') {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cartAction = (string) ($_POST['cart_action'] ?? '');
         (new \App\Modules\Member2_Products\ProductController())->handleCart($cartAction);
-        header('Location: index.php?page=' . ($cartAction === 'demo_selected' ? 'calculator' : 'cart'));
+        header('Location: index.php?page=' . ($cartAction === 'demo_selected' ? 'calculator&source=plan' : 'cart'));
         exit;
     }
     $cartItems = \App\Modules\Member2_Products\ProductController::cartItems();
+    $compatibility = \App\Hooks\UseSolarCalculator::analyzeCompatibility($cartItems);
 }
 
 // -------------------------------------------------------------------------
@@ -84,8 +85,17 @@ if ($page === 'calculator') {
     $demoItems = class_exists(\App\Modules\Member2_Products\ProductController::class)
         ? \App\Modules\Member2_Products\ProductController::demoItems()
         : [];
+    if (empty($demoItems) && class_exists(\App\Modules\Member2_Products\ProductController::class)) {
+        $demoItems = \App\Modules\Member2_Products\ProductController::cartItems();
+    }
     $solarData = $solarCtrl->index($demoItems);
     $calc = $solarData['calc'];
+    $source = $solarData['source'];
+    $has_cart_items = $solarData['has_cart_items'];
+    $plan_calc = $solarData['plan_calc'];
+    $bill_calc = $solarData['bill_calc'];
+    $compatibility = $solarData['compatibility'];
+    $cart_products = $solarData['cart_products'];
     $alert = $solarData['alert'];
     $quotes_list = $solarData['quotes_list'];
     $pagination = $solarData['pagination'];
