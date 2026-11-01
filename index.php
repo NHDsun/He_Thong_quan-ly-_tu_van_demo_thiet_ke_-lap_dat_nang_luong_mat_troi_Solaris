@@ -29,7 +29,7 @@ if (!in_array($page, $validPages, true)) {
 $pageTitles = [
     'home'          => 'SOLARIS - Năng Lượng Mặt Trời Thông Minh',
     'products'      => 'Giải Pháp & Sản Phẩm - SOLARIS',
-    'cart'          => 'Giỏ Hàng Thiết Bị - SOLARIS',
+    'cart'          => 'Kế Hoạch Dự Định Thiết Bị - SOLARIS',
     'calculator'    => 'Tư Vấn & Demo Thiết Kế - SOLARIS',
     'installations' => 'Quản Lý Lắp Đặt & Khảo Sát - SOLARIS',
     'exercises'     => 'Portal 24 Bài Tập Thực Hành - SOLARIS',
@@ -127,10 +127,10 @@ if ($page === 'calculator') {
                     <span>Hotline: <strong style="color: #ffffff;">0909.888.SOLAR</strong></span>
                 </div>
 
-                <!-- Nút Giỏ Hàng nổi bật bên cạnh nút Khảo Sát Báo Giá -->
-                <a href="index.php?page=cart" class="sol-header-cart <?= $page === 'cart' ? 'active' : '' ?>" title="Xem giỏ hàng thiết bị" style="display: inline-flex; align-items: center; gap: 0.55rem; padding: 0.45rem 0.95rem; background: rgba(17, 24, 39, 0.9); border: 1px solid rgba(245, 158, 11, 0.45); border-radius: 6px; color: #ffffff !important; text-decoration: none !important; font-size: 0.85rem; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.35);">
-                    <span class="sol-header-cart__icon" style="font-size: 1.05rem; line-height: 1;">🛒</span>
-                    <span class="sol-header-cart__text" style="color: #ffffff !important; font-weight: 600;">Giỏ Hàng</span>
+                <!-- Nút Kế Hoạch Dự Định nổi bật bên cạnh nút Khảo Sát Báo Giá -->
+                <a href="index.php?page=cart" class="sol-header-cart <?= $page === 'cart' ? 'active' : '' ?>" title="Xem kế hoạch dự định thiết bị" style="display: inline-flex; align-items: center; gap: 0.55rem; padding: 0.45rem 0.95rem; background: rgba(17, 24, 39, 0.9); border: 1px solid rgba(245, 158, 11, 0.45); border-radius: 6px; color: #ffffff !important; text-decoration: none !important; font-size: 0.85rem; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.35);">
+                    <span class="sol-header-cart__icon" style="font-size: 1.05rem; line-height: 1;">📋</span>
+                    <span class="sol-header-cart__text" style="color: #ffffff !important; font-weight: 600;">Kế Hoạch Dự Định</span>
                     <span class="sol-header-cart__badge" style="display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); color: #080c14; font-weight: 800; font-size: 0.75rem; min-width: 22px; height: 20px; padding: 0 6px; border-radius: 999px; line-height: 1; box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);"><?= class_exists(\App\Modules\Member2_Products\ProductController::class) ? \App\Modules\Member2_Products\ProductController::cartCount() : 0 ?></span>
                 </a>
 
@@ -409,7 +409,7 @@ if ($page === 'calculator') {
                     <ul class="sol-footer__links">
                         <li><a href="index.php?page=home">Trang Chủ (Home)</a></li>
                         <li><a href="index.php?page=products">Giải pháp & Sản phẩm</a></li>
-                        <li><a href="index.php?page=cart">Giỏ hàng thiết bị</a></li>
+                        <li><a href="index.php?page=cart">Kế hoạch dự định thiết bị</a></li>
                         <li><a href="index.php?page=calculator">Tư vấn & Demo Thiết kế</a></li>
                         <li><a href="index.php?page=installations">Quản lý Lắp đặt</a></li>
                         <li><a href="index.php?page=exercises">Portal 24 Bài Tập</a></li>
