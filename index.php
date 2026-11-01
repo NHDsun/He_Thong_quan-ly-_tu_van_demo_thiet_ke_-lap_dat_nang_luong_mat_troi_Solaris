@@ -353,8 +353,32 @@ if ($page === 'calculator') {
 
         <?php elseif ($page === 'exercises'): ?>
             <?php 
-            $ex = $_GET['exercise'] ?? null;
-            if ($ex == 13):
+            $ex = isset($_GET['exercise']) ? (int)$_GET['exercise'] : null;
+            if ($ex === 1):
+                echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
+                include __DIR__ . '/resources/views/pages/exercises/member1/exercise1_hinh_chu_nhat.php';
+                echo '</div>';
+            elseif ($ex === 2):
+                echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
+                include __DIR__ . '/resources/views/pages/exercises/member1/exercise2_hinh_tron.php';
+                echo '</div>';
+            elseif ($ex === 3):
+                echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
+                include __DIR__ . '/resources/views/pages/exercises/member1/exercise3_tien_dien.php';
+                echo '</div>';
+            elseif ($ex === 4):
+                echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
+                include __DIR__ . '/resources/views/pages/exercises/member1/exercise4_tam_giac_vuong.php';
+                echo '</div>';
+            elseif ($ex === 5):
+                echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
+                include __DIR__ . '/resources/views/pages/exercises/member1/exercise5_karaoke.php';
+                echo '</div>';
+            elseif ($ex === 6):
+                echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
+                include __DIR__ . '/resources/views/pages/exercises/member1/exercise6_phep_tinh.php';
+                echo '</div>';
+            elseif ($ex === 13):
                 echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
                 include __DIR__ . '/resources/views/pages/exercises/member3/exercise13_matrix_replace.php';
                 echo '</div>';

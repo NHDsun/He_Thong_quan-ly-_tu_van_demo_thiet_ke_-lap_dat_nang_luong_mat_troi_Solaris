@@ -11,20 +11,20 @@
     </div>
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
-        <!-- Thành viên 1: 6 Bài Căn bản & Chuỗi -->
-        <div class="sol-glass-card" style="padding: 1.65rem;">
+        <!-- Thành viên 1: 6 Bài Căn bản & Chuỗi (Đã hoàn thành 100%) -->
+        <div class="sol-glass-card" style="padding: 1.65rem; border-color: rgba(245, 158, 11, 0.4); box-shadow: 0 0 16px rgba(245, 158, 11, 0.1);">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem;">
-                <span class="sol-badge sol-badge--amber">Thành Viên 1</span>
-                <span style="font-size: 0.75rem; color: var(--text-muted);">6 Bài Căn Bản</span>
+                <span class="sol-badge sol-badge--amber">Thành Viên 1 (Đã xong)</span>
+                <span style="font-size: 0.75rem; color: var(--accent-gold); font-weight: 700;">6 Bài Hoàn Chỉnh</span>
             </div>
             <h3 style="font-size: 1.1rem; color: #ffffff; margin-bottom: 0.85rem;">PHP Căn Bản & Biểu Thức</h3>
-            <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.55rem; font-size: 0.825rem;">
-                <li><span style="color: var(--accent-gold);">1.</span> Diện tích & chu vi hình chữ nhật</li>
-                <li><span style="color: var(--accent-gold);">2.</span> Diện tích & chu vi hình tròn</li>
-                <li><span style="color: var(--accent-gold);">3.</span> Tính toán thanh toán tiền điện</li>
-                <li><span style="color: var(--accent-gold);">4.</span> Tính cạnh huyền tam giác vuông</li>
-                <li><span style="color: var(--accent-gold);">5.</span> Tính tiền phòng nghỉ khách sạn</li>
-                <li><span style="color: var(--accent-gold);">6.</span> Xử lý chuỗi và đếm từ căn bản</li>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.65rem; font-size: 0.825rem;">
+                <li><a href="index.php?page=exercises&exercise=1" style="color: var(--accent-gold); text-decoration: none; display: flex; align-items: center; justify-content: space-between;"><span style="color: #cbd5e1;"><strong style="color: var(--accent-gold);">1.</strong> Diện tích & chu vi hình chữ nhật</span><span style="color: var(--accent-gold); font-size: 0.75rem;">Mở bài ➔</span></a></li>
+                <li><a href="index.php?page=exercises&exercise=2" style="color: var(--accent-gold); text-decoration: none; display: flex; align-items: center; justify-content: space-between;"><span style="color: #cbd5e1;"><strong style="color: var(--accent-gold);">2.</strong> Diện tích & chu vi hình tròn</span><span style="color: var(--accent-gold); font-size: 0.75rem;">Mở bài ➔</span></a></li>
+                <li><a href="index.php?page=exercises&exercise=3" style="color: var(--accent-gold); text-decoration: none; display: flex; align-items: center; justify-content: space-between;"><span style="color: #cbd5e1;"><strong style="color: var(--accent-gold);">3.</strong> Tính toán thanh toán tiền điện</span><span style="color: var(--accent-gold); font-size: 0.75rem;">Mở bài ➔</span></a></li>
+                <li><a href="index.php?page=exercises&exercise=4" style="color: var(--accent-gold); text-decoration: none; display: flex; align-items: center; justify-content: space-between;"><span style="color: #cbd5e1;"><strong style="color: var(--accent-gold);">4.</strong> Định lý Pythagoras cạnh huyền</span><span style="color: var(--accent-gold); font-size: 0.75rem;">Mở bài ➔</span></a></li>
+                <li><a href="index.php?page=exercises&exercise=5" style="color: var(--accent-gold); text-decoration: none; display: flex; align-items: center; justify-content: space-between;"><span style="color: #cbd5e1;"><strong style="color: var(--accent-gold);">5.</strong> Tính tiền giờ hát Karaoke</span><span style="color: var(--accent-gold); font-size: 0.75rem;">Mở bài ➔</span></a></li>
+                <li><a href="index.php?page=exercises&exercise=6" style="color: var(--accent-gold); text-decoration: none; display: flex; align-items: center; justify-content: space-between;"><span style="color: #cbd5e1;"><strong style="color: var(--accent-gold);">6.</strong> Phép tính số học trên hai số</span><span style="color: var(--accent-gold); font-size: 0.75rem;">Mở bài ➔</span></a></li>
             </ul>
         </div>
 
