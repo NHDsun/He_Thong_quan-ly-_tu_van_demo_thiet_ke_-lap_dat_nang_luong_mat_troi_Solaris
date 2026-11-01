@@ -50,6 +50,14 @@ final class Database
     }
 
     /**
+     * Alias tương thích cho các module gọi Database::connection().
+     */
+    public static function connection(): PDO
+    {
+        return self::getConnection();
+    }
+
+    /**
      * Cấu hình thông số kết nối CSDL (hỗ trợ file local override hoặc biến môi trường).
      */
     public static function getConfig(): array
