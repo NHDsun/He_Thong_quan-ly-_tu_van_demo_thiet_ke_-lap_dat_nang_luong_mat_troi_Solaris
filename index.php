@@ -102,6 +102,20 @@ if ($page === 'calculator') {
     $db_connected = $solarData['db_connected'];
     $db_error = $solarData['db_error'];
 }
+
+// -------------------------------------------------------------------------
+// Điều phối cho phân hệ TV1 (Hồ sơ 4 Thành viên & Quản lý Profile Tài khoản)
+// -------------------------------------------------------------------------
+if ($page === 'profile') {
+    $profileCtrl = new \App\Modules\Member1_Lead\ProfileController();
+    $profileData = $profileCtrl->handleRequest();
+    $currentUser = $profileData['current_user'];
+    $roleStats = $profileData['role_stats'];
+    $demoAccounts = $profileData['demo_accounts'];
+    $teamMembers = $profileData['team_members'];
+    $profileAlert = $profileData['alert'];
+    $activeTab = $profileData['active_tab'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
