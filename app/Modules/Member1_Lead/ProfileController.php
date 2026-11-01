@@ -5,15 +5,20 @@
  * VAI TRÒ: TRƯỞNG NHÓM & QUẢN LÝ DỰ ÁN (PROJECT MANAGER - PM) / FULLSTACK CORE & UI/UX
  * =========================================================================
  * Module ProfileController:
- * 1. Quản lý thông tin hồ sơ 4 thành viên dự án, phân công trách nhiệm & biểu đồ WBS.
- * 2. Quản lý Hồ sơ tài khoản cá nhân (Profile) cho cả 3 đối tượng: Admin, Kỹ thuật viên (Staff), Khách hàng.
- * 3. Chức năng cập nhật thông tin cá nhân (Họ tên, Email, SĐT) và Đổi mật khẩu tài khoản.
- * 4. Chức năng chuyển đổi nhanh vai trò tài khoản (Quick Role Switcher) phục vụ kiểm thử và nghiệm thu.
+ * 1. Hiển thị thông tin chung người dùng theo chuẩn các trang Profile chuyên nghiệp (Facebook, GitHub, Cổng thông tin).
+ * 2. Phân tách và hiển thị thông tin chung đặc thù của từng đối tượng:
+ *    - Khách hàng (Customer): Thông tin khách, kế hoạch thiết bị dự định, báo giá đã gửi, trạng thái công trình.
+ *    - Kỹ thuật viên (Technician): Thông tin nhân sự, chuyên môn, danh sách công trình phụ trách, tài liệu khảo sát.
+ *    - Quản trị viên (Admin): Thông tin điều hành, quyền hạn hệ thống, tổng quan dự án toàn hệ thống, báo giá cần duyệt.
+ * 3. Hỗ trợ chuyển đổi vai trò xem thông tin chung giữa 3 đối tượng (admin_pro, tech_pro, customer_pro).
+ * 4. Lưu giữ hồ sơ 4 thành viên phát triển dự án và biểu đồ quy trình phối hợp WBS.
  */
 
 namespace App\Modules\Member1_Lead;
 
 use App\Config\Database;
+use App\Modules\Member2_Products\ProductController;
+use App\Hooks\UseSolarCalculator;
 use PDO;
 use Throwable;
 
@@ -38,7 +43,7 @@ class ProfileController
         $alert = $_SESSION['profile_alert'] ?? null;
         unset($_SESSION['profile_alert']);
 
-        // 1. Xử lý Chuyển đổi nhanh vai trò tài khoản mẫu (Quick Role Switcher)
+        // 1. Xử lý Chuyển đổi vai trò xem thông tin chung (Switch Role View)
         if (isset($_GET['switch_account'])) {
             $switchUser = trim((string)$_GET['switch_account']);
             if (in_array($switchUser, ['admin_pro', 'tech_pro', 'customer_pro'], true) && $this->pdo) {
@@ -55,35 +60,23 @@ class ProfileController
                         $roleTitle = match ($user['role']) {
                             'admin' => 'Quản Trị Viên Cấp Cao (Admin)',
                             'technician' => 'Kỹ Thuật Viên Trưởng (Technician)',
-                            default => 'Khách Hàng Trải Nghiệm (Customer)'
+                            default => 'Khách Hàng Thành Viên (Customer)'
                         };
 
                         $_SESSION['profile_alert'] = [
                             'type' => 'success',
-                            'message' => "Đã chuyển đổi thành công sang tài khoản: {$user['full_name']} (Mức: {$roleTitle})!"
+                            'message' => "Đang xem hồ sơ thông tin chung của: {$user['full_name']} (Mức: {$roleTitle})!"
                         ];
-                        header('Location: index.php?page=profile&tab=account');
+                        header('Location: index.php?page=profile');
                         exit;
                     }
                 } catch (Throwable $e) {
-                    $alert = ['type' => 'error', 'message' => 'Lỗi khi chuyển đổi tài khoản: ' . $e->getMessage()];
+                    $alert = ['type' => 'error', 'message' => 'Lỗi khi chuyển đổi: ' . $e->getMessage()];
                 }
             }
         }
 
-        // 2. Xử lý Cập nhật thông tin cá nhân (POST update_profile)
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_profile') {
-            $updateResult = $this->handleUpdateProfile();
-            $alert = $updateResult;
-        }
-
-        // 3. Xử lý Đổi mật khẩu (POST change_password)
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'change_password') {
-            $pwResult = $this->handleChangePassword();
-            $alert = $pwResult;
-        }
-
-        // 4. Lấy thông tin tài khoản hiện tại
+        // 2. Lấy thông tin tài khoản hiện tại
         $currentUserId = (int)($_SESSION['user_id'] ?? $_SESSION['installation_user_id'] ?? 0);
         $currentUser = null;
         if ($this->pdo && $currentUserId > 0) {
@@ -96,7 +89,7 @@ class ProfileController
             }
         }
 
-        // Nếu chưa đăng nhập, mặc định hiển thị thông tin tài khoản admin_pro để tiện trải nghiệm
+        // Nếu chưa đăng nhập, mặc định hiển thị thông tin tài khoản admin_pro để trải nghiệm ngay
         if (!$currentUser && $this->pdo) {
             try {
                 $stmt = $this->pdo->query("SELECT id, username, full_name, email, phone, role, created_at, updated_at FROM users WHERE username = 'admin_pro' LIMIT 1");
@@ -106,96 +99,39 @@ class ProfileController
             }
         }
 
-        // 5. Thống kê theo vai trò của tài khoản hiện tại
+        // 3. Thống kê theo vai trò của tài khoản hiện tại
         $stats = $this->getRoleStats($currentUser);
 
-        // 6. Danh sách 3 tài khoản demo mẫu
+        // 4. Lấy danh sách công trình lắp đặt liên quan đến đối tượng hiện tại
+        $projects = $this->getRoleProjects($currentUser);
+
+        // 5. Lấy danh sách báo giá liên quan đến đối tượng hiện tại
+        $quotes = $this->getRoleQuotes($currentUser);
+
+        // 6. Lấy thông tin kế hoạch dự định (cho Khách hàng)
+        $cartItems = class_exists(ProductController::class) ? ProductController::cartItems() : [];
+        $cartCompat = class_exists(UseSolarCalculator::class) ? UseSolarCalculator::analyzeCompatibility($cartItems) : [];
+        $planCalc = class_exists(UseSolarCalculator::class) ? UseSolarCalculator::calculateFromPlan($cartItems) : [];
+
+        // 7. Danh sách 3 tài khoản demo mẫu
         $demoAccounts = $this->getDemoAccounts();
 
-        // 7. Thông tin chi tiết 4 Thành viên dự án
+        // 8. Thông tin chi tiết 4 Thành viên dự án
         $teamMembers = $this->getTeamMembers();
 
         return [
             'current_user'  => $currentUser,
             'role_stats'    => $stats,
+            'role_projects' => $projects,
+            'role_quotes'   => $quotes,
+            'cart_items'    => $cartItems,
+            'cart_compat'   => $cartCompat,
+            'plan_calc'     => $planCalc,
             'demo_accounts' => $demoAccounts,
             'team_members'  => $teamMembers,
             'alert'         => $alert,
-            'active_tab'    => $_GET['tab'] ?? 'team'
+            'view_mode'     => $_GET['view'] ?? 'profile' // 'profile' (mặc định) hoặc 'team'
         ];
-    }
-
-    /**
-     * Cập nhật thông tin hồ sơ tài khoản
-     */
-    private function handleUpdateProfile(): array
-    {
-        $userId = (int)($_POST['user_id'] ?? 0);
-        $fullName = trim($_POST['full_name'] ?? '');
-        $email = trim($_POST['email'] ?? '');
-        $phone = trim($_POST['phone'] ?? '');
-
-        if ($userId <= 0 || empty($fullName) || empty($email)) {
-            return ['type' => 'error', 'message' => 'Vui lòng điền đầy đủ Họ và tên và Địa chỉ Email!'];
-        }
-
-        if (!$this->pdo) {
-            return ['type' => 'warning', 'message' => 'Không thể kết nối CSDL để cập nhật thông tin.'];
-        }
-
-        try {
-            $stmt = $this->pdo->prepare("UPDATE users SET full_name = ?, email = ?, phone = ?, updated_at = NOW() WHERE id = ?");
-            $stmt->execute([$fullName, $email, $phone, $userId]);
-            $_SESSION['user_name'] = $fullName;
-            return ['type' => 'success', 'message' => 'Cập nhật thông tin hồ sơ tài khoản thành công!'];
-        } catch (Throwable $e) {
-            return ['type' => 'error', 'message' => 'Lỗi khi cập nhật hồ sơ: ' . $e->getMessage()];
-        }
-    }
-
-    /**
-     * Đổi mật khẩu tài khoản
-     */
-    private function handleChangePassword(): array
-    {
-        $userId = (int)($_POST['user_id'] ?? 0);
-        $currentPw = (string)($_POST['current_password'] ?? '');
-        $newPw = (string)($_POST['new_password'] ?? '');
-        $confirmPw = (string)($_POST['confirm_password'] ?? '');
-
-        if ($userId <= 0 || empty($currentPw) || empty($newPw)) {
-            return ['type' => 'error', 'message' => 'Vui lòng nhập đầy đủ mật khẩu hiện tại và mật khẩu mới!'];
-        }
-
-        if ($newPw !== $confirmPw) {
-            return ['type' => 'error', 'message' => 'Mật khẩu mới và mật khẩu xác nhận không khớp!'];
-        }
-
-        if (strlen($newPw) < 6) {
-            return ['type' => 'error', 'message' => 'Mật khẩu mới phải có độ dài tối thiểu từ 6 ký tự!'];
-        }
-
-        if (!$this->pdo) {
-            return ['type' => 'warning', 'message' => 'Chưa kết nối CSDL.'];
-        }
-
-        try {
-            $stmt = $this->pdo->prepare("SELECT password_hash FROM users WHERE id = ?");
-            $stmt->execute([$userId]);
-            $hash = $stmt->fetchColumn();
-
-            if (!$hash || !password_verify($currentPw, $hash)) {
-                return ['type' => 'error', 'message' => 'Mật khẩu hiện tại không chính xác! Vui lòng kiểm tra lại.'];
-            }
-
-            $newHash = password_hash($newPw, PASSWORD_DEFAULT);
-            $update = $this->pdo->prepare("UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?");
-            $update->execute([$newHash, $userId]);
-
-            return ['type' => 'success', 'message' => 'Đổi mật khẩu thành công! Mật khẩu mới đã được cập nhật an toàn.'];
-        } catch (Throwable $e) {
-            return ['type' => 'error', 'message' => 'Lỗi khi đổi mật khẩu: ' . $e->getMessage()];
-        }
     }
 
     /**
@@ -203,7 +139,7 @@ class ProfileController
      */
     private function getRoleStats(?array $user): array
     {
-        $role = $user['role'] ?? 'guest';
+        $role = $user['role'] ?? 'admin';
         $stats = [
             'role' => $role,
             'items' => []
@@ -213,49 +149,80 @@ class ProfileController
 
         try {
             if ($role === 'admin') {
-                $totalProjects = (int)$this->pdo->query("SELECT COUNT(*) FROM installation_projects")->fetchColumn();
+                $totalProjects = (int)$this->pdo->query("SELECT COUNT(*) FROM projects")->fetchColumn();
                 $totalQuotes = (int)$this->pdo->query("SELECT COUNT(*) FROM solar_quotes")->fetchColumn();
                 $totalProducts = (int)$this->pdo->query("SELECT COUNT(*) FROM products WHERE is_active=1")->fetchColumn();
                 $totalUsers = (int)$this->pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
 
                 $stats['items'] = [
-                    ['label' => 'Dự án Lắp đặt', 'value' => $totalProjects, 'icon' => '🏗️', 'color' => '#f59e0b'],
-                    ['label' => 'Yêu cầu Báo giá', 'value' => $totalQuotes, 'icon' => '📋', 'color' => '#10b981'],
-                    ['label' => 'Sản phẩm Catalog', 'value' => $totalProducts, 'icon' => '☀️', 'color' => '#38bdf8'],
-                    ['label' => 'Tài khoản người dùng', 'value' => $totalUsers, 'icon' => '👥', 'color' => '#ec4899']
+                    ['label' => 'Tổng dự án toàn hệ thống', 'value' => $totalProjects . ' công trình', 'icon' => '🏗️', 'color' => '#f59e0b', 'desc' => 'Đang giám sát & quản trị'],
+                    ['label' => 'Yêu cầu báo giá nhận được', 'value' => $totalQuotes . ' hồ sơ', 'icon' => '📋', 'color' => '#10b981', 'desc' => 'Cần xử lý & liên hệ'],
+                    ['label' => 'Thiết bị trong Catalog', 'value' => $totalProducts . ' sản phẩm', 'icon' => '☀️', 'color' => '#38bdf8', 'desc' => 'Đang kinh doanh hoạt động'],
+                    ['label' => 'Tài khoản người dùng', 'value' => $totalUsers . ' tài khoản', 'icon' => '👥', 'color' => '#ec4899', 'desc' => 'Quản trị viên, thợ & khách']
                 ];
             } elseif ($role === 'technician') {
-                $myProjects = (int)$this->pdo->query("SELECT COUNT(*) FROM installation_projects WHERE status IN ('survey_scheduled', 'in_progress')")->fetchColumn();
+                $myProjects = (int)$this->pdo->query("SELECT COUNT(*) FROM projects WHERE status IN ('survey_scheduled', 'in_progress', 'new')")->fetchColumn();
                 $totalDocs = (int)$this->pdo->query("SELECT COUNT(*) FROM project_documents")->fetchColumn();
-                $totalLogs = (int)$this->pdo->query("SELECT COUNT(*) FROM project_logs")->fetchColumn();
+                $totalLogs = (int)$this->pdo->query("SELECT COUNT(*) FROM project_stage_logs")->fetchColumn();
 
                 $stats['items'] = [
-                    ['label' => 'Công trình phụ trách', 'value' => $myProjects, 'icon' => '🔧', 'color' => '#38bdf8'],
-                    ['label' => 'Hồ sơ tài liệu khảo sát', 'value' => $totalDocs, 'icon' => '📁', 'color' => '#10b981'],
-                    ['label' => 'Nhật ký thi công đã ghi', 'value' => $totalLogs, 'icon' => '📝', 'color' => '#f59e0b']
+                    ['label' => 'Công trình được phân công', 'value' => $myProjects . ' dự án', 'icon' => '🔧', 'color' => '#38bdf8', 'desc' => 'Đang triển khai hiện trường'],
+                    ['label' => 'Hồ sơ tài liệu khảo sát', 'value' => $totalDocs . ' tài liệu', 'icon' => '📁', 'color' => '#10b981', 'desc' => 'Biên bản PCCC & EVN'],
+                    ['label' => 'Nhật ký thi công đã ghi', 'value' => $totalLogs . ' nhật ký', 'icon' => '📝', 'color' => '#f59e0b', 'desc' => 'Cập nhật tiến độ dự án']
                 ];
             } else {
                 // Khách hàng (Customer)
-                $cartCount = class_exists(\App\Modules\Member2_Products\ProductController::class)
-                    ? \App\Modules\Member2_Products\ProductController::cartCount()
-                    : 0;
+                $cartCount = class_exists(ProductController::class) ? ProductController::cartCount() : 0;
                 $myQuotes = (int)$this->pdo->query("SELECT COUNT(*) FROM solar_quotes")->fetchColumn();
 
                 $stats['items'] = [
-                    ['label' => 'Thiết bị trong Kế hoạch', 'value' => $cartCount . ' món', 'icon' => '📋', 'color' => '#f59e0b'],
-                    ['label' => 'Báo giá đã yêu cầu', 'value' => $myQuotes, 'icon' => '⚡', 'color' => '#10b981'],
-                    ['label' => 'Tiến độ hoàn thiện', 'value' => 'Sẵn sàng', 'icon' => '🎯', 'color' => '#38bdf8']
+                    ['label' => 'Thiết bị trong Kế hoạch', 'value' => $cartCount . ' món', 'icon' => '📋', 'color' => '#f59e0b', 'desc' => 'Đang quan tâm cấu hình'],
+                    ['label' => 'Báo giá khảo sát đã gửi', 'value' => $myQuotes . ' hồ sơ', 'icon' => '⚡', 'color' => '#10b981', 'desc' => 'Hệ thống đã tiếp nhận'],
+                    ['label' => 'Hạng mức thành viên', 'value' => 'Solar VIP', 'icon' => '⭐', 'color' => '#38bdf8', 'desc' => 'Ưu đãi bảo hành 12 năm']
                 ];
             }
-        } catch (Throwable) {
-            // bỏ qua lỗi nếu bảng chưa có
-        }
+        } catch (Throwable) {}
 
         return $stats;
     }
 
     /**
-     * Danh sách 3 tài khoản mẫu phục vụ chuyển đổi vai trò
+     * Lấy danh sách công trình lắp đặt liên quan đến vai trò
+     */
+    private function getRoleProjects(?array $user): array
+    {
+        if (!$this->pdo) return [];
+        try {
+            $role = $user['role'] ?? 'admin';
+            if ($role === 'customer') {
+                // Khách hàng: xem 1-2 dự án tiêu biểu minh họa
+                $stmt = $this->pdo->query("SELECT * FROM projects ORDER BY id DESC LIMIT 2");
+            } else {
+                // Admin hoặc Technician: xem các dự án gần đây
+                $stmt = $this->pdo->query("SELECT * FROM projects ORDER BY id DESC LIMIT 5");
+            }
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    /**
+     * Lấy danh sách báo giá liên quan đến vai trò
+     */
+    private function getRoleQuotes(?array $user): array
+    {
+        if (!$this->pdo) return [];
+        try {
+            $stmt = $this->pdo->query("SELECT * FROM solar_quotes ORDER BY id DESC LIMIT 5");
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    /**
+     * Danh sách 3 tài khoản demo mẫu
      */
     private function getDemoAccounts(): array
     {
@@ -266,8 +233,8 @@ class ProfileController
                 'name'      => 'Quản Trị Viên Cấp Cao',
                 'email'     => 'admin.pro@solaris.vn',
                 'badge'     => 'sol-badge--amber',
-                'level'     => 'Mức 1 • Toàn quyền hệ thống',
-                'desc'      => 'Phê duyệt dự án, phân bổ kỹ thuật viên, quản trị danh mục thiết bị và báo giá.'
+                'level'     => 'Mức 1 • Quản Trị Viên (Admin)',
+                'desc'      => 'Xem thông tin quản trị hệ thống, duyệt báo giá, phân công kỹ thuật viên.'
             ],
             [
                 'username'  => 'tech_pro',
@@ -275,8 +242,8 @@ class ProfileController
                 'name'      => 'Kỹ Thuật Viên Trưởng',
                 'email'     => 'tech.pro@solaris.vn',
                 'badge'     => 'sol-badge--cyan',
-                'level'     => 'Mức 2 • Kỹ thuật & Hiện trường',
-                'desc'      => 'Khảo sát mái nhà, tải lên biên bản nghiệm thu kỹ thuật, cập nhật nhật ký thi công.'
+                'level'     => 'Mức 2 • Kỹ Thuật Viên (Staff)',
+                'desc'      => 'Xem thông tin nhân sự kỹ thuật, công trình phụ trách, hồ sơ khảo sát mái.'
             ],
             [
                 'username'  => 'customer_pro',
@@ -284,14 +251,14 @@ class ProfileController
                 'name'      => 'Khách Hàng Trải Nghiệm',
                 'email'     => 'customer.pro@gmail.com',
                 'badge'     => 'sol-badge--emerald',
-                'level'     => 'Mức 3 • Trải nghiệm dịch vụ',
-                'desc'      => 'Xem sản phẩm, lập kế hoạch dự định, tính KW & tiền điện, gửi yêu cầu báo giá.'
+                'level'     => 'Mức 3 • Khách Hàng (Customer)',
+                'desc'      => 'Xem kế hoạch thiết bị đã chọn, lịch sử báo giá đã gửi và thông số công suất.'
             ]
         ];
     }
 
     /**
-     * Danh sách hồ sơ năng lực & phân công công việc 4 Thành viên
+     * Danh sách hồ sơ 4 Thành viên
      */
     private function getTeamMembers(): array
     {
