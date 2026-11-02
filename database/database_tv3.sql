@@ -166,9 +166,8 @@ CREATE TABLE `installation_items` (
 
 -- Dữ liệu Users
 INSERT INTO `users` (`id`, `username`, `password_hash`, `full_name`, `email`, `phone`, `role`) VALUES
-(1, 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Solaris System Administrator', 'admin@solaris.vn', '0909888888', 'admin'),
-(2, 'tech_dat', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Nguyễn Tấn Đạt (Kỹ sư trưởng)', 'dat.nguyen@solaris.vn', '0912345678', 'technician'),
-(3, 'khachhang1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Trần Văn Hoàng (Villa Thảo Điền)', 'hoang.tran@gmail.com', '0988123456', 'customer');
+(1, 'tech_dat', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Nguyễn Tấn Đạt (Kỹ sư trưởng)', 'dat.nguyen@solaris.vn', '0912345678', 'technician'),
+(2, 'khachhang1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Trần Văn Hoàng (Villa Thảo Điền)', 'hoang.tran@gmail.com', '0988123456', 'customer');
 
 -- Dữ liệu Categories
 INSERT INTO `categories` (`id`, `name`, `slug`, `description`) VALUES
