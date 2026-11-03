@@ -67,7 +67,7 @@ final class InstallationController
             }
         } catch (PDOException $error) {
             error_log('Installation database: ' . $error->getMessage());
-            $view['error'] = 'Chưa kết nối được dữ liệu lắp đặt. Hãy import database/tv4-installation.sql và kiểm tra cấu hình kết nối theo tài liệu TV4.';
+            $view['error'] = 'Chưa kết nối được dữ liệu lắp đặt. Hãy import database/solaris_data_insert.sql và kiểm tra cấu hình kết nối CSDL.';
         } catch (RuntimeException $error) {
             $view['error'] = $error->getMessage();
         } catch (Throwable $error) {

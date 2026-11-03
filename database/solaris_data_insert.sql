@@ -42,12 +42,10 @@ SET FOREIGN_KEY_CHECKS = 0;
 DELETE FROM `users`;
 INSERT INTO `users` (`id`, `username`, `password_hash`, `full_name`, `email`, `phone`, `role`, `created_at`) VALUES
 (1, 'admin', '$2y$10$tsxq5r3F0X9FthiMHAtTseampqPy9M8GscvTcVgDD1KkKdPf.et7m', 'Nguyễn Huy Đạt (Project Lead)', 'admin@solaris.vn', '0909888001', 'admin', '2026-10-01 08:00:00'),
-(2, 'admin.tv4', '$2y$10$tsxq5r3F0X9FthiMHAtTseampqPy9M8GscvTcVgDD1KkKdPf.et7m', 'Phan Trần Thịnh (QA & Lắp Đặt)', 'thinh.pt@solaris.vn', '0909888004', 'admin', '2026-10-01 08:30:00'),
 (3, 'kythuat.an', '$2y$10$tsxq5r3F0X9FthiMHAtTseampqPy9M8GscvTcVgDD1KkKdPf.et7m', 'Trần Hoàng An (Kỹ Sư Khảo Sát)', 'an.th@solaris.vn', '0909777001', 'technician', '2026-10-02 09:00:00'),
 (4, 'kythuat.binh', '$2y$10$tsxq5r3F0X9FthiMHAtTseampqPy9M8GscvTcVgDD1KkKdPf.et7m', 'Lê Thanh Bình (Kỹ Sư Trưởng Thi Công)', 'binh.lt@solaris.vn', '0909777002', 'technician', '2026-10-02 09:15:00'),
 (5, 'kythuat.chi', '$2y$10$tsxq5r3F0X9FthiMHAtTseampqPy9M8GscvTcVgDD1KkKdPf.et7m', 'Phạm Ngọc Chi (Chuyên Viên Đấu Nối EVN)', 'chi.pn@solaris.vn', '0909777003', 'technician', '2026-10-02 09:30:00'),
 (6, 'kythuat.dung', '$2y$10$tsxq5r3F0X9FthiMHAtTseampqPy9M8GscvTcVgDD1KkKdPf.et7m', 'Vũ Anh Dũng (Kỹ Thuật Viên Cơ Điện)', 'dung.va@solaris.vn', '0909777004', 'technician', '2026-10-02 09:45:00'),
-(7, 'khachhang.demo', '$2y$10$tsxq5r3F0X9FthiMHAtTseampqPy9M8GscvTcVgDD1KkKdPf.et7m', 'Nguyễn Văn Hải (Chủ Biệt Thự Thảo Điền)', 'hai.nv@gmail.com', '0912345678', 'customer', '2026-10-05 10:00:00'),
 (8, 'khachhang.mai', '$2y$10$tsxq5r3F0X9FthiMHAtTseampqPy9M8GscvTcVgDD1KkKdPf.et7m', 'Trần Thị Mai (Chủ Nhà Phố Bình Thạnh)', 'mai.tt@gmail.com', '0987654321', 'customer', '2026-10-06 14:20:00'),
 (9, 'khachhang.tuan', '$2y$10$tsxq5r3F0X9FthiMHAtTseampqPy9M8GscvTcVgDD1KkKdPf.et7m', 'Đặng Quốc Tuấn (Giám Đốc Xưởng May Tân Bình)', 'tuan.dq@gmail.com', '0933221100', 'customer', '2026-10-08 11:10:00'),
 (10, 'admin_pro', '$2y$10$tsxq5r3F0X9FthiMHAtTseampqPy9M8GscvTcVgDD1KkKdPf.et7m', 'Quản Trị Viên Cấp Cao (Admin Level)', 'admin.pro@solaris.vn', '0901888001', 'admin', '2026-10-10 08:00:00'),
@@ -101,7 +99,7 @@ INSERT INTO `products` (`id`, `category_id`, `product_code`, `name`, `capacity_w
 -- -----------------------------------------------------------------------------
 DELETE FROM `solar_quotes`;
 INSERT INTO `solar_quotes` (`id`, `user_id`, `customer_name`, `customer_phone`, `customer_email`, `address`, `monthly_electric_bill`, `roof_area_sqm`, `estimated_system_kwp`, `panel_count`, `estimated_total_cost`, `payback_years`, `notes`, `status`, `created_at`) VALUES
-(1, 7, 'Nguyễn Văn Hải', '0912345678', 'hai.nv@gmail.com', '12 Nguyễn Văn Hưởng, Thảo Điền, TP. Thủ Đức, TP.HCM', 3500000.00, 48.00, 7.70, 14, 115000000.00, 4.2, 'Mái ngói Thái hướng Nam, có nhu cầu lắp thêm lưu trữ sau 6 tháng.', 'approved', '2026-10-14 09:00:00'),
+(1, 12, 'Nguyễn Văn Hải', '0912345678', 'customer.pro@gmail.com', '12 Nguyễn Văn Hưởng, Thảo Điền, TP. Thủ Đức, TP.HCM', 3500000.00, 48.00, 7.70, 14, 115000000.00, 4.2, 'Mái ngói Thái hướng Nam, có nhu cầu lắp thêm lưu trữ sau 6 tháng.', 'approved', '2026-10-14 09:00:00'),
 (2, 8, 'Trần Thị Mai', '0987654321', 'mai.tt@gmail.com', '145 Bạch Đằng, Phường 2, Quận Bình Thạnh, TP.HCM', 2400000.00, 35.00, 5.50, 10, 85000000.00, 4.5, 'Mái tôn bằng phẳng, yêu cầu thi công gọn gàng trong ngày thứ 7.', 'approved', '2026-09-28 10:30:00'),
 (3, 9, 'Đặng Quốc Tuấn', '0933221100', 'tuan.dq@gmail.com', '78 Cộng Hòa, Phường 4, Quận Tân Bình, TP.HCM', 6800000.00, 110.00, 15.00, 26, 210000000.00, 3.8, 'Xưởng may thời trang, tiêu thụ điện chủ yếu ban ngày từ 8h đến 17h.', 'approved', '2026-10-25 15:00:00'),
 (4, NULL, 'Lê Hoàng Long', '0903112233', 'long.lh@yahoo.com', 'Khu biệt thự Nam Long, Quận 7, TP.HCM', 4500000.00, 65.00, 10.00, 18, 148000000.00, 4.1, 'Khách hàng vãng lai để lại yêu cầu tính toán trên website.', 'survey_scheduled', '2026-10-27 16:20:00'),
@@ -113,7 +111,7 @@ INSERT INTO `solar_quotes` (`id`, `user_id`, `customer_name`, `customer_phone`, 
 -- -----------------------------------------------------------------------------
 DELETE FROM `projects`;
 INSERT INTO `projects` (`id`, `contract_code`, `quote_id`, `user_id`, `technician_id`, `project_name`, `capacity_kwp`, `total_amount`, `installation_address`, `status`, `current_stage`, `notes`, `start_date`, `completion_date`, `planned_end_date`, `completed_at`, `created_at`) VALUES
-(1, 'SOLAR-2026-001', 1, 7, 3, 'Điện mặt trời Biệt thự Thảo Điền - Anh Hải', 7.70, 115000000.00, '12 Nguyễn Văn Hưởng, Thảo Điền, TP. Thủ Đức, TP.HCM', 'in_progress', 'installation', 'Hợp đồng trọn gói bao gồm 14 tấm pin Canadian 550W và Inverter Sungrow 8kW.', '2026-10-15', NULL, '2026-11-15', NULL, '2026-10-15 08:00:00'),
+(1, 'SOLAR-2026-001', 1, 12, 3, 'Điện mặt trời Biệt thự Thảo Điền - Anh Hải', 7.70, 115000000.00, '12 Nguyễn Văn Hưởng, Thảo Điền, TP. Thủ Đức, TP.HCM', 'in_progress', 'installation', 'Hợp đồng trọn gói bao gồm 14 tấm pin Canadian 550W và Inverter Sungrow 8kW.', '2026-10-15', NULL, '2026-11-15', NULL, '2026-10-15 08:00:00'),
 (2, 'SOLAR-2026-002', 2, 8, 4, 'Điện mặt trời Nhà phố Bình Thạnh - Chị Mai', 5.50, 85000000.00, '145 Bạch Đằng, Phường 2, Quận Bình Thạnh, TP.HCM', 'completed', 'handover', 'Hệ thống đã nghiệm thu đóng điện hòa lưới thành công với công tơ 2 chiều EVN.', '2026-10-01', '2026-10-20', '2026-10-22', '2026-10-20 11:30:00', '2026-10-01 08:00:00'),
 (3, 'SOLAR-2026-003', 3, 9, 3, 'Hệ thống Điện mặt trời Xưởng May Tân Bình', 15.00, 210000000.00, '78 Cộng Hòa, Phường 4, Quận Tân Bình, TP.HCM', 'new', 'survey', 'Chờ phê duyệt lịch khảo sát kết cấu xà gồ mái tôn xưởng.', '2026-10-28', NULL, '2026-12-05', NULL, '2026-10-28 09:00:00');
 
