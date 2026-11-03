@@ -44,7 +44,17 @@
 - **Hiệu ứng quang năng Solar Shockwave Ripple:** Sóng năng lượng vàng rực rỡ tỏa ra từ điểm nhấp chuột trên màn hình.
 - **Slider 4 giải pháp hệ thống siêu mượt:** Hòa lưới (On-grid), Lưu trữ (Hybrid ESS), Doanh nghiệp (C&I Rooftop), Nông nghiệp bơm nước (Agri-Solar).
 - **Bộ tính toán Solar ROI Sizing 3 miền:** Tùy biến số giờ nắng theo Miền Bắc (3.8h), Miền Trung (4.8h), Miền Nam (5.2h).
-- **Quy trình 5 bước thi công chuẩn EVN:** Khảo sát Drone 3D $ightarrow$ Demo 3D & BOM $ightarrow$ Thi công khung giàn $ightarrow$ Đấu nối Inverter & Pin $ightarrow$ Nghiệm thu đóng điện EVN & SCADA App.
+- **Quy trình 5 bước thi công chuẩn EVN:** Khảo sát Drone 3D -> Demo 3D & BOM -> Thi công khung giàn -> Đấu nối Inverter & Pin -> Nghiệm thu đóng điện EVN & SCADA App.
+
+### 5. Cổng Xác Thực Đăng Nhập & Đăng Ký Tài Khoản Bằng Gmail (OTP Verification)
+- **Tự động điều hướng khi vừa vào dự án:** Người dùng chưa đăng nhập sẽ được đưa đến cổng **Auth Portal** hiện đại với 2 tab chuyển đổi mượt mà giữa Đăng Nhập và Đăng Ký.
+- **Cơ chế xác thực qua Gmail với OTP 6 số:**
+  1. Người dùng nhập thông tin và địa chỉ Gmail nhận mã.
+  2. Hệ thống tạo mã xác thực 6 số ngẫu nhiên có hiệu lực 10 phút, tự động gửi qua email đồng thời cung cấp **Hộp Thư Ảo Gmail Sandbox** trực quan trên giao diện để phục vụ kiểm thử nhanh chóng ngay trên localhost.
+  3. Giao diện 6 ô nhập mã OTP hiện đại tự động nhảy focus, tự động paste từ clipboard, đếm ngược thời gian thực và cho phép gửi lại mã khi cần.
+  4. Sau khi xác nhận mã OTP chính xác, tài khoản được lưu vào CSDL users, tự động đăng nhập và chuyển về Trang Chủ với thông báo kích hoạt rực rỡ.
+- **Hỗ trợ Đăng nhập 1-Click Tester Accounts:** Giữ nút truy cập nhanh 3 vai trò mẫu (Admin, Tech, Customer) để Giảng viên và Hội đồng chấm điểm có thể kiểm thử toàn diện mọi luồng nghiệp vụ.
+- **Nút Đăng xuất an toàn:** Bổ sung nút đăng xuất 🚪 ở cả thanh Navigation Bar ngang và Menu dọc bên trái.
 
 ---
 
@@ -63,3 +73,30 @@ TIẾN ĐỘ VÀ CƠ CẤU TỶ TRỌNG ĐÓNG GÓP XÂY DỰNG DỰ ÁN SOLARIS
 • TV4 (Phan Trần Thịnh):    Quy trình Lắp đặt 4 Giai đoạn, Upload ảnh SHA-256, Bài tập MySQL (20%)
 ========================================================================================
 ```
+
+---
+
+## 💾 IV. HỆ THỐNG DỮ LIỆU ĐỒNG BỘ CHO NHÓM (DATABASE SYNC SPECIFICATION)
+
+Để đảm bảo toàn bộ 4 thành viên (Đạt, Hải, Toàn, Thịnh) và Hội đồng chấm điểm có dữ liệu đồng nhất 100%, hệ thống cung cấp file đồng bộ dữ liệu mẫu:
+
+- **File Dữ Liệu Đồng Bộ Độc Lập:** [`database/solaris_data_insert.sql`](file:///F:/Work/AXMPP/htdocs/PHP/Doan/database/solaris_data_insert.sql) (hoặc file gốc tại thư mục dự án: [`solaris_data_insert.sql`](file:///F:/Work/AXMPP/htdocs/PHP/Doan/solaris_data_insert.sql))
+- **File CSDL Trọn Gói (Schema + Data):** [`database/solaris_full.sql`](file:///F:/Work/AXMPP/htdocs/PHP/Doan/database/solaris_full.sql)
+
+### 1. Phạm Vi 17 Bảng Dữ Liệu Đồng Bộ
+1. **Quản lý Tài khoản & Phân quyền:** `users` (12 tài khoản: Admin, Technician, Customer, Tester)
+2. **Danh mục & Thiết bị quang điện:** `categories` (4 danh mục), `products` (26 sản phẩm Tier-1)
+3. **Báo giá & Dự án Solar:** `solar_quotes` (6 báo giá), `projects` (3 hợp đồng thực tế)
+4. **Vật tư & Giai đoạn thi công:** `installation_items` (15 hạng mục BOM), `project_stages` (18 bước quy trình), `project_assignments` (5 phân công kỹ thuật), `project_stage_logs` (5 nhật ký thi công)
+5. **Hồ sơ nghiệm thu & Yêu cầu:** `project_documents` (6 ảnh khảo sát, bản vẽ CAD, EVN), `project_requests` (2 yêu cầu gia hạn/thay kỹ thuật)
+6. **Portal 24 Bài tập PHP Bán sữa:** `hang_sua` (6 hãng), `loai_sua` (4 loại), `sua` (25 sản phẩm phân trang), `khach_hang` (8 khách hàng), `hoa_don` (5 hóa đơn), `ct_hoadon` (8 chi tiết)
+
+### 2. Cách Thực Hiện Đồng Bộ
+```bash
+# Cách 1: Qua dòng lệnh MySQL/XAMPP Shell:
+mysql -u root -p solaris < database/solaris_data_insert.sql
+
+# Cách 2: Qua giao diện phpMyAdmin:
+# Truy cập http://localhost/phpmyadmin -> Chọn CSDL solaris -> Tab "Import" -> Chọn file solaris_data_insert.sql -> Bấm "Go"
+```
+
