@@ -24,7 +24,7 @@ $page = $_GET['page'] ?? null;
 $validPages = ['auth', 'home', 'products', 'cart', 'calculator', 'installations', 'exercises', 'profile'];
 
 // Kiểm tra trạng thái đăng nhập trong session
-$isLoggedIn = !empty($_SESSION['is_logged_in']) || !empty($_SESSION['user_id']);
+$isLoggedIn = !empty($_SESSION['is_logged_in']) && !empty($_SESSION['user_id']);
 
 // Xử lý action logout nếu có ở cấp toàn cục
 if ((isset($_GET['action']) && $_GET['action'] === 'logout') || $page === 'auth') {
@@ -131,7 +131,7 @@ if ($page === 'calculator') {
 // -------------------------------------------------------------------------
 // Xác định tài khoản hiện tại toàn cục (phục vụ Navigation Bar & Profile)
 // -------------------------------------------------------------------------
-$currentUserId = (int)($_SESSION['user_id'] ?? $_SESSION['installation_user_id'] ?? 0);
+$currentUserId = (int)($_SESSION['user_id'] ?? 0);
 $currentUser = null;
 try {
     $pdoGlobal = \App\Config\Database::getPdo();
@@ -139,29 +139,17 @@ try {
         $uStmt = $pdoGlobal->prepare("SELECT id, username, full_name, email, phone, role, created_at FROM users WHERE id = ?");
         $uStmt->execute([$currentUserId]);
         $currentUser = $uStmt->fetch(PDO::FETCH_ASSOC) ?: null;
-    }
-    if (!$currentUser && $pdoGlobal && $isLoggedIn) {
-        $uStmt = $pdoGlobal->query("SELECT id, username, full_name, email, phone, role, created_at FROM users WHERE username = 'admin_pro' LIMIT 1");
-        $currentUser = $uStmt->fetch(PDO::FETCH_ASSOC) ?: null;
         if ($currentUser) {
-            $_SESSION['user_id'] = (int)$currentUser['id'];
             $_SESSION['user_role'] = (string)$currentUser['role'];
             $_SESSION['user_name'] = (string)$currentUser['full_name'];
+            $_SESSION['user_email'] = (string)$currentUser['email'];
+        } else {
+            // ID trong session không còn tồn tại trong CSDL -> xóa session
+            unset($_SESSION['user_id'], $_SESSION['user_role'], $_SESSION['user_name'], $_SESSION['user_email'], $_SESSION['is_logged_in']);
+            $isLoggedIn = false;
         }
     }
 } catch (\Throwable $e) {}
-
-if (!$currentUser && $isLoggedIn) {
-    $currentUser = [
-        'id' => 10,
-        'username' => 'admin_pro',
-        'full_name' => 'Quản Trị Viên Cấp Cao (Admin Level)',
-        'email' => 'admin.pro@solaris.vn',
-        'phone' => '0901.888.001',
-        'role' => 'admin',
-        'created_at' => '2026-10-01 08:00:00'
-    ];
-}
 
 // -------------------------------------------------------------------------
 // Điều phối cho phân hệ TV1 (Hồ sơ 4 Thành viên & Quản lý Profile Tài khoản)

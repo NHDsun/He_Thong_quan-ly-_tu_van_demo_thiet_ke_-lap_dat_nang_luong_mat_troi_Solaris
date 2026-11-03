@@ -168,12 +168,15 @@ class SolarDemoController
             ];
         }
 
+        $userId = !empty($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
+
         try {
             $stmt = $pdo->prepare("INSERT INTO `solar_quotes` 
-                (`customer_name`, `customer_phone`, `customer_email`, `address`, `monthly_electric_bill`, `roof_area_sqm`, `estimated_system_kwp`, `panel_count`, `estimated_total_cost`, `payback_years`, `notes`, `status`)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')");
+                (`user_id`, `customer_name`, `customer_phone`, `customer_email`, `address`, `monthly_electric_bill`, `roof_area_sqm`, `estimated_system_kwp`, `panel_count`, `estimated_total_cost`, `payback_years`, `notes`, `status`)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')");
 
             $stmt->execute([
+                $userId,
                 $name,
                 $phone,
                 $email,

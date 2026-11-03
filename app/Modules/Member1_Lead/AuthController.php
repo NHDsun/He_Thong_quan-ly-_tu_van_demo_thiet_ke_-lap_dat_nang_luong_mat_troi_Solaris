@@ -35,7 +35,10 @@ class AuthController
 
         // 1. Xử lý Đăng Xuất (Logout)
         if (isset($_GET['action']) && $_GET['action'] === 'logout') {
-            unset($_SESSION['user_id'], $_SESSION['user_role'], $_SESSION['user_name'], $_SESSION['user_email'], $_SESSION['is_logged_in'], $_SESSION['pending_registration'], $_SESSION['auth_step']);
+            $_SESSION = [];
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_regenerate_id(true);
+            }
             $success = "Bạn đã đăng xuất an toàn khỏi hệ sinh thái Solaris.";
             $step = 'login';
         }
@@ -86,12 +89,17 @@ class AuthController
                         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
                         if ($user && (password_verify($password, (string)$user['password_hash']) || $password === 'Solaris@2026')) {
+                            // Làm sạch session trước khi đăng nhập tài khoản mới
+                            $_SESSION = [];
+                            if (session_status() === PHP_SESSION_ACTIVE) {
+                                session_regenerate_id(true);
+                            }
                             $_SESSION['user_id'] = (int)$user['id'];
+                            $_SESSION['installation_user_id'] = (int)$user['id'];
                             $_SESSION['user_role'] = (string)$user['role'];
                             $_SESSION['user_name'] = (string)$user['full_name'];
                             $_SESSION['user_email'] = (string)$user['email'];
                             $_SESSION['is_logged_in'] = true;
-                            unset($_SESSION['pending_registration'], $_SESSION['auth_step']);
                             header('Location: index.php?page=home&login_success=1');
                             exit;
                         } else {
@@ -218,14 +226,19 @@ class AuthController
 
                         $newUserId = (int)$this->pdo->lastInsertId();
 
-                        // Tự động đăng nhập
+                        // Xóa sạch session cũ để tài khoản mới hoàn toàn độc lập
+                        $_SESSION = [];
+                        if (session_status() === PHP_SESSION_ACTIVE) {
+                            session_regenerate_id(true);
+                        }
+
+                        // Tự động đăng nhập cho khách hàng mới vừa tạo
                         $_SESSION['user_id'] = $newUserId;
-                        $_SESSION['user_role'] = $pending['role'];
+                        $_SESSION['installation_user_id'] = $newUserId;
+                        $_SESSION['user_role'] = 'customer';
                         $_SESSION['user_name'] = $pending['full_name'];
                         $_SESSION['user_email'] = $pending['email'];
                         $_SESSION['is_logged_in'] = true;
-
-                        unset($_SESSION['pending_registration'], $_SESSION['auth_step']);
 
                         header('Location: index.php?page=home&registered=1');
                         exit;

@@ -52,10 +52,12 @@ class ProfileController
                     $stmt->execute([$switchUser]);
                     $user = $stmt->fetch(PDO::FETCH_ASSOC);
                     if ($user) {
+                        $_SESSION['is_logged_in'] = true;
                         $_SESSION['user_id'] = (int)$user['id'];
                         $_SESSION['installation_user_id'] = (int)$user['id'];
                         $_SESSION['user_role'] = $user['role'];
                         $_SESSION['user_name'] = $user['full_name'];
+                        $_SESSION['user_email'] = $user['email'];
 
                         $roleTitle = match ($user['role']) {
                             'admin' => 'Quản Trị Viên Cấp Cao (Admin)',
@@ -77,7 +79,7 @@ class ProfileController
         }
 
         // 2. Lấy thông tin tài khoản hiện tại
-        $currentUserId = (int)($_SESSION['user_id'] ?? $_SESSION['installation_user_id'] ?? 0);
+        $currentUserId = (int)($_SESSION['user_id'] ?? 0);
         $currentUser = null;
         if ($this->pdo && $currentUserId > 0) {
             try {
@@ -89,14 +91,10 @@ class ProfileController
             }
         }
 
-        // Nếu chưa đăng nhập, mặc định hiển thị thông tin tài khoản admin_pro để trải nghiệm ngay
-        if (!$currentUser && $this->pdo) {
-            try {
-                $stmt = $this->pdo->query("SELECT id, username, full_name, email, phone, role, created_at, updated_at FROM users WHERE username = 'admin_pro' LIMIT 1");
-                $currentUser = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
-            } catch (Throwable) {
-                $currentUser = null;
-            }
+        // Nếu chưa đăng nhập hoặc tài khoản không tồn tại -> bắt buộc về trang auth
+        if (!$currentUser) {
+            header('Location: index.php?page=auth');
+            exit;
         }
 
         // 2.1 Xử lý Tạo Tài Khoản Kỹ Thuật Viên Mới (Chỉ dành riêng cho Quản trị viên Admin)
@@ -236,13 +234,16 @@ class ProfileController
      */
     private function getRoleStats(?array $user): array
     {
-        $role = $user['role'] ?? 'admin';
+        $role = $user['role'] ?? 'customer';
+        $userId = (int)($user['id'] ?? 0);
+        $userEmail = (string)($user['email'] ?? '');
+
         $stats = [
             'role' => $role,
             'items' => []
         ];
 
-        if (!$this->pdo) return $stats;
+        if (!$this->pdo || !$userId) return $stats;
 
         try {
             if ($role === 'admin') {
@@ -258,24 +259,43 @@ class ProfileController
                     ['label' => 'Tài khoản người dùng', 'value' => $totalUsers . ' tài khoản', 'icon' => '👥', 'color' => '#ec4899', 'desc' => 'Quản trị viên, thợ & khách']
                 ];
             } elseif ($role === 'technician') {
-                $myProjects = (int)$this->pdo->query("SELECT COUNT(*) FROM projects WHERE status IN ('survey_scheduled', 'in_progress', 'new')")->fetchColumn();
-                $totalDocs = (int)$this->pdo->query("SELECT COUNT(*) FROM project_documents")->fetchColumn();
-                $totalLogs = (int)$this->pdo->query("SELECT COUNT(*) FROM project_stage_logs")->fetchColumn();
+                $myProjectsStmt = $this->pdo->prepare("
+                    SELECT COUNT(DISTINCT p.id) FROM projects p 
+                    WHERE p.technician_id = ? 
+                       OR EXISTS (SELECT 1 FROM project_assignments a WHERE a.project_id = p.id AND a.technician_id = ? AND a.ended_at IS NULL)
+                ");
+                $myProjectsStmt->execute([$userId, $userId]);
+                $myProjects = (int)$myProjectsStmt->fetchColumn();
+
+                $docsStmt = $this->pdo->prepare("SELECT COUNT(*) FROM project_documents WHERE uploaded_by = ?");
+                $docsStmt->execute([$userId]);
+                $totalDocs = (int)$docsStmt->fetchColumn();
+
+                $logsStmt = $this->pdo->prepare("SELECT COUNT(*) FROM project_stage_logs WHERE actor_id = ?");
+                $logsStmt->execute([$userId]);
+                $totalLogs = (int)$logsStmt->fetchColumn();
 
                 $stats['items'] = [
-                    ['label' => 'Công trình được phân công', 'value' => $myProjects . ' dự án', 'icon' => '🔧', 'color' => '#38bdf8', 'desc' => 'Đang triển khai hiện trường'],
-                    ['label' => 'Hồ sơ tài liệu khảo sát', 'value' => $totalDocs . ' tài liệu', 'icon' => '📁', 'color' => '#10b981', 'desc' => 'Biên bản PCCC & EVN'],
-                    ['label' => 'Nhật ký thi công đã ghi', 'value' => $totalLogs . ' nhật ký', 'icon' => '📝', 'color' => '#f59e0b', 'desc' => 'Cập nhật tiến độ dự án']
+                    ['label' => 'Công trình được phân công', 'value' => $myProjects . ' dự án', 'icon' => '🔧', 'color' => '#38bdf8', 'desc' => 'Trực tiếp thi công hiện trường'],
+                    ['label' => 'Hồ sơ tài liệu khảo sát', 'value' => $totalDocs . ' tài liệu', 'icon' => '📁', 'color' => '#10b981', 'desc' => 'Biên bản PCCC & EVN tải lên'],
+                    ['label' => 'Nhật ký thi công đã ghi', 'value' => $totalLogs . ' nhật ký', 'icon' => '📝', 'color' => '#f59e0b', 'desc' => 'Ghi nhận tiến độ công trình']
                 ];
             } else {
-                // Khách hàng (Customer)
+                // Khách hàng (Customer) - CHỈ ĐẾM CỦA RIÊNG KHÁCH HÀNG NÀY!
                 $cartCount = class_exists(ProductController::class) ? ProductController::cartCount() : 0;
-                $myQuotes = (int)$this->pdo->query("SELECT COUNT(*) FROM solar_quotes")->fetchColumn();
+                
+                $quotesStmt = $this->pdo->prepare("SELECT COUNT(*) FROM solar_quotes WHERE user_id = ? OR (customer_email = ? AND customer_email != '')");
+                $quotesStmt->execute([$userId, $userEmail]);
+                $myQuotes = (int)$quotesStmt->fetchColumn();
+
+                $projStmt = $this->pdo->prepare("SELECT COUNT(*) FROM projects WHERE user_id = ?");
+                $projStmt->execute([$userId]);
+                $myProjects = (int)$projStmt->fetchColumn();
 
                 $stats['items'] = [
                     ['label' => 'Thiết bị trong Kế hoạch', 'value' => $cartCount . ' món', 'icon' => '📋', 'color' => '#f59e0b', 'desc' => 'Đang quan tâm cấu hình'],
-                    ['label' => 'Báo giá khảo sát đã gửi', 'value' => $myQuotes . ' hồ sơ', 'icon' => '⚡', 'color' => '#10b981', 'desc' => 'Hệ thống đã tiếp nhận'],
-                    ['label' => 'Hạng mức thành viên', 'value' => 'Solar VIP', 'icon' => '⭐', 'color' => '#38bdf8', 'desc' => 'Ưu đãi bảo hành 12 năm']
+                    ['label' => 'Báo giá khảo sát đã gửi', 'value' => $myQuotes . ' hồ sơ', 'icon' => '⚡', 'color' => '#10b981', 'desc' => 'Hồ sơ yêu cầu của bạn'],
+                    ['label' => 'Hợp đồng công trình của bạn', 'value' => $myProjects . ' dự án', 'icon' => '🏗️', 'color' => '#38bdf8', 'desc' => 'Đang triển khai lắp đặt']
                 ];
             }
         } catch (Throwable) {}
@@ -288,17 +308,31 @@ class ProfileController
      */
     private function getRoleProjects(?array $user): array
     {
-        if (!$this->pdo) return [];
+        if (!$this->pdo || empty($user)) return [];
         try {
-            $role = $user['role'] ?? 'admin';
+            $role = $user['role'] ?? 'customer';
+            $userId = (int)($user['id'] ?? 0);
+
             if ($role === 'customer') {
-                // Khách hàng: xem 1-2 dự án tiêu biểu minh họa
-                $stmt = $this->pdo->query("SELECT * FROM projects ORDER BY id DESC LIMIT 2");
+                // Khách hàng: CHỈ XEM CÔNG TRÌNH CỦA CHÍNH MÌNH
+                $stmt = $this->pdo->prepare("SELECT * FROM projects WHERE user_id = ? ORDER BY id DESC");
+                $stmt->execute([$userId]);
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } elseif ($role === 'technician') {
+                // Kỹ thuật viên: CHỈ XEM CÔNG TRÌNH ĐƯỢC PHÂN CÔNG
+                $stmt = $this->pdo->prepare("
+                    SELECT p.* FROM projects p 
+                    WHERE p.technician_id = ? 
+                       OR EXISTS (SELECT 1 FROM project_assignments a WHERE a.project_id = p.id AND a.technician_id = ? AND a.ended_at IS NULL)
+                    ORDER BY p.id DESC
+                ");
+                $stmt->execute([$userId, $userId]);
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
             } else {
-                // Admin hoặc Technician: xem các dự án gần đây
-                $stmt = $this->pdo->query("SELECT * FROM projects ORDER BY id DESC LIMIT 5");
+                // Admin: xem các dự án toàn sàn
+                $stmt = $this->pdo->query("SELECT * FROM projects ORDER BY id DESC LIMIT 10");
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
             }
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Throwable) {
             return [];
         }
@@ -309,10 +343,25 @@ class ProfileController
      */
     private function getRoleQuotes(?array $user): array
     {
-        if (!$this->pdo) return [];
+        if (!$this->pdo || empty($user)) return [];
         try {
-            $stmt = $this->pdo->query("SELECT * FROM solar_quotes ORDER BY id DESC LIMIT 5");
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $role = $user['role'] ?? 'customer';
+            $userId = (int)($user['id'] ?? 0);
+            $userEmail = (string)($user['email'] ?? '');
+
+            if ($role === 'customer') {
+                // Khách hàng: CHỈ XEM BÁO GIÁ CỦA CHÍNH MÌNH (theo user_id hoặc email)
+                $stmt = $this->pdo->prepare("SELECT * FROM solar_quotes WHERE user_id = ? OR (customer_email = ? AND customer_email != '') ORDER BY id DESC");
+                $stmt->execute([$userId, $userEmail]);
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } elseif ($role === 'technician') {
+                // Kỹ thuật viên không cần quản lý báo giá bán lẻ
+                return [];
+            } else {
+                // Admin: xem các báo giá toàn sàn
+                $stmt = $this->pdo->query("SELECT * FROM solar_quotes ORDER BY id DESC LIMIT 10");
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
         } catch (Throwable) {
             return [];
         }

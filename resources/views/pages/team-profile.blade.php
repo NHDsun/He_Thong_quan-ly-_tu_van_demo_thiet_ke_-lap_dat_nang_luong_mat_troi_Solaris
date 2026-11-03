@@ -23,7 +23,7 @@ if ($tab === 'staff' && ($currentUser['role'] ?? '') !== 'admin') {
     $tab = 'account';
 }
 
-$userRole = $currentUser['role'] ?? 'admin';
+$userRole = $currentUser['role'] ?? 'customer';
 $roleName = match ($userRole) {
     'admin' => 'Quản Trị Viên Cấp Cao (Admin)',
     'technician' => 'Kỹ Thuật Viên Trưởng (Technician)',
@@ -65,7 +65,7 @@ $roleName = match ($userRole) {
         <a href="index.php?page=profile&tab=account" class="sol-btn <?= $tab === 'account' ? 'sol-btn--solar' : 'sol-btn--outline' ?>" style="font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.2rem;">
             <span>👤</span> Profile
             <span class="sol-badge <?= $userRole === 'admin' ? 'sol-badge--amber' : ($userRole === 'technician' ? 'sol-badge--cyan' : 'sol-badge--emerald') ?>" style="font-size: 0.7rem; padding: 0.1rem 0.45rem;">
-                <?= htmlspecialchars(strtoupper($currentUser['username'] ?? 'ADMIN_PRO')) ?>
+                <?= htmlspecialchars(strtoupper($currentUser['username'] ?? 'USER')) ?>
             </span>
         </a>
         <?php if ($userRole === 'admin'): ?>
@@ -317,15 +317,31 @@ $roleName = match ($userRole) {
 
             <!-- Phần 4.2: Hồ Sơ Yêu Cầu Báo Giá Đã Gửi -->
             <section class="sol-glass-card" style="padding: 1.85rem; margin-bottom: 2rem;">
-                <div style="margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.85rem;">
-                    <span class="sol-badge sol-badge--emerald" style="margin-bottom: 0.25rem;">HỒ SƠ KHẢO SÁT & BÁO GIÁ</span>
-                    <h3 style="color: #ffffff; font-size: 1.25rem; font-family: var(--font-heading); margin: 0;">
-                        ⚡ Danh Sách Báo Giá Khảo Sát Đã Gửi Hệ Thống
-                    </h3>
+                <div style="margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.85rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                    <div>
+                        <span class="sol-badge sol-badge--emerald" style="margin-bottom: 0.25rem;">HỒ SƠ KHẢO SÁT & BÁO GIÁ</span>
+                        <h3 style="color: #ffffff; font-size: 1.25rem; font-family: var(--font-heading); margin: 0;">
+                            ⚡ Danh Sách Báo Giá Khảo Sát Đã Gửi Hệ Thống
+                        </h3>
+                    </div>
+                    <?php if (!empty($roleQuotes)): ?>
+                        <a href="index.php?page=calculator" class="sol-btn sol-btn--solar sol-btn--sm">
+                            + Tạo Thêm Yêu Cầu Mới
+                        </a>
+                    <?php endif; ?>
                 </div>
 
                 <?php if (empty($roleQuotes)): ?>
-                    <p style="color: var(--text-secondary); font-size: 0.85rem;">Bạn chưa gửi yêu cầu báo giá nào. Hãy thực hiện tính toán tại mục Demo Thiết Kế để gửi yêu cầu.</p>
+                    <div style="text-align: center; padding: 2rem 1rem; background: rgba(8, 12, 20, 0.4); border-radius: var(--radius-sm); border: 1px dashed var(--border-subtle);">
+                        <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">⚡</div>
+                        <h4 style="color: #ffffff; font-size: 1.05rem; margin: 0 0 0.4rem;">Bạn Chưa Gửi Yêu Cầu Báo Giá Nào</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.825rem; max-width: 520px; margin: 0 auto 1.25rem;">
+                            Sử dụng công cụ mô phỏng thiết kế để tính toán công suất, chi phí đầu tư và thời gian hoàn vốn cho mái nhà của bạn.
+                        </p>
+                        <a href="index.php?page=calculator" class="sol-btn sol-btn--solar sol-btn--sm">
+                            Mô Phỏng & Đăng Ký Khảo Sát Báo Giá →
+                        </a>
+                    </div>
                 <?php else: ?>
                     <div style="overflow-x: auto;">
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.825rem; color: #ffffff;">
@@ -360,6 +376,80 @@ $roleName = match ($userRole) {
                                         <td style="padding: 0.75rem 1rem; text-align: center;">
                                             <span class="sol-badge sol-badge--emerald" style="font-size: 0.7rem; padding: 0.15rem 0.5rem;">
                                                 <?= htmlspecialchars($q['status'] === 'approved' ? 'Đã duyệt' : ($q['status'] === 'survey_scheduled' ? 'Đã xếp lịch khảo sát' : 'Tiếp nhận')) ?>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
+            </section>
+
+            <!-- Phần 4.3: Hợp Đồng & Tiến Độ Công Trình Thi Công Của Bạn -->
+            <section class="sol-glass-card" style="padding: 1.85rem; margin-bottom: 2rem;">
+                <div style="margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.85rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                    <div>
+                        <span class="sol-badge sol-badge--cyan" style="margin-bottom: 0.25rem;">HỢP ĐỒNG & CÔNG TRÌNH THỰC TẾ</span>
+                        <h3 style="color: #ffffff; font-size: 1.25rem; font-family: var(--font-heading); margin: 0;">
+                            🏗️ Tiến Độ Thi Công Dự Án Điện Mặt Trời Của Bạn
+                        </h3>
+                    </div>
+                    <?php if (!empty($roleProjects)): ?>
+                        <a href="index.php?page=installations" class="sol-btn sol-btn--outline sol-btn--sm">
+                            Xem Chi Tiết Nhật Ký & Biên Bản →
+                        </a>
+                    <?php endif; ?>
+                </div>
+
+                <?php if (empty($roleProjects)): ?>
+                    <div style="text-align: center; padding: 2rem 1rem; background: rgba(8, 12, 20, 0.4); border-radius: var(--radius-sm); border: 1px dashed var(--border-subtle);">
+                        <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🏗️</div>
+                        <h4 style="color: #ffffff; font-size: 1.05rem; margin: 0 0 0.4rem;">Bạn Chưa Có Hợp Đồng / Công Trình Thi Công Nào</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.825rem; max-width: 520px; margin: 0 auto;">
+                            Sau khi đội ngũ kỹ sư Solaris hoàn tất khảo sát hiện trường mái và hai bên ký kết hợp đồng, tiến độ 4 giai đoạn thi công thực tế cùng nhật ký hiện trường sẽ được cập nhật trực tiếp tại đây.
+                        </p>
+                    </div>
+                <?php else: ?>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.825rem; color: #ffffff;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-subtle); background: rgba(8, 12, 20, 0.7); text-align: left;">
+                                    <th style="padding: 0.75rem 1rem;">Mã hợp đồng</th>
+                                    <th style="padding: 0.75rem 1rem;">Tên công trình</th>
+                                    <th style="padding: 0.75rem 1rem; text-align: center;">Công suất (kWp)</th>
+                                    <th style="padding: 0.75rem 1rem;">Giai đoạn thi công</th>
+                                    <th style="padding: 0.75rem 1rem; text-align: right;">Giá trị hợp đồng</th>
+                                    <th style="padding: 0.75rem 1rem; text-align: center;">Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($roleProjects as $p): ?>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                        <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 600;">
+                                            <?= htmlspecialchars($p['contract_code'] ?? 'SOLAR-2026') ?>
+                                        </td>
+                                        <td style="padding: 0.75rem 1rem; font-weight: 600;">
+                                            <?= htmlspecialchars($p['project_name'] ?? 'Công trình điện mặt trời') ?>
+                                        </td>
+                                        <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 700; color: var(--accent-amber);">
+                                            <?= number_format((float)($p['capacity_kwp'] ?? 5.5), 1) ?> kWp
+                                        </td>
+                                        <td style="padding: 0.75rem 1rem; color: var(--accent-gold);">
+                                            <?= match ($p['current_stage'] ?? 'survey') {
+                                                'survey' => '1. Khảo sát hiện trường mái',
+                                                'material' => '2. Chuẩn bị vật tư thiết bị',
+                                                'installation' => '3. Thi công khung & tấm pin',
+                                                'handover' => '4. Nghiệm thu & Đóng điện EVN',
+                                                default => 'Đang thực hiện'
+                                            } ?>
+                                        </td>
+                                        <td style="padding: 0.75rem 1rem; text-align: right; font-weight: 700; color: var(--accent-emerald);">
+                                            <?= number_format((float)($p['total_amount'] ?? 0)) ?> đ
+                                        </td>
+                                        <td style="padding: 0.75rem 1rem; text-align: center;">
+                                            <span class="sol-badge <?= ($p['status'] ?? '') === 'completed' ? 'sol-badge--emerald' : 'sol-badge--amber' ?>" style="font-size: 0.7rem; padding: 0.15rem 0.5rem;">
+                                                <?= ($p['status'] ?? '') === 'completed' ? 'Hoàn thành' : 'Đang thi công' ?>
                                             </span>
                                         </td>
                                     </tr>
