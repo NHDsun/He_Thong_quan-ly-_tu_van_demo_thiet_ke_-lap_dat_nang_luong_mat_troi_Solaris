@@ -20,13 +20,28 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start(['cookie_httponly' => true, 'cookie_samesite' => 'Lax']);
 }
 
-$page = $_GET['page'] ?? 'home';
-$validPages = ['home', 'products', 'cart', 'calculator', 'installations', 'exercises', 'profile'];
-if (!in_array($page, $validPages, true)) {
+$page = $_GET['page'] ?? null;
+$validPages = ['auth', 'home', 'products', 'cart', 'calculator', 'installations', 'exercises', 'profile'];
+
+// Kiểm tra trạng thái đăng nhập trong session
+$isLoggedIn = !empty($_SESSION['is_logged_in']) || !empty($_SESSION['user_id']);
+
+// Xử lý action logout nếu có ở cấp toàn cục
+if ((isset($_GET['action']) && $_GET['action'] === 'logout') || $page === 'auth') {
+    $page = 'auth';
+} elseif (!$isLoggedIn && ($page === null || $page === 'home')) {
+    // Khi vừa vào dự án mà chưa đăng nhập -> Tự động đưa về trang Đăng Nhập & Đăng Ký
+    $page = 'auth';
+} elseif ($page === null) {
     $page = 'home';
 }
 
+if (!in_array($page, $validPages, true)) {
+    $page = $isLoggedIn ? 'home' : 'auth';
+}
+
 $pageTitles = [
+    'auth'          => 'Đăng Nhập & Đăng Ký Tài Khoản (Gmail OTP) - SOLARIS',
     'home'          => 'SOLARIS - Năng Lượng Mặt Trời Thông Minh',
     'products'      => 'Giải Pháp & Sản Phẩm - SOLARIS',
     'cart'          => 'Kế Hoạch Dự Định Thiết Bị - SOLARIS',
@@ -36,6 +51,16 @@ $pageTitles = [
     'profile'       => 'Quản Lý Hồ Sơ Tài Khoản (Profile) - SOLARIS'
 ];
 $title = $pageTitles[$page] ?? 'SOLARIS';
+
+// -------------------------------------------------------------------------
+// Điều phối cho phân hệ Auth (Đăng nhập, Đăng ký Gmail OTP)
+// -------------------------------------------------------------------------
+$authData = [];
+if ($page === 'auth') {
+    $authCtrl = new \App\Modules\Member1_Lead\AuthController();
+    $authData = $authCtrl->handleRequest();
+    $isLoggedIn = !empty($_SESSION['is_logged_in']) || !empty($_SESSION['user_id']);
+}
 
 // -------------------------------------------------------------------------
 // Điều phối cho phân hệ TV4 (Lắp đặt)
@@ -115,7 +140,7 @@ try {
         $uStmt->execute([$currentUserId]);
         $currentUser = $uStmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
-    if (!$currentUser && $pdoGlobal) {
+    if (!$currentUser && $pdoGlobal && $isLoggedIn) {
         $uStmt = $pdoGlobal->query("SELECT id, username, full_name, email, phone, role, created_at FROM users WHERE username = 'admin_pro' LIMIT 1");
         $currentUser = $uStmt->fetch(PDO::FETCH_ASSOC) ?: null;
         if ($currentUser) {
@@ -126,7 +151,7 @@ try {
     }
 } catch (\Throwable $e) {}
 
-if (!$currentUser) {
+if (!$currentUser && $isLoggedIn) {
     $currentUser = [
         'id' => 10,
         'username' => 'admin_pro',
@@ -169,11 +194,17 @@ if ($page === 'profile') {
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Montserrat:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="resources/css/solaris-theme.css?v=<?= file_exists(__DIR__ . '/resources/css/solaris-theme.css') ? filemtime(__DIR__ . '/resources/css/solaris-theme.css') : '2.3' ?>">
 </head>
-<body class="solar-bg-grid <?= $page === 'home' ? 'solar-layout-home' : 'solar-layout-app' ?>">
+<body class="solar-bg-grid <?= $page === 'home' ? 'solar-layout-home' : ($page === 'auth' ? 'solar-layout-auth' : 'solar-layout-app') ?>">
     <div class="glow-ambient-1"></div>
     <div class="glow-ambient-2"></div>
 
-<?php if ($page === 'home'): ?>
+<?php if ($page === 'auth'): ?>
+    <!-- ================================================================= -->
+    <!-- GIAO DIỆN AUTH: ĐĂNG NHẬP, ĐĂNG KÝ GMAIL & XÁC THỰC MÃ OTP 6 SỐ   -->
+    <!-- ================================================================= -->
+    <?php require __DIR__ . '/resources/views/pages/auth.blade.php'; ?>
+
+<?php elseif ($page === 'home'): ?>
     <!-- ================================================================= -->
     <!-- GIAO DIỆN TRANG CHỦ (LANDING PAGE FULL-WIDTH VỚI NAVBAR NGANG)    -->
     <!-- ================================================================= -->
@@ -239,17 +270,46 @@ if ($page === 'profile') {
                 </li>
             </ul>
 
-            <div class="sol-nav-right">
+            <div class="sol-nav-right" style="display: flex; align-items: center; gap: 0.5rem;">
                 <a href="index.php?page=profile" class="sol-nav-profile-pill" title="Profile">
                     <span class="sol-nav-profile-pill__icon">👤</span>
                     <span class="sol-nav-profile-pill__text">Profile</span>
-                    <span class="sol-nav-profile-pill__badge"><?= htmlspecialchars(strtoupper($currentUser['username'] ?? 'ADMIN_PRO')) ?></span>
+                    <span class="sol-nav-profile-pill__badge"><?= htmlspecialchars(strtoupper($currentUser['username'] ?? 'GUEST')) ?></span>
+                </a>
+                <a href="index.php?page=auth&action=logout" class="sol-nav-logout-btn" title="Đăng xuất khỏi hệ thống" style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #fca5a5; text-decoration: none; font-size: 0.9rem; transition: all 0.2s ease;">
+                    🚪
                 </a>
             </div>
         </div>
     </nav>
 
     <main class="sol-main-content">
+        <?php if (isset($_GET['registered'])): ?>
+            <div class="sol-container" style="padding-top: 1.5rem;">
+                <div class="sol-alert sol-alert--success" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.5); border-radius: 10px; color: #a7f3d0; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span style="font-size: 1.5rem;">🎉</span>
+                        <div>
+                            <strong style="color: #ffffff; font-size: 1rem;">Chúc mừng! Bạn đã đăng ký và xác thực tài khoản Gmail thành công.</strong>
+                            <div style="font-size: 0.85rem; color: #6ee7b7; margin-top: 2px;">Tài khoản của bạn đã được kích hoạt trên hệ thống SOLARIS. Hãy bắt đầu khám phá các tính năng!</div>
+                        </div>
+                    </div>
+                    <button type="button" onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: #6ee7b7; font-size: 1.25rem; cursor: pointer;">✕</button>
+                </div>
+            </div>
+        <?php elseif (isset($_GET['login_success'])): ?>
+            <div class="sol-container" style="padding-top: 1.5rem;">
+                <div class="sol-alert sol-alert--success" style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1.25rem; background: rgba(56, 189, 248, 0.2); border: 1px solid rgba(56, 189, 248, 0.5); border-radius: 10px; color: #bae6fd; box-shadow: 0 4px 15px rgba(56, 189, 248, 0.2);">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span style="font-size: 1.3rem;">⚡</span>
+                        <div>
+                            <strong style="color: #ffffff; font-size: 0.95rem;">Đăng nhập thành công!</strong> Chào mừng <strong><?= htmlspecialchars($currentUser['full_name'] ?? 'Bạn') ?></strong> quay trở lại hệ thống Solaris.
+                        </div>
+                    </div>
+                    <button type="button" onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: #bae6fd; font-size: 1.25rem; cursor: pointer;">✕</button>
+                </div>
+            </div>
+        <?php endif; ?>
         <!-- ================================================================= -->
         <!-- 1. HERO SECTION SIÊU HIỆN ĐẠI & DẢI THÔNG SỐ LIVE TICKER         -->
         <!-- ================================================================= -->
@@ -905,11 +965,16 @@ if ($page === 'profile') {
             </div>
 
             <div class="sol-sidebar__footer">
-                <a href="index.php?page=profile" class="sol-nav-profile-pill sol-nav-profile-pill--sidebar <?= $page === 'profile' ? 'active' : '' ?>" title="Profile">
-                    <span class="sol-nav-profile-pill__icon">👤</span>
-                    <span class="sol-nav-profile-pill__text">Profile</span>
-                    <span class="sol-nav-profile-pill__badge"><?= htmlspecialchars(strtoupper($currentUser['username'] ?? 'ADMIN_PRO')) ?></span>
-                </a>
+                <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.5rem;">
+                    <a href="index.php?page=profile" style="flex: 1;" class="sol-nav-profile-pill sol-nav-profile-pill--sidebar <?= $page === 'profile' ? 'active' : '' ?>" title="Profile">
+                        <span class="sol-nav-profile-pill__icon">👤</span>
+                        <span class="sol-nav-profile-pill__text">Profile</span>
+                        <span class="sol-nav-profile-pill__badge"><?= htmlspecialchars(strtoupper($currentUser['username'] ?? 'GUEST')) ?></span>
+                    </a>
+                    <a href="index.php?page=auth&action=logout" title="Đăng xuất khỏi hệ thống" style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #fca5a5; text-decoration: none; font-size: 0.9rem;">
+                        🚪
+                    </a>
+                </div>
                 <div class="sol-sidebar__hotline">
                     <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 6px #10b981;"></span>
                     <span>Hotline: <strong>0909.888.SOLAR</strong></span>

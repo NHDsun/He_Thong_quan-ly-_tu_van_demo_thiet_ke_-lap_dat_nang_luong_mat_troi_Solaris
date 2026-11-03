@@ -44,7 +44,17 @@
 - **Hiệu ứng quang năng Solar Shockwave Ripple:** Sóng năng lượng vàng rực rỡ tỏa ra từ điểm nhấp chuột trên màn hình.
 - **Slider 4 giải pháp hệ thống siêu mượt:** Hòa lưới (On-grid), Lưu trữ (Hybrid ESS), Doanh nghiệp (C&I Rooftop), Nông nghiệp bơm nước (Agri-Solar).
 - **Bộ tính toán Solar ROI Sizing 3 miền:** Tùy biến số giờ nắng theo Miền Bắc (3.8h), Miền Trung (4.8h), Miền Nam (5.2h).
-- **Quy trình 5 bước thi công chuẩn EVN:** Khảo sát Drone 3D $ightarrow$ Demo 3D & BOM $ightarrow$ Thi công khung giàn $ightarrow$ Đấu nối Inverter & Pin $ightarrow$ Nghiệm thu đóng điện EVN & SCADA App.
+- **Quy trình 5 bước thi công chuẩn EVN:** Khảo sát Drone 3D -> Demo 3D & BOM -> Thi công khung giàn -> Đấu nối Inverter & Pin -> Nghiệm thu đóng điện EVN & SCADA App.
+
+### 5. Cổng Xác Thực Đăng Nhập & Đăng Ký Tài Khoản Bằng Gmail (OTP Verification)
+- **Tự động điều hướng khi vừa vào dự án:** Người dùng chưa đăng nhập sẽ được đưa đến cổng **Auth Portal** hiện đại với 2 tab chuyển đổi mượt mà giữa Đăng Nhập và Đăng Ký.
+- **Cơ chế xác thực qua Gmail với OTP 6 số:**
+  1. Người dùng nhập thông tin và địa chỉ Gmail nhận mã.
+  2. Hệ thống tạo mã xác thực 6 số ngẫu nhiên có hiệu lực 10 phút, tự động gửi qua email đồng thời cung cấp **Hộp Thư Ảo Gmail Sandbox** trực quan trên giao diện để phục vụ kiểm thử nhanh chóng ngay trên localhost.
+  3. Giao diện 6 ô nhập mã OTP hiện đại tự động nhảy focus, tự động paste từ clipboard, đếm ngược thời gian thực và cho phép gửi lại mã khi cần.
+  4. Sau khi xác nhận mã OTP chính xác, tài khoản được lưu vào CSDL users, tự động đăng nhập và chuyển về Trang Chủ với thông báo kích hoạt rực rỡ.
+- **Hỗ trợ Đăng nhập 1-Click Tester Accounts:** Giữ nút truy cập nhanh 3 vai trò mẫu (Admin, Tech, Customer) để Giảng viên và Hội đồng chấm điểm có thể kiểm thử toàn diện mọi luồng nghiệp vụ.
+- **Nút Đăng xuất an toàn:** Bổ sung nút đăng xuất 🚪 ở cả thanh Navigation Bar ngang và Menu dọc bên trái.
 
 ---
 
