@@ -99,6 +99,99 @@ class ProfileController
             }
         }
 
+        // 2.1 Xử lý Tạo Tài Khoản Kỹ Thuật Viên Mới (Chỉ dành riêng cho Quản trị viên Admin)
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['profile_action'] ?? '') === 'create_technician') {
+            if (($currentUser['role'] ?? '') !== 'admin') {
+                $_SESSION['profile_alert'] = [
+                    'type' => 'error',
+                    'message' => 'Bạn không có quyền quản trị viên để tạo tài khoản nhân viên / kỹ thuật viên.'
+                ];
+                header('Location: index.php?page=profile');
+                exit;
+            }
+
+            $fullName = trim((string)($_POST['full_name'] ?? ''));
+            $username = strtolower(trim((string)($_POST['username'] ?? '')));
+            $email = strtolower(trim((string)($_POST['email'] ?? '')));
+            $phone = trim((string)($_POST['phone'] ?? ''));
+            $password = (string)($_POST['password'] ?? '');
+
+            // Nếu mật khẩu để trống thì dùng mật khẩu mặc định Solaris@2026
+            if ($password === '') {
+                $password = 'Solaris@2026';
+            }
+
+            // Chuẩn hóa username nếu chưa nhập
+            if ($username === '') {
+                $emailParts = explode('@', $email);
+                $username = preg_replace('/[^a-zA-Z0-9_.]/', '', $emailParts[0] ?? 'tech');
+                if (strlen($username) < 3) $username .= rand(100, 999);
+            }
+
+            if ($fullName === '' || $email === '') {
+                $_SESSION['profile_alert'] = [
+                    'type' => 'error',
+                    'message' => 'Vui lòng nhập đầy đủ Họ tên và Email của Kỹ thuật viên.'
+                ];
+            } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $_SESSION['profile_alert'] = [
+                    'type' => 'error',
+                    'message' => 'Địa chỉ Email không đúng định dạng chuẩn.'
+                ];
+            } elseif (strlen($password) < 6) {
+                $_SESSION['profile_alert'] = [
+                    'type' => 'error',
+                    'message' => 'Mật khẩu phải có độ dài tối thiểu từ 6 ký tự trở lên.'
+                ];
+            } elseif ($this->pdo) {
+                try {
+                    $checkStmt = $this->pdo->prepare("SELECT id, username, email FROM users WHERE username = ? OR email = ? LIMIT 1");
+                    $checkStmt->execute([$username, $email]);
+                    $exists = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+                    if ($exists) {
+                        if (strtolower((string)$exists['username']) === $username) {
+                            $_SESSION['profile_alert'] = [
+                                'type' => 'error',
+                                'message' => "Tên đăng nhập '{$username}' đã tồn tại trên hệ thống. Vui lòng chọn tên khác."
+                            ];
+                        } else {
+                            $_SESSION['profile_alert'] = [
+                                'type' => 'error',
+                                'message' => "Địa chỉ Email '{$email}' đã được đăng ký. Vui lòng sử dụng email khác."
+                            ];
+                        }
+                    } else {
+                        $hash = password_hash($password, PASSWORD_BCRYPT);
+                        $insertStmt = $this->pdo->prepare("
+                            INSERT INTO users (username, password_hash, full_name, email, phone, role, created_at)
+                            VALUES (?, ?, ?, ?, ?, 'technician', NOW())
+                        ");
+                        $insertStmt->execute([
+                            $username,
+                            $hash,
+                            $fullName,
+                            $email,
+                            $phone ?: '0909777999'
+                        ]);
+
+                        $_SESSION['profile_alert'] = [
+                            'type' => 'success',
+                            'message' => "Đã tạo thành công tài khoản Kỹ thuật viên: '{$fullName}' (Tài khoản: {$username})! Mật khẩu đăng nhập: {$password}"
+                        ];
+                    }
+                } catch (Throwable $e) {
+                    $_SESSION['profile_alert'] = [
+                        'type' => 'error',
+                        'message' => 'Lỗi khi lưu tài khoản kỹ thuật viên: ' . $e->getMessage()
+                    ];
+                }
+            }
+
+            header('Location: index.php?page=profile&tab=staff#staff-section');
+            exit;
+        }
+
         // 3. Thống kê theo vai trò của tài khoản hiện tại
         $stats = $this->getRoleStats($currentUser);
 
@@ -108,15 +201,18 @@ class ProfileController
         // 5. Lấy danh sách báo giá liên quan đến đối tượng hiện tại
         $quotes = $this->getRoleQuotes($currentUser);
 
-        // 6. Lấy thông tin kế hoạch dự định (cho Khách hàng)
+        // 6. Lấy danh sách nhân viên kỹ thuật viên (cho Quản trị viên)
+        $technicians = $this->getTechnicians();
+
+        // 7. Lấy thông tin kế hoạch dự định (cho Khách hàng)
         $cartItems = class_exists(ProductController::class) ? ProductController::cartItems() : [];
         $cartCompat = class_exists(UseSolarCalculator::class) ? UseSolarCalculator::analyzeCompatibility($cartItems) : [];
         $planCalc = class_exists(UseSolarCalculator::class) ? UseSolarCalculator::calculateFromPlan($cartItems) : [];
 
-        // 7. Danh sách 3 tài khoản demo mẫu
+        // 8. Danh sách 3 tài khoản demo mẫu
         $demoAccounts = $this->getDemoAccounts();
 
-        // 8. Thông tin chi tiết 4 Thành viên dự án
+        // 9. Thông tin chi tiết 4 Thành viên dự án
         $teamMembers = $this->getTeamMembers();
 
         return [
@@ -124,13 +220,14 @@ class ProfileController
             'role_stats'    => $stats,
             'role_projects' => $projects,
             'role_quotes'   => $quotes,
+            'technicians'   => $technicians,
             'cart_items'    => $cartItems,
             'cart_compat'   => $cartCompat,
             'plan_calc'     => $planCalc,
             'demo_accounts' => $demoAccounts,
             'team_members'  => $teamMembers,
             'alert'         => $alert,
-            'view_mode'     => $_GET['view'] ?? 'profile' // 'profile' (mặc định) hoặc 'team'
+            'view_mode'     => $_GET['tab'] ?? $_GET['view'] ?? 'account'
         ];
     }
 
@@ -330,5 +427,29 @@ class ProfileController
                 ]
             ]
         ];
+    }
+
+    /**
+     * Lấy danh sách kỹ thuật viên kèm số lượng công trình phân công
+     */
+    public function getTechnicians(): array
+    {
+        if (!$this->pdo) return [];
+        try {
+            $sql = "
+                SELECT u.id, u.username, u.full_name, u.email, u.phone, u.role, u.created_at,
+                       COUNT(DISTINCT p.id) as project_count,
+                       COUNT(DISTINCT a.id) as assignment_count
+                FROM users u
+                LEFT JOIN projects p ON p.technician_id = u.id
+                LEFT JOIN project_assignments a ON a.technician_id = u.id AND a.ended_at IS NULL
+                WHERE u.role = 'technician'
+                GROUP BY u.id
+                ORDER BY u.id DESC
+            ";
+            return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Throwable) {
+            return [];
+        }
     }
 }

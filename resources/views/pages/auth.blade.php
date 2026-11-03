@@ -166,7 +166,7 @@ $lastMail = $authData['last_mail'] ?? null;
                             </div>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 1rem;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 0.75rem;">
                             <div class="sol-form-group">
                                 <label class="sol-form-label" style="display: block; font-size: 0.825rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
                                     📞 Số Điện Thoại
@@ -176,13 +176,17 @@ $lastMail = $authData['last_mail'] ?? null;
 
                             <div class="sol-form-group">
                                 <label class="sol-form-label" style="display: block; font-size: 0.825rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
-                                    🏷️ Vai Trò
+                                    🏷️ Loại Tài Khoản
                                 </label>
-                                <select name="role" class="sol-input" style="width: 100%; padding: 0.7rem 1rem; background: #0f172a; border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; color: #ffffff; font-size: 0.9rem;">
-                                    <option value="customer" selected>Khách Hàng (Customer)</option>
-                                    <option value="technician">Kỹ Thuật Viên (Technician)</option>
-                                </select>
+                                <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.65rem 0.85rem; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; color: #34d399; font-size: 0.85rem; font-weight: 600;">
+                                    <span>👤</span>
+                                    <span>Khách Hàng (Customer)</span>
+                                </div>
+                                <input type="hidden" name="role" value="customer">
                             </div>
+                        </div>
+                        <div style="font-size: 0.75rem; color: #94a3b8; margin-top: -0.25rem; margin-bottom: 1rem; line-height: 1.4;">
+                            ℹ️ Đăng ký công khai áp dụng mặc định cho <strong>Khách hàng</strong>. Tài khoản Kỹ thuật viên do Quản trị viên cấp trong mục <em>Quản lý nhân viên</em>.
                         </div>
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 1.4rem;">

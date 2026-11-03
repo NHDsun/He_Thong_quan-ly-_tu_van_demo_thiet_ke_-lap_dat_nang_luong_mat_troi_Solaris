@@ -112,7 +112,9 @@ class AuthController
                 $phone = trim((string)($_POST['phone'] ?? ''));
                 $password = (string)($_POST['password'] ?? '');
                 $confirmPassword = (string)($_POST['confirm_password'] ?? '');
-                $role = trim((string)($_POST['role'] ?? 'customer'));
+                // Đăng ký công khai luôn mặc định là Khách hàng (customer)
+                // Kỹ thuật viên (technician) sẽ được Quản trị viên (admin) tạo trong Quản lý nhân viên
+                $role = 'customer';
 
                 // Tự động sinh username từ phần đầu email nếu người dùng không chỉ định
                 $username = trim((string)($_POST['username'] ?? ''));
@@ -159,7 +161,7 @@ class AuthController
                                 'username'       => $username,
                                 'phone'          => $phone ?: '0909.888.SOLAR',
                                 'password_hash'  => password_hash($password, PASSWORD_BCRYPT),
-                                'role'           => in_array($role, ['customer', 'technician'], true) ? $role : 'customer',
+                                'role'           => 'customer',
                                 'otp_code'       => $otpCode,
                                 'otp_expires_at' => $expiresAt,
                                 'created_at'     => time()

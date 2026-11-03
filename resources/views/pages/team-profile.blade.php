@@ -16,7 +16,10 @@
  */
 
 $tab = $_GET['tab'] ?? ($activeTab ?? 'account');
-if (!in_array($tab, ['account', 'team'], true)) {
+if (!in_array($tab, ['account', 'team', 'staff'], true)) {
+    $tab = 'account';
+}
+if ($tab === 'staff' && ($currentUser['role'] ?? '') !== 'admin') {
     $tab = 'account';
 }
 
@@ -35,12 +38,14 @@ $roleName = match ($userRole) {
             👤 Phân Hệ 1 • Quản Lý Hồ Sơ Tài Khoản & Đội Ngũ Dự Án
         </span>
         <h1 class="sol-section-header__title" style="font-size: 2.2rem;">
-            <?= $tab === 'account' ? 'Profile Tài Khoản' : 'Hồ Sơ Đội Ngũ 4 Thành Viên & Biểu Đồ WBS' ?>
+            <?= $tab === 'account' ? 'Profile Tài Khoản' : ($tab === 'staff' ? 'Quản Lý Nhân Viên (Kỹ Thuật Viên)' : 'Hồ Sơ Đội Ngũ 4 Thành Viên & Biểu Đồ WBS') ?>
         </h1>
         <p class="sol-section-header__desc">
             <?= $tab === 'account' 
                 ? 'Xem thông tin định danh, quyền hạn hệ thống, thiết bị trong kế hoạch dự định và lịch sử hoạt động của ' . htmlspecialchars($roleName) . '.'
-                : 'Thông tin 4 thành viên phát triển dự án Solaris, bảng phân công nhiệm vụ và biểu đồ cơ cấu đóng góp dự án.' ?>
+                : ($tab === 'staff'
+                    ? 'Quản lý danh sách nhân sự kỹ thuật hiện trường, theo dõi phân công dự án và khởi tạo tài khoản kỹ thuật viên mới cho hệ thống.'
+                    : 'Thông tin 4 thành viên phát triển dự án Solaris, bảng phân công nhiệm vụ và biểu đồ cơ cấu đóng góp dự án.') ?>
         </p>
     </div>
 
@@ -63,6 +68,14 @@ $roleName = match ($userRole) {
                 <?= htmlspecialchars(strtoupper($currentUser['username'] ?? 'ADMIN_PRO')) ?>
             </span>
         </a>
+        <?php if ($userRole === 'admin'): ?>
+            <a href="index.php?page=profile&tab=staff" class="sol-btn <?= $tab === 'staff' ? 'sol-btn--solar' : 'sol-btn--outline' ?>" style="font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.2rem; border-color: #f59e0b;">
+                <span>👨‍🔧</span> Quản Lý Nhân Viên
+                <span class="sol-badge sol-badge--amber" style="font-size: 0.7rem; padding: 0.1rem 0.45rem;">
+                    <?= count($technicians ?? []) ?> KTV
+                </span>
+            </a>
+        <?php endif; ?>
         <a href="index.php?page=profile&tab=team" class="sol-btn <?= $tab === 'team' ? 'sol-btn--solar' : 'sol-btn--outline' ?>" style="font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.2rem;">
             <span>👥</span> Đội Ngũ Phát Triển (4 Thành Viên) & Biểu Đồ
         </a>
@@ -464,7 +477,10 @@ $roleName = match ($userRole) {
                             👑 Bảng Tổng Hợp Báo Giá & Hồ Sơ Dự Án Toàn Hệ Thống
                         </h3>
                     </div>
-                    <div style="display: flex; gap: 0.5rem;">
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <a href="index.php?page=profile&tab=staff" class="sol-btn sol-btn--outline sol-btn--sm" style="border-color: #38bdf8; color: #38bdf8;">
+                            👨‍🔧 Quản Lý Nhân Viên (<?= count($technicians ?? []) ?> KTV)
+                        </a>
                         <a href="index.php?page=products" class="sol-btn sol-btn--outline sol-btn--sm">
                             ☀️ Quản Lý Sản Phẩm (26 SP)
                         </a>
@@ -565,7 +581,17 @@ $roleName = match ($userRole) {
                 </div>
             </section>
 
+            <!-- Phần 4.2: Quản Lý Nhân Sự & Kỹ Thuật Viên Hệ Thống -->
+            <?php require __DIR__ . '/../partials/staff-management.blade.php'; ?>
+
         <?php endif; ?>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 3: QUẢN LÝ NHÂN VIÊN & KỸ THUẬT VIÊN (DÀNH RIÊNG CHO ADMIN)       -->
+    <!-- ===================================================================== -->
+    <?php elseif ($tab === 'staff' && $userRole === 'admin'): ?>
+
+        <?php require __DIR__ . '/../partials/staff-management.blade.php'; ?>
 
     <!-- ===================================================================== -->
     <!-- TAB 2: THÔNG TIN 4 THÀNH VIÊN DỰ ÁN & BIỂU ĐỒ TRÁCH NHIỆM WBS         -->

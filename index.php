@@ -180,6 +180,7 @@ if ($page === 'profile') {
     $teamMembers = $profileData['team_members'];
     $profileAlert = $profileData['alert'];
     $activeTab = $profileData['view_mode'] ?? 'account';
+    $technicians = $profileData['technicians'] ?? [];
 }
 ?>
 <!DOCTYPE html>
