@@ -1066,6 +1066,34 @@ if ($page === 'profile') {
                         echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
                         include __DIR__ . '/resources/views/pages/exercises/member3/exercise18_mysql_custom_grid.php';
                         echo '</div>';
+                    elseif ($ex === 19):
+                        echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
+                        include __DIR__ . '/resources/views/pages/exercises/member4/exercise19_mysql_grid.php';
+                        echo '</div>';
+                    elseif ($ex === 20):
+                        echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
+                        include __DIR__ . '/resources/views/pages/exercises/member4/exercise20_mysql_cards.php';
+                        echo '</div>';
+                    elseif ($ex === 21):
+                        echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
+                        if (is_string($_GET['milk'] ?? null) && trim($_GET['milk']) !== '') {
+                            include __DIR__ . '/resources/views/pages/exercises/member4/exercise21_mysql_product.php';
+                        } else {
+                            include __DIR__ . '/resources/views/pages/exercises/member4/exercise21_mysql_detail.php';
+                        }
+                        echo '</div>';
+                    elseif ($ex === 22):
+                        echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
+                        include __DIR__ . '/resources/views/pages/exercises/member4/exercise22_mysql_create.php';
+                        echo '</div>';
+                    elseif ($ex === 23):
+                        echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
+                        include __DIR__ . '/resources/views/pages/exercises/member4/exercise23_mysql_search.php';
+                        echo '</div>';
+                    elseif ($ex === 24):
+                        echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
+                        include __DIR__ . '/resources/views/pages/exercises/member4/exercise24_mysql_advanced.php';
+                        echo '</div>';
                     else:
                         require __DIR__ . '/resources/views/pages/exercises/portal.blade.php';
                     endif;
