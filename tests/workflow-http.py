@@ -45,6 +45,13 @@ def field(text, name):
 def state():
     return json.loads(fixture('state'))
 
+def dashboard_counts(text):
+    section = re.search(r'<section\b[^>]*class="tv4-dashboard"[^>]*>(.*?)</section>', text, re.S)
+    if not section:
+        return {}
+    pairs = re.findall(r'<dt>(.*?)</dt>\s*<dd>([\d.]+)</dd>', section.group(1), re.S)
+    return {html.unescape(title): int(count.replace('.', '')) for title, count in pairs}
+
 def login(browser, user):
     request(browser, 'page=auth', {'auth_action': 'login', 'identity': user, 'password': 'WorkflowTest!2026'})
 
@@ -99,10 +106,18 @@ try:
     assert not state()['quotes']; checks += 1
     for browser, user in [(customer, 'http2'), (admin, 'http1'), (technician, 'http3'), (other, 'http4')]:
         login(browser, user)
+    text, _ = request(admin, 'page=installations')
+    assert len(dashboard_counts(text)) == 8 and dashboard_counts(text)['Tổng dự án'] == 0; checks += 1
+    text, _ = request(technician, 'page=installations')
+    assert len(dashboard_counts(text)) == 6 and dashboard_counts(text)['Dự án được phân công'] == 0; checks += 1
+    text, _ = request(customer, 'page=installations')
+    assert not dashboard_counts(text); checks += 1
     data, (_, url) = register(customer, 'bill')
     assert 'page=installations&project=' in url; checks += 1
     first = state()['projects'][0]
     assert first['status'] == 'pending_approval' and first['current_stage'] is None; checks += 1
+    text, _ = request(admin, 'page=installations&filter=completed')
+    assert dashboard_counts(text)['Tổng dự án'] == 1 and dashboard_counts(text)['Yêu cầu chờ duyệt'] == 1; checks += 1
     request(customer, 'page=calculator&source=bill', data)
     assert len(state()['projects']) == 1 and len(state()['quotes']) == 1; checks += 1
     text, _ = request(other, 'page=calculator')
@@ -119,6 +134,8 @@ try:
     assert 'Chọn kỹ thuật viên' in text; checks += 1
     request(admin, page, {'csrf': field(text, 'csrf'), 'action': 'assign', 'start_date': (date.fromisoformat(today) + timedelta(days=1)).isoformat(), 'end_date': (date.fromisoformat(today) + timedelta(days=14)).isoformat(), 'technicians[]': ['3'], 'hours_per_day': '4'})
     assert state()['projects'][0]['status'] == 'scheduled' and state()['projects'][0]['started_at'] is None; checks += 1
+    text, _ = request(technician, 'page=installations')
+    assert dashboard_counts(text)['Dự án được phân công'] == 1 and dashboard_counts(text)['Giai đoạn chờ bắt đầu'] == 1; checks += 1
     start_current(technician, page)
     assert state()['projects'][0]['status'] == 'in_progress' and state()['projects'][0]['started_at'] is not None; checks += 1
     survey = next(stage for stage in state()['stages'] if stage['project_id'] == first['id'] and stage['stage'] == 'survey')
@@ -197,6 +214,10 @@ try:
     request(admin, 'page=calculator', {'csrf': field(text, 'csrf'), 'action': 'approve_quote', 'quote_id': quote['id'], 'review_note': 'Configuration approved'})
     second = state()['projects'][-1]
     assert second['status'] == 'pending_approval'; checks += 1
+    text, _ = request(admin, 'page=installations')
+    assert dashboard_counts(text)['Tổng dự án'] == 2; checks += 1
+    text, _ = request(technician, 'page=installations')
+    assert dashboard_counts(text)['Dự án được phân công'] == 1 and 'Tổng dự án' not in dashboard_counts(text); checks += 1
     page2 = 'page=installations&project=' + str(second['id'])
     text, _ = request(admin, page2)
     request(admin, page2, {'csrf': field(text, 'csrf'), 'action': 'reject_project', 'review_note': 'Outside service area'})

@@ -41,6 +41,13 @@ Sáu giai đoạn: khảo sát → thiết kế → mua sắm → thi công → 
 - Khi lịch được duyệt vượt mốc kết thúc ban đầu, hệ thống kéo dài ngày kết thúc dự kiến và lịch giữ chỗ của nhóm tới ngày đó; không tự phân bổ lại các bước còn lại. Thống kê mức rảnh vẫn dùng cơ sở thứ Hai–thứ Sáu, tám giờ/ngày.
 - Hoãn chỉ cập nhật lịch bước hiện tại (ngày kết thúc là tùy chọn), không đẩy dây chuyền các bước sau. Ngày thực thi bước sau vẫn được đề xuất khi gửi duyệt hoàn thành.
 
+## Dashboard trang chính quản lý lắp đặt
+
+- Admin có tám card: tổng dự án, yêu cầu dự án chờ duyệt, chờ phân công, dự án chờ bắt đầu, dự án đang thực hiện, dự án hoàn tất, giai đoạn chờ duyệt và yêu cầu hoãn/đổi người đang chờ xử lý.
+- Kỹ thuật viên có sáu card: dự án còn được phân công, giai đoạn chờ bắt đầu, giai đoạn đang thực hiện, cần bổ sung hồ sơ, giai đoạn chờ duyệt và yêu cầu do chính mình gửi còn chờ xử lý. Các số liệu chỉ thuộc dự án người đó đang được phân công, không đếm trùng khi có nhiều dòng phân công.
+- Card luôn phản ánh toàn phạm vi của vai trò, không thay đổi theo bộ lọc hoặc trang danh sách. Một bước kế tiếp đang chờ bắt đầu vẫn được tính dù dự án tổng thể đang thực hiện. Các yêu cầu/giai đoạn còn treo trên dự án đã kết thúc không được tính vào số việc cần xử lý.
+- Dashboard chỉ xuất hiện trên danh sách chính của admin/kỹ thuật viên, không xuất hiện ở trang chi tiết hoặc giao diện khách hàng. Không cần thay đổi database.
+
 ## Vật tư phát sinh, chi phí và hóa đơn
 
 Các chức năng từ `quanLyLapDat04` được tích hợp cùng quy trình duyệt hiện tại:

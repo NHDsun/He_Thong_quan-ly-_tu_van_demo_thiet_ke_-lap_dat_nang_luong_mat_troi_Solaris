@@ -91,6 +91,9 @@ if ($admin) {
                 <?php require __DIR__ . '/../components/installation/detail.php'; ?>
             <?php endif; ?>
         <?php else: ?>
+            <?php if (isset($viewData['dashboard'])): ?>
+                <?php require __DIR__ . '/../components/installation/dashboard.php'; ?>
+            <?php endif; ?>
             <nav class="tv4-tabs" aria-label="Lọc dự án">
                 <?php foreach ($filters as $key => $label): ?>
                     <a class="<?= $viewData['filter'] === $key ? 'active' : '' ?>" href="<?= UI::escape(UI::url(['filter' => $key, 'p' => 1])) ?>">

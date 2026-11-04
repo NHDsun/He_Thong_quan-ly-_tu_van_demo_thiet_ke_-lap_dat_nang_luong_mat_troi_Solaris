@@ -93,6 +93,40 @@ final class UseInstallationWorkflow
         ];
     }
 
+    public function dashboard(array $actor): array
+    {
+        if (!in_array($actor['role'], ['admin', 'technician'], true)) {
+            return [];
+        }
+        $where = '1=1';
+        $params = [];
+        if ($actor['role'] === 'technician') {
+            $where = 'EXISTS (SELECT 1 FROM project_assignments a WHERE a.project_id=p.id AND a.technician_id=? AND a.ended_at IS NULL)';
+            $params[] = $actor['id'];
+        }
+        // EXISTS giữ mỗi dự án một lần, kể cả khi có nhiều dòng phân công.
+        $counts = $this->rows("SELECT COUNT(*) total_projects,
+            COALESCE(SUM(p.status='pending_approval'),0) pending_projects,
+            COALESCE(SUM(p.status='new'),0) new_projects,
+            COALESCE(SUM(p.status='scheduled'),0) scheduled_projects,
+            COALESCE(SUM(p.status='in_progress'),0) active_projects,
+            COALESCE(SUM(p.status='completed'),0) completed_projects,
+            COALESCE(SUM(p.status IN ('scheduled','in_progress') AND s.status='scheduled'),0) ready_stages,
+            COALESCE(SUM(p.status='in_progress' AND s.status='in_progress'),0) active_stages,
+            COALESCE(SUM(p.status='in_progress' AND s.status='revision_required'),0) revision_stages,
+            COALESCE(SUM(p.status='in_progress' AND s.status='pending_approval'),0) pending_stages
+            FROM projects p LEFT JOIN project_stages s ON s.project_id=p.id AND s.stage=p.current_stage
+            WHERE {$where}", $params)[0];
+        $ownRequests = '';
+        if ($actor['role'] === 'technician') {
+            $ownRequests = ' AND r.requested_by=?';
+            $params[] = $actor['id'];
+        }
+        $counts['pending_requests'] = $this->rows("SELECT COUNT(*) total FROM project_requests r JOIN projects p ON p.id=r.project_id
+            WHERE {$where} AND p.status IN ('scheduled','in_progress') AND r.status='pending'{$ownRequests}", $params)[0]['total'];
+        return array_map('intval', $counts);
+    }
+
     public function detail(int $id, array $actor, int $logPage = 1, int $requestPage = 1): array
     {
         $project = $this->project($id, $actor);

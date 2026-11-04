@@ -66,12 +66,16 @@ try {
     $yesterday = (new DateTimeImmutable($today))->modify('-1 day')->format('Y-m-d');
     $assignment = ['start_date' => $today, 'end_date' => (new DateTimeImmutable($today))->modify('+14 days')->format('Y-m-d'), 'technicians' => [3, 5], 'hours_per_day' => 4];
 
+    $check($w->dashboard($admin)['total_projects'] === 0 && $w->dashboard($tech)['pending_requests'] === 0, 'Empty dashboards return numeric zero');
+    $check($w->dashboard($customer) === [], 'Customer cannot retrieve staff dashboard');
+
     $denied(fn () => $w->registerQuote(0, $data, $calc, 'bill', true, bin2hex(random_bytes(32))), 'Guest cannot register');
     $denied(fn () => $w->registerQuote(1, $data, $calc, 'bill', true, bin2hex(random_bytes(32))), 'Admin cannot impersonate customer');
     $key = bin2hex(random_bytes(32));
     $direct = $w->registerQuote(2, $data, $calc, 'bill', true, $key);
     $id = $direct['project_id'];
     $check($status($id) === 'pending_approval', 'Direct survey awaits project approval');
+    $check($w->dashboard($admin)['pending_projects'] === 1 && $w->dashboard($tech)['total_projects'] === 0, 'Admin sees pending intake; unassigned technician sees none');
     $check($scalar('SELECT status FROM solar_quotes WHERE id=?', [$direct['quote_id']]) === 'draft', 'Survey estimate is not auto-approved');
     $check($scalar('SELECT current_stage FROM projects WHERE id=?', [$id]) === null, 'No active stage before assignment');
     $check((int) $scalar("SELECT COUNT(*) FROM project_stages WHERE project_id=? AND status='locked'", [$id]) === 6, 'All stages locked');
@@ -94,6 +98,11 @@ try {
     $check($scalar('SELECT current_stage FROM projects WHERE id=?', [$id]) === 'survey', 'Survey is first stage');
     $check((int) $scalar("SELECT COUNT(*) FROM project_stages WHERE project_id=? AND status='scheduled'", [$id]) === 1, 'Only first stage scheduled');
     $check(count($w->listing($tech, 'scheduled', 1)['projects']) === 1, 'Assigned technician sees work');
+    $check($w->dashboard($tech)['total_projects'] === 1 && $w->dashboard($tech)['ready_stages'] === 1, 'Technician dashboard counts assigned ready stage');
+    $w->run('INSERT INTO project_assignments (project_id,technician_id,planned_start,planned_end,hours_per_day,assigned_by) VALUES (?,?,?,?,?,?)', [$id, 3, $assignment['start_date'], $assignment['end_date'], 4, 1]);
+    $duplicateAssignment = (int) $db->lastInsertId();
+    $check($w->dashboard($tech)['total_projects'] === 1, 'Repeated assignment does not double count project');
+    $w->run('UPDATE project_assignments SET ended_at=NOW() WHERE id=?', [$duplicateAssignment]);
     $denied(fn () => $w->act($admin, $id, 'assign', $assignment), 'Cannot duplicate crew');
     $denied(fn () => $w->act($tech, $id, 'submit_stage', []), 'Evidence image required');
     foreach (array_keys(Workflow::STAGES) as $i => $stageCode) {
@@ -105,7 +114,11 @@ try {
         $denied(fn () => $w->act($tech, $id, 'submit_stage', ['next_start_date' => $today]), 'Evidence required after starting');
         $w->run("INSERT INTO project_documents (project_id,stage_id,document_type,file_name,file_hash,file_path,file_size_kb,file_type,uploaded_by) VALUES (?,?,'stage_photo','test.png',?,'tests/fixture.png',1,'image/png',3)", [$id, $stageId, hash('sha256', $stageCode)]);
         if ($i === 0) {
+            $check($w->dashboard($tech)['active_stages'] === 1, 'Technician dashboard tracks started stage');
             $w->act($tech, $id, 'postpone', ['reason' => 'Mưa lớn', 'proposed_start' => $today, 'proposed_end' => $tomorrow]);
+            $check($w->dashboard($admin)['pending_requests'] === 1 && $w->dashboard($tech)['pending_requests'] === 1
+                && $w->dashboard(['id' => 5, 'role' => 'technician'])['pending_requests'] === 0,
+                'Admin sees team requests; technician sees own pending requests');
             $denied(fn () => $w->act($tech, $id, 'submit_stage', []), 'Pending postponement requires acknowledgement');
         }
         if ($i < 5) {
@@ -118,9 +131,11 @@ try {
             $check($scalar('SELECT status FROM project_stages WHERE project_id=? AND position=?', [$id,$i+2]) === 'locked', 'Submitting evidence does not open next stage');
         }
         if ($i === 0) {
+            $check($w->dashboard($admin)['pending_stages'] === 1 && $w->dashboard($tech)['pending_stages'] === 1, 'Dashboards track stage awaiting approval');
             $denied(fn () => $w->act($admin, $id, 'reject_stage', []), 'Revision reason required');
             $w->act($admin, $id, 'reject_stage', ['review_note' => 'Bổ sung góc chụp']);
             $check($scalar('SELECT status FROM project_stages WHERE id=?', [$stageId]) === 'revision_required', 'Stage returned for revision');
+            $check($w->dashboard($tech)['revision_stages'] === 1, 'Technician sees required revision');
             $w->act($tech, $id, 'submit_stage', ['acknowledge_postpone' => '1', 'next_start_date' => $today]);
         }
         if ($stageCode === 'procurement') {
@@ -133,6 +148,7 @@ try {
         $denied(fn () => $w->act($admin, $id, 'approve_stage', []), 'Repeated stage approval cannot skip next stage');
     }
     $check($status($id) === 'completed', 'Handover completes project');
+    $check($w->dashboard($admin)['completed_projects'] === 1 && $w->dashboard($tech)['total_projects'] === 0, 'Completion updates admin totals and releases technician dashboard scope');
     $check((int) $scalar('SELECT COUNT(*) FROM project_assignments WHERE project_id=? AND ended_at IS NULL', [$id]) === 0, 'Completion releases crew');
     $check((int) $scalar("SELECT COUNT(*) FROM project_requests WHERE project_id=? AND status='pending'", [$id]) === 0, 'Completion closes pending requests');
     $denied(fn () => $w->act($admin, $id, 'cancel_project', ['review_note' => 'Không hợp lệ']), 'Completed project immutable');
@@ -166,6 +182,7 @@ try {
     $nextId=(int)$scalar("SELECT id FROM project_stages WHERE project_id=? AND stage='design'",[$planProject]);
     $check($scalar('SELECT planned_start FROM project_stages WHERE id=?',[$nextId])===$future, 'Approval uses technician proposed date');
     $check($scalar('SELECT started_at FROM project_stages WHERE id=?',[$nextId])===null, 'Approval never starts next stage clock');
+    $check($w->dashboard($tech)['ready_stages'] === 1 && $w->dashboard($tech)['scheduled_projects'] === 0, 'Ready-stage count includes later stage in an ongoing project');
     $check($scalar('SELECT planned_end_date FROM projects WHERE id=?',[$planProject])===$future, 'Approved execution date extends project estimate when needed');
     $check($scalar('SELECT MIN(planned_end) FROM project_assignments WHERE project_id=? AND ended_at IS NULL',[$planProject])===$future,'Approved execution date extends crew reservations');
     $check((int)$scalar('SELECT COUNT(*) FROM project_stages WHERE project_id=? AND position>2 AND planned_start IS NULL',[$planProject])===4, 'Future stages have no equal time allocation');
