@@ -274,7 +274,6 @@ if ($page === 'profile') {
                 <a href="index.php?page=profile" class="sol-nav-profile-pill" title="Hồ sơ tài khoản">
                     <span class="sol-nav-profile-pill__icon">👤</span>
                     <span class="sol-nav-profile-pill__text">Profile</span>
-                    <span class="sol-nav-profile-pill__badge"><?= htmlspecialchars(strtoupper($currentUser['username'] ?? 'GUEST')) ?></span>
                 </a>
                 <a href="index.php?page=auth&action=logout" class="sol-nav-logout-btn" title="Đăng xuất khỏi hệ thống">
                     <span>🚪</span>
@@ -969,11 +968,8 @@ if ($page === 'profile') {
                 <!-- Hàng hiển thị Profile và Nút Đăng Xuất trên cùng 1 dòng -->
                 <div class="sol-sidebar-footer-row">
                     <a href="index.php?page=profile" class="sol-nav-profile-pill sol-nav-profile-pill--sidebar <?= $page === 'profile' ? 'active' : '' ?>" title="Hồ sơ tài khoản">
-                        <div style="display: flex; align-items: center; gap: 0.45rem; min-width: 0;">
-                            <span class="sol-nav-profile-pill__icon">👤</span>
-                            <span class="sol-nav-profile-pill__text">Profile</span>
-                        </div>
-                        <span class="sol-nav-profile-pill__badge"><?= htmlspecialchars(strtoupper($currentUser['username'] ?? 'GUEST')) ?></span>
+                        <span class="sol-nav-profile-pill__icon">👤</span>
+                        <span class="sol-nav-profile-pill__text">Profile</span>
                     </a>
 
                     <a href="index.php?page=auth&action=logout" class="sol-sidebar-logout-btn" title="Đăng xuất khỏi hệ thống">

@@ -982,8 +982,9 @@ a.sol-header-cart:hover,
 .sol-nav-profile-pill--sidebar {
     flex: 1;
     min-width: 0;
-    justify-content: space-between;
-    padding: 0.5rem 0.65rem;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
     box-sizing: border-box;
 }
 
