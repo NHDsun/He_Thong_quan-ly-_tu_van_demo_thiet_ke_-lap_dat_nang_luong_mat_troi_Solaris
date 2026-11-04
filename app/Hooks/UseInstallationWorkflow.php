@@ -70,18 +70,18 @@ final class UseInstallationWorkflow
             $where .= ' AND EXISTS (SELECT 1 FROM project_assignments a WHERE a.project_id=p.id AND a.technician_id=? AND a.ended_at IS NULL)';
             $params[] = $actor['id'];
         }
-        if (in_array($filter, ['new', 'approved', 'in_progress', 'completed'], true)) {
+        if (in_array($filter, ['new', 'pending_approval', 'approved', 'in_progress', 'completed'], true)) {
             $where .= ' AND p.status=?';
             $params[] = $filter;
         } elseif ($filter === 'pending' && $actor['role'] === 'admin') {
-            $where .= " AND (EXISTS (SELECT 1 FROM project_requests r WHERE r.project_id=p.id AND r.status='pending') OR EXISTS (SELECT 1 FROM project_stages s WHERE s.project_id=p.id AND s.status='pending_approval'))";
+            $where .= " AND (p.status='pending_approval' OR EXISTS (SELECT 1 FROM project_requests r WHERE r.project_id=p.id AND r.status='pending') OR EXISTS (SELECT 1 FROM project_stages s WHERE s.project_id=p.id AND s.status='pending_approval'))";
         }
         $total = (int) $this->rows("SELECT COUNT(*) n FROM projects p WHERE {$where}", $params)[0]['n'];
         $pager = UsePaginationState::make($total, $page);
         $projects = $this->rows("SELECT p.*, (SELECT COUNT(*) FROM project_stages s WHERE s.project_id=p.id AND s.status='approved') approved_count,
             (SELECT COUNT(*) FROM project_assignments a WHERE a.project_id=p.id AND a.ended_at IS NULL) crew_count,
             (SELECT COUNT(*) FROM project_requests r WHERE r.project_id=p.id AND r.status='pending') request_count
-            FROM projects p WHERE {$where} ORDER BY FIELD(p.status,'new','approved','in_progress','completed','cancelled'), p.created_at DESC, p.id DESC LIMIT {$pager['limit']} OFFSET {$pager['offset']}", $params);
+            FROM projects p WHERE {$where} ORDER BY FIELD(p.status,'pending_approval','new','in_progress','approved','completed','cancelled'), p.created_at DESC, p.id DESC LIMIT {$pager['limit']} OFFSET {$pager['offset']}", $params);
         return [
             'projects' => $projects,
             'pager' => $pager,

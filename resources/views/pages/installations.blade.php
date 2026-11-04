@@ -8,25 +8,27 @@ $customer = $actor && $actor['role'] === 'customer';
 if ($admin) {
     $filters = [
         'all' => 'Tất cả',
-        'approved' => 'Đã duyệt',
+        'pending_approval' => 'Chờ duyệt',
         'new' => 'Dự án mới',
         'in_progress' => 'Đang thực hiện',
-        'pending' => 'Chờ phê duyệt',
+        'approved' => 'Đã duyệt',
         'completed' => 'Hoàn tất',
     ];
 } elseif ($customer) {
     $filters = [
         'all' => 'Tất cả dự án của tôi',
-        'approved' => 'Đã duyệt',
+        'pending_approval' => 'Chờ duyệt',
         'new' => 'Chờ triển khai',
         'in_progress' => 'Đang thực hiện',
+        'approved' => 'Đã duyệt',
         'completed' => 'Đã hoàn tất'
     ];
 } else {
     $filters = [
         'all' => 'Dự án của tôi',
-        'approved' => 'Đã duyệt',
+        'pending_approval' => 'Chờ duyệt',
         'in_progress' => 'Đang thực hiện',
+        'approved' => 'Đã duyệt',
     ];
 }
 ?>

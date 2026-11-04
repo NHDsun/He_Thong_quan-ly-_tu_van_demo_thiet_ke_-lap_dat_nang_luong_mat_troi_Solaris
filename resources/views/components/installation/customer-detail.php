@@ -41,7 +41,7 @@ $stageLabels = ['locked' => 'Chưa triển khai', 'in_progress' => 'Đang thực
 </article>
 <ol class="tv4-steps" aria-label="Quy trình dự án của bạn">
     <?php foreach ($detail['stages'] as $stage): ?>
-        <li class="<?= $stage['status'] === 'approved' ? 'done' : ($stage['stage'] === $project['current_stage'] && in_array($project['status'], ['in_progress', 'approved'], true) ? 'current' : '') ?>">
+        <li class="<?= $stage['status'] === 'approved' ? 'done' : ($stage['stage'] === $project['current_stage'] && in_array($project['status'], ['in_progress', 'approved', 'pending_approval', 'new'], true) ? 'current' : '') ?>">
             <a href="#customer-stage-<?= (int) $stage['position'] ?>">
                 <span><?= $stage['status'] === 'approved' ? '✓' : (int) $stage['position'] ?></span>
                 <strong><?= UI::escape(Workflow::STAGES[$stage['stage']]) ?></strong>
