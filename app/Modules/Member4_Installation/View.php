@@ -93,7 +93,7 @@ final class View
 
     public static function label(string $status): string
     {
-        return ['new' => 'Chờ phân công', 'in_progress' => 'Đang thực hiện', 'completed' => 'Hoàn tất',
+        return ['new' => 'Chờ phân công', 'scheduled' => 'Chờ bắt đầu', 'in_progress' => 'Đang thực hiện', 'completed' => 'Hoàn tất',
             'cancelled' => 'Đã hủy', 'locked' => 'Chưa mở', 'pending_approval' => 'Chờ duyệt',
             'revision_required' => 'Cần bổ sung', 'approved' => 'Đã duyệt', 'pending' => 'Chờ duyệt', 'draft' => 'Dự toán nháp',
             'rejected' => 'Từ chối', 'superseded' => 'Đã đóng'] [$status] ?? $status;
@@ -103,6 +103,7 @@ final class View
     {
         return ['project_created' => 'Khởi tạo yêu cầu dự án', 'approve_project' => 'Duyệt triển khai dự án',
             'reject_project' => 'Từ chối yêu cầu dự án', 'project_cancelled' => 'Hủy dự án', 'crew_assigned' => 'Phân công đội ngũ',
+            'project_started' => 'Bắt đầu dự án thực tế', 'stage_scheduled' => 'Duyệt lịch giai đoạn tiếp theo',
             'stage_started' => 'Bắt đầu giai đoạn', 'document_uploaded' => 'Tải minh chứng',
             'stage_submitted' => 'Gửi duyệt giai đoạn', 'approve_stage' => 'Duyệt giai đoạn',
             'reject_stage' => 'Yêu cầu bổ sung', 'postpone_requested' => 'Đề nghị hoãn lịch',

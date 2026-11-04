@@ -11,6 +11,7 @@ if ($admin) {
         'pending' => 'Cần xử lý',
         'pending_approval' => 'Yêu cầu chờ duyệt',
         'new' => 'Dự án mới',
+        'scheduled' => 'Chờ bắt đầu',
         'in_progress' => 'Đang thực hiện',
         'rejected' => 'Bị từ chối',
         'cancelled' => 'Đã hủy',
@@ -21,6 +22,7 @@ if ($admin) {
         'all' => 'Tất cả dự án của tôi',
         'pending_approval' => 'Chờ duyệt',
         'new' => 'Chờ triển khai',
+        'scheduled' => 'Chờ bắt đầu',
         'in_progress' => 'Đang thực hiện',
         'rejected' => 'Bị từ chối',
         'cancelled' => 'Đã hủy',
@@ -29,6 +31,7 @@ if ($admin) {
 } else {
     $filters = [
         'all' => 'Dự án của tôi',
+        'scheduled' => 'Chờ bắt đầu',
         'in_progress' => 'Đang thực hiện',
     ];
 }

@@ -21,7 +21,7 @@ foreach ($detail['stages'] as $stage) {
         $approvedStages++;
     }
 }
-$editable = $project['status'] === 'in_progress';
+$editable = in_array($project['status'], ['scheduled', 'in_progress'], true);
 
 $hasPostpone = false;
 foreach ($detail['requests'] as $request) {
@@ -81,6 +81,7 @@ foreach ($detail['crew'] as $member) {
     <?php if ($project['completed_at']): ?>
         <p>Hoàn tất lúc <?= UI::escape($project['completed_at']) ?></p>
     <?php endif; ?>
+    <p>Bắt đầu thực tế dự án: <?= UI::escape($project['started_at'] ?? 'Chưa bắt đầu') ?></p>
 </article>
 <?php if ($project['reviewed_at']): ?>
     <div class="tv4-notice">Kết quả duyệt lúc <?= UI::escape($project['reviewed_at']) ?>: <?= UI::escape($project['review_note'] ?: UI::label($project['status'])) ?></div>
@@ -105,7 +106,7 @@ foreach ($detail['crew'] as $member) {
         </form>
     </section>
 <?php endif; ?>
-<?php if ($admin && in_array($project['status'], ['pending_approval','new','in_progress'], true)): ?>
+<?php if ($admin && in_array($project['status'], ['pending_approval','new','scheduled','in_progress'], true)): ?>
     <details class="sol-glass-card tv4-panel">
         <summary>Hủy dự án</summary>
         <form method="post" class="tv4-review">
@@ -152,6 +153,18 @@ foreach ($detail['crew'] as $member) {
                     <?php if ($finished): ?><span class="tv4-stage-toggle" aria-hidden="true"></span><?php endif; ?>
                 </<?= $headingTag ?>>
                 <div class="tv4-stage-content">
+                <p class="tv4-muted">Bắt đầu thực tế: <?= UI::escape($stage['started_at'] ?? 'Chưa bắt đầu') ?></p>
+                <?php if ($stage['proposed_next_start']): ?>
+                    <p>Ngày thực thi bước tiếp theo do nhân viên đề xuất: <strong><?= UI::escape($stage['proposed_next_start']) ?></strong></p>
+                <?php endif; ?>
+                <?php if ($active && !$admin && $stage['status'] === 'scheduled'): ?>
+                    <form method="post" class="tv4-review">
+                        <?php UI::form('start_stage'); ?>
+                        <input type="hidden" name="stage_id" value="<?= (int) $stage['id'] ?>">
+                        <p>Ngày dự kiến đã duyệt: <?= UI::escape($stage['planned_start']) ?>. Có thể bắt đầu sớm; hệ thống giữ lịch dự kiến và ghi riêng thời gian thực tế khi nhấn bắt đầu.</p>
+                        <?php UI::component('button', $stage['stage'] === 'survey' ? 'Bắt đầu dự án & khảo sát' : 'Bắt đầu giai đoạn', ['type' => 'submit'], ['disabled' => !$stage['planned_start']]); ?>
+                    </form>
+                <?php endif; ?>
                 <?php if ($stage['stage'] === 'survey'): ?>
                     <?php UI::component('button', 'Phát sinh vật tư', ['variant' => 'outline', 'size' => 'sm'], ['data-material-open' => 'tv4-material-dialog', 'aria-haspopup' => 'dialog', 'aria-controls' => 'tv4-material-dialog']); ?>
                     <?php require __DIR__ . '/material-dialog.php'; ?>
@@ -185,6 +198,7 @@ foreach ($detail['crew'] as $member) {
                 <?php if ($active && !$admin && in_array($stage['status'], ['in_progress','revision_required'], true)): ?>
                     <form method="post" enctype="multipart/form-data" class="tv4-upload">
                         <?php UI::form('upload'); ?>
+                        <input type="hidden" name="stage_id" value="<?= (int) $stage['id'] ?>">
                         <label>
                             Loại tài liệu
                             <select name="document_type">
@@ -222,6 +236,15 @@ foreach ($detail['crew'] as $member) {
                     </form>
                     <form method="post" class="tv4-submit-stage">
                         <?php UI::form('submit_stage'); ?>
+                        <input type="hidden" name="stage_id" value="<?= (int) $stage['id'] ?>">
+                        <?php if ((int) $stage['position'] < 6): ?>
+                            <label>Ngày thực thi dự kiến của bước tiếp theo
+                                <input type="date" name="next_start_date" min="<?= UI::escape($viewData['today']) ?>" value="<?= UI::escape($stage['proposed_next_start'] && $stage['proposed_next_start'] >= $viewData['today'] ? $stage['proposed_next_start'] : $viewData['today']) ?>" required>
+                            </label>
+                            <p class="tv4-muted">Quản lý duyệt hoàn thành bước này đồng thời duyệt lịch dự kiến bước kế tiếp. Nhân viên có thể bắt đầu sớm và ghi nhận thời gian thực tế.</p>
+                        <?php else: ?>
+                            <p>Đây là bước cuối; quản lý duyệt để hoàn tất dự án.</p>
+                        <?php endif; ?>
                         <?php if ($hasPostpone): ?>
                             <div class="tv4-notice">
                                 <strong>Đang có yêu cầu hoãn chờ xử lý.</strong>
@@ -237,8 +260,11 @@ foreach ($detail['crew'] as $member) {
                     </form>
                 <?php elseif ($active && $admin && $stage['status'] === 'pending_approval'): ?>
                     <?php $paymentRequired = $stage['stage'] === 'procurement' && $detail['billing']['summary']['remaining'] > 0; ?>
+                    <?php $scheduleRequired = (int) $stage['position'] < 6 && !$stage['proposed_next_start']; ?>
                     <form method="post" class="tv4-review">
                         <?php UI::csrf(); ?>
+                        <input type="hidden" name="stage_id" value="<?= (int) $stage['id'] ?>">
+                        <?php if ($scheduleRequired): ?><p class="tv4-notice">Chưa có ngày thực thi bước tiếp theo. Hãy yêu cầu nhân viên bổ sung lịch và gửi duyệt lại.</p><?php endif; ?>
                         <?php if ($paymentRequired): $remaining = $detail['billing']['summary']['remaining']; ?>
                             <p class="tv4-notice" role="status">Chưa thể duyệt bước mua sắm. Khách hàng cần thanh toán đủ chi phí dự án, gồm vật tư phát sinh. Còn thiếu <?= number_format($remaining / 100, $remaining % 100 ? 2 : 0, ',', '.') ?> đ. Tải lại trang sau khi khách hàng thanh toán.</p>
                         <?php endif; ?>
@@ -247,7 +273,7 @@ foreach ($detail['crew'] as $member) {
                             <textarea name="review_note" maxlength="5000"></textarea>
                         </label>
                         <div class="tv4-actions">
-                            <?php UI::component('button', 'Duyệt & mở bước tiếp theo', ['type' => 'submit'], ['name' => 'action', 'value' => 'approve_stage', 'disabled' => $paymentRequired]); UI::component('button', 'Yêu cầu bổ sung', ['type' => 'submit', 'variant' => 'outline'], ['name' => 'action', 'value' => 'reject_stage']); ?>
+                            <?php UI::component('button', (int) $stage['position'] < 6 ? 'Duyệt hoàn thành & lịch bước tiếp theo' : 'Duyệt & hoàn tất dự án', ['type' => 'submit'], ['name' => 'action', 'value' => 'approve_stage', 'disabled' => $paymentRequired || $scheduleRequired]); UI::component('button', 'Yêu cầu bổ sung', ['type' => 'submit', 'variant' => 'outline'], ['name' => 'action', 'value' => 'reject_stage']); ?>
                         </div>
                     </form>
                 <?php endif; ?>
@@ -311,7 +337,7 @@ foreach ($detail['crew'] as $member) {
                     <p><?= UI::escape($request['reason']) ?></p>
                     <?php if ($request['request_type'] === 'postpone'): ?>
                         <p>Lịch đề xuất: <?= UI::escape($request['proposed_start']) ?> → <?= UI::escape($request['proposed_end']) ?></p>
-                        <small>Các giai đoạn sau sẽ được dời theo ngày kết thúc mới.</small>
+                        <small>Chỉ cập nhật lịch bước hiện tại; các bước sau được đề xuất và duyệt riêng.</small>
                     <?php else: ?>
                         <p><?= UI::escape($request['old_name']) ?> → <?= UI::escape($request['next_name']) ?></p>
                     <?php endif; ?>
@@ -331,18 +357,18 @@ foreach ($detail['crew'] as $member) {
                 </article>
             <?php endforeach; ?>
         </section>
-        <?php if (!$admin && $editable && $current && in_array($current['status'], ['in_progress','revision_required'], true)): ?>
+        <?php if (!$admin && $editable && $current && in_array($current['status'], ['scheduled','in_progress','revision_required'], true)): ?>
             <section class="sol-glass-card tv4-panel">
                 <h3>Đề xuất hoãn lịch</h3>
                 <form method="post">
                     <?php UI::form('postpone'); ?>
                     <label>
                         Bắt đầu mới
-                        <input type="date" name="proposed_start" min="<?= UI::escape($current['planned_start']) ?>" value="<?= UI::escape($current['planned_start']) ?>" required>
+                        <input type="date" name="proposed_start" min="<?= UI::escape(max($current['planned_start'] ?? $viewData['today'], $viewData['today'])) ?>" value="<?= UI::escape(max($current['planned_start'] ?? $viewData['today'], $viewData['today'])) ?>" required>
                     </label>
                     <label>
-                        Kết thúc mới
-                        <input type="date" name="proposed_end" min="<?= UI::escape($current['planned_end']) ?>" value="<?= UI::escape($current['planned_end']) ?>" required>
+                        Kết thúc dự kiến (nếu có)
+                        <input type="date" name="proposed_end" min="<?= UI::escape($current['planned_end'] ?? $viewData['today']) ?>" value="<?= UI::escape($current['planned_end']) ?>">
                     </label>
                     <label>
                         Lý do

@@ -40,6 +40,11 @@ final class UseInstallationWorkflow
         $query->execute($params);
     }
 
+    public function today(): string
+    {
+        return (string) $this->rows('SELECT CURDATE() today')[0]['today'];
+    }
+
     public function project(int $id, array $actor, bool $lock = false): array
     {
         $project = $this->rows('SELECT * FROM projects WHERE id=?' . ($lock ? ' FOR UPDATE' : ''), [$id])[0] ?? null;
@@ -70,18 +75,18 @@ final class UseInstallationWorkflow
             $where .= ' AND EXISTS (SELECT 1 FROM project_assignments a WHERE a.project_id=p.id AND a.technician_id=? AND a.ended_at IS NULL)';
             $params[] = $actor['id'];
         }
-        if (in_array($filter, ['new', 'pending_approval', 'rejected', 'in_progress', 'completed', 'cancelled'], true)) {
+        if (in_array($filter, ['new', 'scheduled', 'pending_approval', 'rejected', 'in_progress', 'completed', 'cancelled'], true)) {
             $where .= ' AND p.status=?';
             $params[] = $filter;
         } elseif ($filter === 'pending' && $actor['role'] === 'admin') {
-            $where .= " AND (p.status='pending_approval' OR (p.status='in_progress' AND (EXISTS (SELECT 1 FROM project_requests r WHERE r.project_id=p.id AND r.status='pending') OR EXISTS (SELECT 1 FROM project_stages s WHERE s.project_id=p.id AND s.status='pending_approval'))))";
+            $where .= " AND (p.status='pending_approval' OR (p.status IN ('scheduled','in_progress') AND (EXISTS (SELECT 1 FROM project_requests r WHERE r.project_id=p.id AND r.status='pending') OR EXISTS (SELECT 1 FROM project_stages s WHERE s.project_id=p.id AND s.status='pending_approval'))))";
         }
         $total = (int) $this->rows("SELECT COUNT(*) n FROM projects p WHERE {$where}", $params)[0]['n'];
         $pager = UsePaginationState::make($total, $page);
         $projects = $this->rows("SELECT p.*, (SELECT COUNT(*) FROM project_stages s WHERE s.project_id=p.id AND s.status='approved') approved_count,
             (SELECT COUNT(*) FROM project_assignments a WHERE a.project_id=p.id AND a.ended_at IS NULL) crew_count,
             (SELECT COUNT(*) FROM project_requests r WHERE r.project_id=p.id AND r.status='pending') request_count
-            FROM projects p WHERE {$where} ORDER BY FIELD(p.status,'pending_approval','new','in_progress','completed','rejected','cancelled'), p.created_at DESC, p.id DESC LIMIT {$pager['limit']} OFFSET {$pager['offset']}", $params);
+            FROM projects p WHERE {$where} ORDER BY FIELD(p.status,'pending_approval','new','scheduled','in_progress','completed','rejected','cancelled'), p.created_at DESC, p.id DESC LIMIT {$pager['limit']} OFFSET {$pager['offset']}", $params);
         return [
             'projects' => $projects,
             'pager' => $pager,
@@ -96,12 +101,12 @@ final class UseInstallationWorkflow
             $summary = [];
             foreach (['id', 'contract_code', 'project_name', 'capacity_kwp', 'total_amount',
                 'installation_address', 'status', 'current_stage', 'start_date',
-                'planned_end_date', 'completion_date', 'completed_at', 'reviewed_at', 'review_note', 'cancel_reason'] as $field) {
+                'planned_end_date', 'completion_date', 'completed_at', 'started_at', 'reviewed_at', 'review_note', 'cancel_reason'] as $field) {
                 $summary[$field] = $project[$field];
             }
             return [
                 'project' => $summary,
-                'stages' => $this->rows('SELECT stage,position,status,planned_start,planned_end,started_at,completed_at FROM project_stages WHERE project_id=? ORDER BY position', [$id]),
+                'stages' => $this->rows('SELECT stage,position,status,planned_start,planned_end,started_at,completed_at,proposed_next_start FROM project_stages WHERE project_id=? ORDER BY position', [$id]),
                 'crew' => $this->rows('SELECT u.full_name FROM project_assignments a JOIN users u ON u.id=a.technician_id WHERE a.project_id=? AND a.ended_at IS NULL ORDER BY a.id', [$id]),
                 'documents' => [],
             ];
@@ -165,8 +170,8 @@ final class UseInstallationWorkflow
         $technicians = $this->rows("SELECT id,full_name FROM users WHERE role='technician' ORDER BY full_name,id LIMIT {$pager['limit']} OFFSET {$pager['offset']}");
         foreach ($technicians as $index => $tech) {
             $tech['bookings'] = $this->rows("SELECT a.*,p.project_name,p.contract_code FROM project_assignments a JOIN projects p ON p.id=a.project_id
-                WHERE a.technician_id=? AND a.ended_at IS NULL AND p.status='in_progress' AND a.planned_start<=? AND a.planned_end>=? AND (? IS NULL OR p.id<>?) ORDER BY a.planned_start", [$tech['id'], $end, $start, $excludeProject, $excludeProject]);
-            $tech['project_count'] = (int) $this->rows("SELECT COUNT(DISTINCT a.project_id) n FROM project_assignments a JOIN projects p ON p.id=a.project_id WHERE a.technician_id=? AND a.ended_at IS NULL AND p.status='in_progress' AND (? IS NULL OR p.id<>?)", [$tech['id'], $excludeProject, $excludeProject])[0]['n'];
+                WHERE a.technician_id=? AND a.ended_at IS NULL AND p.status IN ('scheduled','in_progress') AND a.planned_start<=? AND a.planned_end>=? AND (? IS NULL OR p.id<>?) ORDER BY a.planned_start", [$tech['id'], $end, $start, $excludeProject, $excludeProject]);
+            $tech['project_count'] = (int) $this->rows("SELECT COUNT(DISTINCT a.project_id) n FROM project_assignments a JOIN projects p ON p.id=a.project_id WHERE a.technician_id=? AND a.ended_at IS NULL AND p.status IN ('scheduled','in_progress') AND (? IS NULL OR p.id<>?)", [$tech['id'], $excludeProject, $excludeProject])[0]['n'];
             $hours = 0;
             foreach ($tech['bookings'] as $booking) {
                 $hours += self::workdays(max($start, $booking['planned_start']), min($end, $booking['planned_end'])) * (float) $booking['hours_per_day'];
@@ -246,7 +251,7 @@ final class UseInstallationWorkflow
                 $this->db->commit();
                 return;
             }
-            if ($project['status'] !== 'in_progress') {
+            if (!in_array($project['status'], ['scheduled', 'in_progress'], true)) {
                 throw new RuntimeException('Dự án chưa bắt đầu triển khai.');
             }
 
@@ -258,8 +263,15 @@ final class UseInstallationWorkflow
             if (!$stage) {
                 throw new RuntimeException('Dự án chưa được khởi tạo đủ giai đoạn.');
             }
+            if (isset($data['stage_id']) && (int) $data['stage_id'] !== (int) $stage['id']) {
+                throw new RuntimeException('Giai đoạn đã thay đổi. Hãy tải lại trang.');
+            }
 
             switch ($action) {
+                case 'start_stage':
+                    $this->requireTechnician($project, $actor);
+                    $this->startStage($project, $stage, $actor, $data);
+                    break;
                 case 'add_material':
                     (new UseProjectBilling($this))->add($project, $actor, $data);
                     break;
@@ -304,9 +316,35 @@ final class UseInstallationWorkflow
 
     private function requireTechnician(array $project, array $actor): void
     {
-        if ($actor['role'] !== 'technician' || $project['status'] !== 'in_progress') {
+        if ($actor['role'] !== 'technician' || !in_array($project['status'], ['scheduled', 'in_progress'], true)) {
             throw new RuntimeException('Chỉ kỹ thuật viên được phân công mới được gửi cập nhật.');
         }
+    }
+
+    private function startStage(array $project, array $stage, array $actor, array $data): void
+    {
+        if ((int) ($data['stage_id'] ?? 0) !== (int) $stage['id'] || $stage['status'] !== 'scheduled') {
+            throw new RuntimeException('Giai đoạn không còn chờ bắt đầu. Hãy tải lại trang.');
+        }
+        if (!$stage['planned_start']) {
+            throw new RuntimeException('Giai đoạn chưa có lịch được duyệt.');
+        }
+        if ($this->rows("SELECT id FROM project_stages WHERE project_id=? AND position<? AND status<>'approved'", [$project['id'], $stage['position']])) {
+            throw new RuntimeException('Giai đoạn trước chưa được duyệt hoàn thành.');
+        }
+        $this->run("UPDATE project_stages SET status='in_progress',started_at=NOW() WHERE id=?", [$stage['id']]);
+        if ($stage['stage'] === 'survey') {
+            $this->run("UPDATE projects SET status='in_progress',started_at=COALESCE(started_at,NOW()) WHERE id=?", [$project['id']]);
+            $this->log($project, $actor, 'project_started', 'scheduled', 'in_progress');
+        }
+        $this->extendSchedule($project, $this->today());
+        $this->log($project, $actor, 'stage_started', 'scheduled', 'in_progress');
+    }
+
+    private function extendSchedule(array $project, string $date): void
+    {
+        $this->run('UPDATE projects SET planned_end_date=GREATEST(COALESCE(planned_end_date,?),?) WHERE id=?', [$date, $date, $project['id']]);
+        $this->run('UPDATE project_assignments SET planned_end=GREATEST(planned_end,?) WHERE project_id=? AND ended_at IS NULL', [$date, $project['id']]);
     }
 
     private function reviewProject(array $project, array $actor, string $action, array $data): void
@@ -340,6 +378,10 @@ final class UseInstallationWorkflow
             throw new RuntimeException('Giai đoạn không còn chờ duyệt.');
         }
         $approved = $action === 'approve_stage';
+        $next = $this->rows('SELECT * FROM project_stages WHERE project_id=? AND position=?', [$id, $stage['position'] + 1])[0] ?? null;
+        if ($approved && $next && !$stage['proposed_next_start']) {
+            throw new RuntimeException('Nhân viên chưa đề xuất ngày thực thi giai đoạn tiếp theo. Hãy yêu cầu bổ sung.');
+        }
         if ($approved && $stage['stage'] === 'procurement') {
             $billing = (new UseProjectBilling($this))->summary($project);
             if ($billing['remaining'] > 0) {
@@ -353,12 +395,14 @@ final class UseInstallationWorkflow
         $this->log($project, $actor, $action, $stage['status'], $nextStatus, $note);
         if ($approved) {
             $this->closeRequests($project, $actor, (int) $stage['id'], 'Giai đoạn đã hoàn thành.');
-            $next = $this->rows('SELECT * FROM project_stages WHERE project_id=? AND position=?', [$id, $stage['position'] + 1])[0] ?? null;
             if ($next) {
-                $this->run("UPDATE project_stages SET status='in_progress',started_at=NOW() WHERE id=?", [$next['id']]);
+                $date = $stage['proposed_next_start'];
+                self::date($date);
+                $this->run("UPDATE project_stages SET status='scheduled',planned_start=?,planned_end=NULL,started_at=NULL WHERE id=?", [$date, $next['id']]);
                 $this->run('UPDATE projects SET current_stage=? WHERE id=?', [$next['stage'], $id]);
+                $this->extendSchedule($project, $date);
                 $project['current_stage'] = $next['stage'];
-                $this->log($project, $actor, 'stage_started', 'locked', 'in_progress');
+                $this->log($project, $actor, 'stage_scheduled', 'locked', 'scheduled', 'Ngày thực thi được duyệt: ' . $date);
             } else {
                 $this->run("UPDATE projects SET status='completed',completion_date=CURDATE(),completed_at=NOW() WHERE id=?", [$id]);
                 $this->run('UPDATE project_assignments SET ended_at=NOW() WHERE project_id=? AND ended_at IS NULL', [$id]);
@@ -401,8 +445,20 @@ final class UseInstallationWorkflow
         if ($pending && ($data['acknowledge_postpone'] ?? '') !== '1') {
             throw new RuntimeException('Có yêu cầu hoãn đang chờ duyệt. Hãy xác nhận đã tiếp tục công việc trước khi gửi duyệt giai đoạn.');
         }
-        $this->run("UPDATE project_stages SET status='pending_approval',submitted_at=NOW(),submitted_by=?,review_note=NULL,reviewed_at=NULL,reviewed_by=NULL WHERE id=?", [$actor['id'], $stage['id']]);
-        $this->log($project, $actor, 'stage_submitted', $stage['status'], 'pending_approval', $pending ? 'Đã xác nhận tiếp tục công việc trong khi yêu cầu hoãn còn chờ.' : '');
+        $nextDate = null;
+        if ((int) $stage['position'] < count(self::STAGES)) {
+            $nextDate = (string) ($data['next_start_date'] ?? '');
+            if ($nextDate === '') {
+                throw new RuntimeException('Chọn ngày thực thi bước tiếp theo trước khi gửi duyệt.');
+            }
+            self::date($nextDate);
+            if ($nextDate < $this->today()) {
+                throw new RuntimeException('Ngày thực thi bước tiếp theo không được trước hôm nay.');
+            }
+            self::workdays(min($project['start_date'] ?? $this->today(), $this->today()), $nextDate);
+        }
+        $this->run("UPDATE project_stages SET status='pending_approval',proposed_next_start=?,submitted_at=NOW(),submitted_by=?,review_note=NULL,reviewed_at=NULL,reviewed_by=NULL WHERE id=?", [$nextDate, $actor['id'], $stage['id']]);
+        $this->log($project, $actor, 'stage_submitted', $stage['status'], 'pending_approval', trim(($pending ? 'Đã xác nhận tiếp tục công việc. ' : '') . ($nextDate ? 'Đề xuất bước tiếp theo: ' . $nextDate : 'Gửi duyệt bàn giao cuối cùng.')));
     }
 
     private function admin(array $actor): void
@@ -422,9 +478,7 @@ final class UseInstallationWorkflow
         }
         $start = (string) ($data['start_date'] ?? '');
         $end = (string) ($data['end_date'] ?? '');
-        if (self::workdays($start, $end) < 6) {
-            throw new RuntimeException('Lịch dự án cần ít nhất 6 ngày làm việc (thứ Hai đến thứ Sáu).');
-        }
+        self::workdays($start, $end);
         $technicianIds = [];
         foreach ((array) ($data['technicians'] ?? []) as $value) {
             $technicianId = (int) $value;
@@ -443,23 +497,10 @@ final class UseInstallationWorkflow
             $this->technician($tech);
             $this->run('INSERT INTO project_assignments (project_id,technician_id,planned_start,planned_end,hours_per_day,assigned_by) VALUES (?,?,?,?,?,?)', [$project['id'], $tech, $start, $end, $hours, $actor['id']]);
         }
-        // Chia đều số ngày làm việc của dự án cho sáu giai đoạn.
-        $workingDates = [];
-        for ($day = self::date($start); $day <= self::date($end); $day = $day->modify('+1 day')) {
-            if ($day->format('N') <= 5) {
-                $workingDates[] = $day->format('Y-m-d');
-            }
-        }
-        $totalDays = count($workingDates);
-        foreach (array_keys(self::STAGES) as $stageIndex => $stageCode) {
-            $startIndex = (int) floor($stageIndex * $totalDays / 6);
-            $endIndex = (int) floor(($stageIndex + 1) * $totalDays / 6) - 1;
-            $this->run('UPDATE project_stages SET planned_start=?,planned_end=?,status=?,started_at=IF(?=0,NOW(),NULL) WHERE project_id=? AND stage=?', [$workingDates[$startIndex], $workingDates[$endIndex], $stageIndex === 0 ? 'in_progress' : 'locked', $stageIndex, $project['id'], $stageCode]);
-        }
-        $this->run("UPDATE projects SET status='in_progress',current_stage='survey',technician_id=?,start_date=?,planned_end_date=? WHERE id=?", [$technicianIds[0], $start, $end, $project['id']]);
-        $this->log($project, $actor, 'crew_assigned', 'new', 'in_progress', 'Nhóm: ' . implode(', ', $technicianIds) . '; ' . $hours . ' giờ/người/ngày.');
-        $project['current_stage'] = 'survey';
-        $this->log($project, $actor, 'stage_started', 'locked', 'in_progress');
+        $this->run("UPDATE project_stages SET status='locked',planned_start=NULL,planned_end=NULL,started_at=NULL WHERE project_id=?", [$project['id']]);
+        $this->run("UPDATE project_stages SET status='scheduled',planned_start=? WHERE project_id=? AND stage='survey'", [$start, $project['id']]);
+        $this->run("UPDATE projects SET status='scheduled',current_stage='survey',technician_id=?,start_date=?,planned_end_date=? WHERE id=?", [$technicianIds[0], $start, $end, $project['id']]);
+        $this->log($project, $actor, 'crew_assigned', 'new', 'scheduled', 'Nhóm: ' . implode(', ', $technicianIds) . '; ' . $hours . ' giờ/người/ngày. Khảo sát dự kiến: ' . $start);
     }
 
     private function technician(int $id): void
@@ -471,7 +512,7 @@ final class UseInstallationWorkflow
 
     private function request(array $project, array $stage, array $actor, string $type, array $data): void
     {
-        if (!in_array($stage['status'], ['in_progress', 'revision_required'], true)) {
+        if (!in_array($stage['status'], ['scheduled', 'in_progress', 'revision_required'], true)) {
             throw new RuntimeException('Không gửi yêu cầu mới khi giai đoạn đang chờ duyệt hoặc đã hoàn thành.');
         }
         if ($this->rows("SELECT id FROM project_requests WHERE stage_id=? AND request_type=? AND status='pending'", [$stage['id'], $type])) {
@@ -481,10 +522,15 @@ final class UseInstallationWorkflow
         $start = $end = $old = $next = null;
         if ($type === 'postpone') {
             $start = (string) ($data['proposed_start'] ?? '');
-            $end = (string) ($data['proposed_end'] ?? '');
-            if (self::workdays($start, $end) < 1 || $start < $stage['planned_start'] || $end < $stage['planned_end']) {
-                throw new RuntimeException('Lịch hoãn phải có ngày làm việc và không sớm hơn lịch giai đoạn hiện tại.');
+            $end = trim((string) ($data['proposed_end'] ?? '')) ?: null;
+            self::date($start);
+            if ($end) {
+                self::date($end);
             }
+            if ($start < max($stage['planned_start'] ?? $this->today(), $this->today()) || ($end && ($end < $start || $end < ($stage['planned_end'] ?? $start)))) {
+                throw new RuntimeException('Lịch hoãn không được trước hôm nay hoặc sớm hơn lịch giai đoạn hiện tại.');
+            }
+            self::workdays(min($project['start_date'] ?? $this->today(), $this->today()), $end ?? $start);
         } else {
             $old = (int) ($data['old_technician_id'] ?? 0);
             $next = (int) ($data['proposed_technician_id'] ?? 0);
@@ -516,16 +562,16 @@ final class UseInstallationWorkflow
             throw new RuntimeException('Giai đoạn đang chờ duyệt hoàn thành. Hãy duyệt hoặc trả giai đoạn về bổ sung trước khi duyệt hoãn/đổi người.');
         }
         if ($approved && $request['request_type'] === 'postpone') {
-            $shift = (int) self::date($stage['planned_end'])->diff(self::date($request['proposed_end']))->format('%r%a');
             $this->run('UPDATE project_stages SET planned_start=?,planned_end=? WHERE id=?', [$request['proposed_start'], $request['proposed_end'], $stage['id']]);
-            $this->run('UPDATE project_stages SET planned_start=DATE_ADD(planned_start,INTERVAL ? DAY),planned_end=DATE_ADD(planned_end,INTERVAL ? DAY) WHERE project_id=? AND position>?', [$shift, $shift, $project['id'], $stage['position']]);
-            $this->run('UPDATE projects SET planned_end_date=DATE_ADD(planned_end_date,INTERVAL ? DAY) WHERE id=?', [$shift, $project['id']]);
-            $this->run('UPDATE project_assignments SET planned_end=DATE_ADD(planned_end,INTERVAL ? DAY) WHERE project_id=? AND ended_at IS NULL', [$shift, $project['id']]);
-            $note = trim($note . ' Dời các bước sau thêm ' . $shift . ' ngày lịch.');
+            $this->extendSchedule($project, $request['proposed_end'] ?? $request['proposed_start']);
+            if ($stage['stage'] === 'survey' && !$project['started_at']) {
+                $this->run('UPDATE projects SET start_date=? WHERE id=?', [$request['proposed_start'], $project['id']]);
+            }
+            $note = trim($note . ' Chỉ cập nhật lịch giai đoạn hiện tại; bước tiếp theo được đề xuất khi gửi duyệt.');
         } elseif ($approved) {
             $assignment = $this->replacementValid((int) $project['id'], (int) $request['old_technician_id'], (int) $request['proposed_technician_id']);
             $this->run('UPDATE project_assignments SET ended_at=NOW() WHERE id=?', [$assignment['id']]);
-            $start = max(date('Y-m-d'), $assignment['planned_start']);
+            $start = max($this->today(), $assignment['planned_start']);
             $end = max($start, $assignment['planned_end']);
             $this->run('INSERT INTO project_assignments (project_id,technician_id,planned_start,planned_end,hours_per_day,assigned_by) VALUES (?,?,?,?,?,?)', [$project['id'], $request['proposed_technician_id'], $start, $end, $assignment['hours_per_day'], $actor['id']]);
             if ((int) $project['technician_id'] === (int) $request['old_technician_id']) {

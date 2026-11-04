@@ -9,7 +9,7 @@ require_once dirname(__DIR__) . '/app/Config/Database.php';
 $db = App\Config\Database::getConnection();
 $db->exec("CREATE TABLE IF NOT EXISTS schema_migrations (version VARCHAR(100) PRIMARY KEY,applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
 $pending = [];
-foreach (['20261104_project_workflow', '20261104_project_billing'] as $version) {
+foreach (['20261104_project_workflow', '20261104_project_billing', '20261104_stage_schedule'] as $version) {
     $q = $db->prepare('SELECT version FROM schema_migrations WHERE version=?');
     $q->execute([$version]);
     if (!$q->fetchColumn()) {

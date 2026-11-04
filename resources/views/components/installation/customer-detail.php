@@ -15,7 +15,7 @@ foreach ($detail['stages'] as $stage) {
         $approved++;
     }
 }
-$stageLabels = ['locked' => 'Chưa triển khai', 'in_progress' => 'Đang thực hiện',
+$stageLabels = ['locked' => 'Chưa triển khai', 'scheduled' => 'Chờ bắt đầu', 'in_progress' => 'Đang thực hiện',
     'revision_required' => 'Đang bổ sung hồ sơ', 'pending_approval' => 'Chờ xác nhận hoàn thành', 'approved' => 'Đã hoàn thành'];
 ?>
 <a class="tv4-back" href="index.php?page=installations">← Dự án của tôi</a>
@@ -37,6 +37,7 @@ $stageLabels = ['locked' => 'Chưa triển khai', 'in_progress' => 'Đang thực
             <?php foreach ($detail['crew'] as $member): ?><span><?= UI::escape($member['full_name']) ?></span><?php endforeach; ?>
         </div></div>
     <?php endif; ?>
+    <p>Bắt đầu thực tế dự án: <?= UI::escape($project['started_at'] ?? 'Chưa bắt đầu') ?></p>
     <?php if ($project['completed_at']): ?><p>Hoàn tất dự án: <?= UI::escape($project['completed_at']) ?></p><?php endif; ?>
 </article>
 <?php if ($project['reviewed_at']): ?>
@@ -47,7 +48,7 @@ $stageLabels = ['locked' => 'Chưa triển khai', 'in_progress' => 'Đang thực
 <?php endif; ?>
 <ol class="tv4-steps" aria-label="Quy trình dự án của bạn">
     <?php foreach ($detail['stages'] as $stage): ?>
-        <li class="<?= $stage['status'] === 'approved' ? 'done' : ($stage['stage'] === $project['current_stage'] && $project['status'] === 'in_progress' ? 'current' : '') ?>">
+        <li class="<?= $stage['status'] === 'approved' ? 'done' : ($stage['stage'] === $project['current_stage'] && in_array($project['status'], ['scheduled','in_progress'], true) ? 'current' : '') ?>">
             <a href="#customer-stage-<?= (int) $stage['position'] ?>">
                 <span><?= $stage['status'] === 'approved' ? '✓' : (int) $stage['position'] ?></span>
                 <strong><?= UI::escape(Workflow::STAGES[$stage['stage']]) ?></strong>
@@ -61,7 +62,7 @@ $stageLabels = ['locked' => 'Chưa triển khai', 'in_progress' => 'Đang thực
     <?php foreach ($detail['stages'] as $stage): ?>
         <?php
             $finished = $stage['status'] === 'approved';
-            $active = $project['status'] === 'in_progress' && $stage['stage'] === $project['current_stage'];
+            $active = in_array($project['status'], ['scheduled','in_progress'], true) && $stage['stage'] === $project['current_stage'];
             $stageTag = $finished ? 'details' : 'article';
             $headingTag = $finished ? 'summary' : 'div';
         ?>

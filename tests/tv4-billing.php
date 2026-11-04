@@ -51,7 +51,7 @@ try {
     $customer = ['id' => 4, 'role' => 'customer'];
     $other = ['id' => 5, 'role' => 'customer'];
     $material = ['product_id' => 1, 'quantity' => 2, 'material_reason' => 'Cáp dài hơn sau khảo sát'];
-    foreach (['pending_approval', 'new', 'rejected'] as $notStarted) {
+    foreach (['pending_approval', 'new', 'scheduled', 'rejected'] as $notStarted) {
         $w->run('UPDATE projects SET status=? WHERE id=1', [$notStarted]);
         $reject(fn () => $w->act($customer, 1, 'pay_project', ['expected_remaining' => '10000000', 'confirm_simulation' => '1']), 'Không thanh toán dự án ' . $notStarted);
         $reject(fn () => $w->act($admin, 1, 'add_material', $material), 'Không phát sinh vật tư dự án ' . $notStarted);
@@ -120,6 +120,7 @@ try {
     foreach (array_keys(Workflow::STAGES) as $i => $code) {
         $w->run('INSERT INTO project_stages (project_id,stage,position,status) VALUES (2,?,?,?)', [$code, $i + 1, $i < 2 ? 'approved' : ($i === 2 ? 'in_progress' : 'locked')]);
     }
+    $w->run('UPDATE project_stages SET proposed_next_start=CURDATE() WHERE project_id=2');
     $w->act($admin, 2, 'add_material', ['product_id' => 1, 'quantity' => 1, 'material_reason' => 'Bổ sung trước khi duyệt mua sắm']);
     $w->run("UPDATE project_stages SET status='pending_approval' WHERE project_id=2 AND stage='procurement'");
     $before = count($w->rows('SELECT id FROM project_stage_logs WHERE project_id=2'));
@@ -141,7 +142,7 @@ try {
     $w->act($admin, 2, 'approve_stage', []);
     $check($w->project(2, $admin)['current_stage'] === 'installation'
         && $w->rows("SELECT status FROM project_stages WHERE project_id=2 AND stage='procurement'")[0]['status'] === 'approved'
-        && $w->rows("SELECT status FROM project_stages WHERE project_id=2 AND stage='installation'")[0]['status'] === 'in_progress',
+        && $w->rows("SELECT status FROM project_stages WHERE project_id=2 AND stage='installation'")[0]['status'] === 'scheduled',
         'Thanh toán đủ cả phát sinh mới duyệt và mở bước thi công');
     echo "{$count} kiểm tra thành công.\n";
 } finally {

@@ -269,4 +269,6 @@ INSERT INTO `ct_hoadon` (`So_hoa_don`, `Ma_sua`, `So_luong`, `Don_gia`) VALUES
 ('HD005', 'SUA006', 10, 26000.00),
 ('HD005', 'SUA008', 4, 30000.00);
 
+UPDATE projects p JOIN (SELECT project_id,MIN(started_at) first_start FROM project_stages WHERE started_at IS NOT NULL GROUP BY project_id) s ON s.project_id=p.id SET p.started_at=s.first_start WHERE p.started_at IS NULL AND p.status IN ('in_progress','completed');
+
 SET FOREIGN_KEY_CHECKS = 1;

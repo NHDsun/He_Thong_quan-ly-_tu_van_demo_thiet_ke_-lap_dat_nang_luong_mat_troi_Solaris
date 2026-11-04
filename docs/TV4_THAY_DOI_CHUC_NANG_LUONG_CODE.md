@@ -213,7 +213,7 @@ Quy trình hiện tại được mô tả tại [PROJECT_WORKFLOW.md](PROJECT_WO
 - Cả hai đường đều tạo sáu giai đoạn `locked`, chưa đặt `current_stage` và chưa phân công kỹ thuật viên.
 - Admin duyệt yêu cầu bằng `approve_project` để chuyển `new`, hoặc `reject_project` để từ chối có lý do.
 - `createFromApprovedQuote(quoteId, adminId)` vẫn là điểm tích hợp cho báo giá đã duyệt; trả lại ID cũ nếu đã có dự án, nếu chưa thì tạo yêu cầu `pending_approval`.
-- Admin phân công xong thì bắt đầu dự án ngay, không cần nhân viên xác nhận.
+- Admin phân công xong thì chờ nhân viên bắt đầu thực thi; từng bước được lên lịch riêng khi gửi duyệt.
 
 ### 5.3. Phân công nhiều kỹ thuật viên
 
@@ -224,8 +224,8 @@ Admin mở dự án mới
     -> gửi action=assign
     -> kiểm tra ngày, số người, vai trò và số giờ
     -> thêm các dòng project_assignments
-    -> chia ngày làm việc cho 6 giai đoạn
-    -> mở bước survey và đổi dự án sang in_progress
+    -> lên lịch survey, năm bước sau chưa có lịch
+    -> dự án scheduled, nhân viên nhấn start_stage để ghi giờ thực tế và chuyển in_progress
 ```
 
 `projects.technician_id` lưu người đầu tiên trong nhóm để tương thích thiết kế trước. Quyền dự án của cả nhóm được kiểm tra bằng `project_assignments`, không chỉ bằng cột này.
@@ -257,7 +257,8 @@ Admin gửi action=approve_stage
     -> kiểm tra giai đoạn đang chờ duyệt
     -> chuyển sang approved
     -> đóng các yêu cầu còn chờ của giai đoạn
-    -> mở bước tiếp theo, hoặc hoàn tất dự án nếu là bước 6
+    -> duyệt ngày thực thi do nhân viên đề xuất, bước tiếp theo chờ bắt đầu
+    -> nhân viên nhấn start_stage, có thể sớm hơn lịch dự kiến; hoặc hoàn tất dự án nếu là bước 6
 ```
 
 Nếu admin gửi `reject_stage`, lý do là bắt buộc và trạng thái chuyển sang `revision_required`. Kỹ thuật viên có thể bổ sung tài liệu và gửi duyệt lại. Bước tiếp theo vẫn khóa.
@@ -270,9 +271,7 @@ Nếu admin gửi `reject_stage`, lý do là bắt buộc và trạng thái chuy
 4. Nếu gửi duyệt hoàn thành khi yêu cầu hoãn vẫn chờ, phải xác nhận `acknowledge_postpone=1`.
 5. Khi giai đoạn được duyệt hoàn thành, yêu cầu hoãn còn chờ được đóng với trạng thái `superseded`.
 
-Nếu admin chấp thuận hoãn trước khi gửi duyệt hoàn thành, lịch giai đoạn được thay đổi. Ngày kết thúc các bước sau, dự án và phân công nhóm được dời theo chênh lệch ngày kết thúc cũ/mới.
-
-Ví dụ: ngày kết thúc giai đoạn đổi từ 10/11 sang 13/11 thì các bước sau dời thêm 3 ngày lịch. Cơ chế dời không tự bỏ cuối tuần.
+Nếu admin chấp thuận hoãn, chỉ lịch bước hiện tại được cập nhật. Không tự dời các bước sau; nhân viên đề xuất ngày bước kế tiếp khi gửi duyệt. Xem [PROJECT_WORKFLOW.md](PROJECT_WORKFLOW.md) cho cơ chế thời gian hiện tại.
 
 Khi giai đoạn đang `pending_approval`, hệ thống chặn **chấp thuận** yêu cầu hoãn/đổi người. Admin cần duyệt hoàn thành hoặc trả giai đoạn về bổ sung trước khi chấp thuận yêu cầu đó; thao tác từ chối yêu cầu vẫn có thể thực hiện nếu yêu cầu còn hợp lệ.
 

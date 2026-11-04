@@ -1,14 +1,14 @@
 # Quy trình đăng ký và triển khai dự án
 
-Cập nhật ngày 04/11/2026. Nhân viên không cần xác nhận nhận việc: admin phân công thành công là dự án bắt đầu.
+Cập nhật ngày 04/11/2026. Sau phân công, dự án chờ nhân viên nhấn bắt đầu thực thi. Mỗi bước có lịch riêng do nhân viên đề xuất và admin duyệt; không chia đều sáu bước theo lịch ban đầu.
 
 ## Trạng thái
 
 | Đối tượng | Trạng thái |
 | --- | --- |
 | Phương án / báo giá | `draft`, `pending_approval`, `approved`, `rejected` |
-| Dự án | `pending_approval`, `rejected`, `new`, `in_progress`, `completed`, `cancelled` |
-| Giai đoạn | `locked`, `in_progress`, `pending_approval`, `revision_required`, `approved` |
+| Dự án | `pending_approval`, `rejected`, `new`, `scheduled`, `in_progress`, `completed`, `cancelled` |
+| Giai đoạn | `locked`, `scheduled`, `in_progress`, `pending_approval`, `revision_required`, `approved` |
 
 `approved` chỉ dùng cho phương án và giai đoạn. Dự án được duyệt mang trạng thái `new` (chờ phân công). `projects.current_stage` là NULL trước khi phân công. Hủy dự án giữ lại giai đoạn đang làm để tra cứu lịch sử.
 
@@ -17,7 +17,7 @@ Cập nhật ngày 04/11/2026. Nhân viên không cần xác nhận nhận việ
 1. **Khảo sát trực tiếp:** khách hàng đăng nhập → demo theo hóa đơn → đăng ký khảo sát → tạo dự án `pending_approval` và sáu giai đoạn `locked`. Phương án giữ `draft` vì chưa phải báo giá được quản lý chấp thuận.
 2. **Kế hoạch dự định:** chọn thiết bị → demo theo kế hoạch → gửi phương án `pending_approval` → admin duyệt phương án → tạo dự án `pending_approval` và sáu giai đoạn `locked`.
 
-Cả hai tiếp tục: admin duyệt triển khai → `new` → chọn nhân viên, khoảng ngày và giờ/ngày → `in_progress`, mở khảo sát ngay. Hai lần duyệt của đường kế hoạch có mục đích riêng: duyệt cấu hình/dự toán và duyệt tiếp nhận triển khai.
+Cả hai tiếp tục: admin duyệt triển khai → `new` → chọn nhân viên, khoảng ngày tham khảo và giờ/ngày → `scheduled` (chờ bắt đầu), lên lịch khảo sát. Nhân viên nhấn bắt đầu khảo sát (có thể sớm hơn lịch dự kiến) → `in_progress`, ghi `projects.started_at` và `project_stages.started_at`. Hai lần duyệt của đường kế hoạch có mục đích riêng: duyệt cấu hình/dự toán và duyệt tiếp nhận triển khai.
 
 Nút **Lưu dự toán nháp** chỉ lưu phương án. Khách có thể gửi dự toán đã lưu từ danh sách; hệ thống dùng nguồn `source` đã lưu để chọn đúng đường xử lý. Mỗi báo giá chỉ liên kết tối đa một dự án qua UNIQUE `projects.quote_id`. `request_key` duy nhất ngăn gửi lại biểu mẫu tạo trùng.
 
@@ -26,10 +26,20 @@ Nút **Lưu dự toán nháp** chỉ lưu phương án. Khách có thể gửi d
 - Khách hàng dùng trang Tư vấn & Demo để gửi yêu cầu, xem phương án và dự án của mình. Người chưa đăng nhập hoặc tài khoản nội bộ không được đăng ký thay khách.
 - Admin dùng liên kết **Duyệt phương án từ kế hoạch dự định** ở trang lắp đặt; duyệt/từ chối phương án tại danh sách trên trang tư vấn. Duyệt phương án không tự duyệt triển khai.
 - Admin dùng bộ lọc **Yêu cầu chờ duyệt** để duyệt hoặc từ chối dự án, sau đó phân công tại **Dự án mới**. Bộ lọc **Cần xử lý** gồm yêu cầu dự án, giai đoạn và yêu cầu phát sinh còn chờ xử lý của dự án đang làm.
-- Chỉ kỹ thuật viên còn được phân công mới được upload, gửi duyệt hoặc đề nghị hoãn/đổi người. Không có bước nhận lời mời tham gia.
+- Chỉ kỹ thuật viên còn được phân công mới được upload, gửi duyệt hoặc đề nghị hoãn/đổi người. Không có bước nhận lời mời tham gia riêng. Nhân viên nhấn bắt đầu thực thi để ghi nhận giờ bắt đầu.
 - Từ chối phương án, từ chối dự án, hủy dự án và trả giai đoạn về bổ sung đều cần lý do. Khách hàng xem được phản hồi duyệt dự án và lý do hủy.
 
-Sáu giai đoạn: khảo sát → thiết kế → mua sắm → thi công → kiểm thử/nối lưới → bàn giao/nghiệm thu. Mỗi bước cần ít nhất một ảnh JPG/PNG để gửi duyệt. Admin duyệt mở bước kế tiếp; yêu cầu bổ sung đưa bước hiện tại về `revision_required`. Duyệt bước cuối hoàn tất dự án và kết thúc phân công. Hủy dự án kết thúc phân công, đóng yêu cầu phát sinh nhưng giữ nhật ký và hồ sơ.
+Sáu giai đoạn: khảo sát → thiết kế → mua sắm → thi công → kiểm thử/nối lưới → bàn giao/nghiệm thu. Mỗi bước cần ít nhất một ảnh JPG/PNG để gửi duyệt. Khi gửi duyệt năm bước đầu, nhân viên phải chọn ngày thực thi bước kế tiếp từ hôm nay trở đi. Admin duyệt đồng thời hoàn thành bước hiện tại và lên lịch bước tiếp theo (`scheduled`, chưa ghi giờ bắt đầu). Nhân viên có thể bắt đầu sớm hơn ngày đã duyệt; lịch dự kiến được giữ và giờ thực tế được ghi riêng. Yêu cầu bổ sung đưa bước hiện tại về `revision_required`; giờ bắt đầu ban đầu được giữ nguyên. Duyệt bước cuối hoàn tất dự án và kết thúc phân công. Hủy dự án kết thúc phân công, đóng yêu cầu phát sinh nhưng giữ nhật ký và hồ sơ.
+
+## Lịch dự kiến và thời gian thực tế
+
+- Admin giữ khoảng ngày tổng thể làm mốc tham khảo và để tính tải phân công; không yêu cầu tối thiểu sáu ngày làm việc. Khoảng lịch phải tăng dần và không quá hai năm.
+- Khi phân công, chỉ khảo sát có `planned_start`; cả năm bước sau chưa có ngày. `projects.start_date` là ngày khảo sát dự kiến, `projects.started_at` là giờ bắt đầu thực tế do nút bắt đầu ghi lại.
+- Mỗi giai đoạn có trạng thái `scheduled` giữa khóa và thực hiện. Chỉ kỹ thuật viên còn được phân công được bắt đầu sau khi mọi bước trước đã được duyệt. Có thể thực hiện sớm hơn `planned_start`; ngày này là mốc dự kiến, không phải điều kiện khóa thao tác.
+- Nhân viên đủ minh chứng chọn `next_start_date` khi gửi duyệt. Lưu trên bước hiện tại tại `proposed_next_start`; chỉ khi admin duyệt mới ghi sang `planned_start` của bước kế tiếp. Ngày cuối tuần được phép; không ép theo cách chia ngày làm việc cũ.
+- Không tự ghi giờ bắt đầu bước kế tiếp khi admin duyệt. Bước cuối không yêu cầu ngày kế tiếp; duyệt bàn giao vẫn ghi giờ hoàn tất dự án.
+- Khi lịch được duyệt vượt mốc kết thúc ban đầu, hệ thống kéo dài ngày kết thúc dự kiến và lịch giữ chỗ của nhóm tới ngày đó; không tự phân bổ lại các bước còn lại. Thống kê mức rảnh vẫn dùng cơ sở thứ Hai–thứ Sáu, tám giờ/ngày.
+- Hoãn chỉ cập nhật lịch bước hiện tại (ngày kết thúc là tùy chọn), không đẩy dây chuyền các bước sau. Ngày thực thi bước sau vẫn được đề xuất khi gửi duyệt hoàn thành.
 
 ## Vật tư phát sinh, chi phí và hóa đơn
 
@@ -60,6 +70,7 @@ Script dùng cấu hình chung `App\Config\Database`, lưu bản sao cấu trúc
 - Dự án đã có phân công, tài liệu hoặc dấu vết thực hiện được giữ ở luồng đang làm. Dự án cũ `approved` chưa triển khai chuyển `new`; trạng thái không hợp lệ chưa triển khai chuyển `pending_approval`.
 - Giữ các dự án `completed`, `cancelled`, `rejected` và nhật ký hiện có.
 - `solar_quote_logs` lưu lịch sử phương án trước khi có dự án; `project_stage_logs.stage` cho phép NULL đối với sự kiện cấp dự án.
+- Migration `20261104_stage_schedule` thêm trạng thái chờ bắt đầu, giờ thực tế cấp dự án và ngày đề xuất bước kế tiếp. Giữ nguyên ngày và trạng thái các bước đã có; chỉ suy ra giờ bắt đầu dự án cũ từ giờ bắt đầu giai đoạn đã lưu. Hồ sơ cũ đang chờ duyệt nhưng chưa có ngày kế tiếp cần được trả về bổ sung rồi gửi lại.
 - Migration `20261104_project_billing` chỉ tạo thêm `project_extra_materials` và `project_payments`, không nhập lại dữ liệu mẫu. Cùng lệnh migration sẽ áp dụng các phiên bản còn thiếu.
 
 ## Kiểm tra

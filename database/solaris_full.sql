@@ -124,7 +124,7 @@ CREATE TABLE `projects` (
     `capacity_kwp` DECIMAL(6,2) NOT NULL,
     `total_amount` DECIMAL(15,2) NOT NULL,
     `installation_address` VARCHAR(255) NOT NULL,
-    `status` ENUM('pending_approval', 'rejected', 'new', 'in_progress', 'completed', 'cancelled') NOT NULL DEFAULT 'pending_approval',
+    `status` ENUM('pending_approval', 'rejected', 'new', 'scheduled', 'in_progress', 'completed', 'cancelled') NOT NULL DEFAULT 'pending_approval',
     `legacy_status` VARCHAR(30) NULL,
     `reviewed_by` INT NULL,
     `reviewed_at` DATETIME NULL,
@@ -135,6 +135,7 @@ CREATE TABLE `projects` (
     `current_stage` ENUM('survey', 'design', 'procurement', 'installation', 'grid_connection', 'handover') NULL DEFAULT NULL,
     `notes` TEXT NULL,
     `start_date` DATE NULL,
+    `started_at` DATETIME NULL,
     `completion_date` DATE NULL,
     `planned_end_date` DATE NULL,
     `completed_at` DATETIME NULL,
@@ -199,9 +200,10 @@ CREATE TABLE `project_stages` (
     `project_id` INT NOT NULL,
     `stage` ENUM('survey', 'design', 'procurement', 'installation', 'grid_connection', 'handover') NOT NULL,
     `position` TINYINT NOT NULL COMMENT 'Thứ tự từ 1 đến 6',
-    `status` ENUM('locked', 'in_progress', 'pending_approval', 'revision_required', 'approved') NOT NULL DEFAULT 'locked',
+    `status` ENUM('locked', 'scheduled', 'in_progress', 'pending_approval', 'revision_required', 'approved') NOT NULL DEFAULT 'locked',
     `planned_start` DATE NULL,
     `planned_end` DATE NULL,
+    `proposed_next_start` DATE NULL,
     `started_at` DATETIME NULL,
     `submitted_at` DATETIME NULL,
     `submitted_by` INT NULL,
@@ -381,6 +383,8 @@ CREATE TABLE `ct_hoadon` (
     FOREIGN KEY (`So_hoa_don`) REFERENCES `hoa_don`(`So_hoa_don`) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (`Ma_sua`) REFERENCES `sua`(`Ma_sua`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+UPDATE projects p JOIN (SELECT project_id,MIN(started_at) first_start FROM project_stages WHERE started_at IS NOT NULL GROUP BY project_id) s ON s.project_id=p.id SET p.started_at=s.first_start WHERE p.started_at IS NULL AND p.status IN ('in_progress','completed');
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -697,6 +701,8 @@ INSERT INTO `ct_hoadon` (`So_hoa_don`, `Ma_sua`, `So_luong`, `Don_gia`) VALUES
 ('HD004', 'SUA004', 1, 15000.00),
 ('HD005', 'SUA006', 10, 26000.00),
 ('HD005', 'SUA008', 4, 30000.00);
+
+UPDATE projects p JOIN (SELECT project_id,MIN(started_at) first_start FROM project_stages WHERE started_at IS NOT NULL GROUP BY project_id) s ON s.project_id=p.id SET p.started_at=s.first_start WHERE p.started_at IS NULL AND p.status IN ('in_progress','completed');
 
 SET FOREIGN_KEY_CHECKS = 1;
 

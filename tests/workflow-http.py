@@ -1,4 +1,5 @@
 """Exercise real forms against a temporary PHP server and isolated MySQL database."""
+from datetime import date, timedelta
 import base64
 import html
 import http.cookiejar
@@ -26,6 +27,9 @@ def client():
     return urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
 
 def request(browser, page, data=None):
+    if data and data.get('action') == 'submit_stage':
+        data = dict(data)
+        data.setdefault('next_start_date', today)
     body = urllib.parse.urlencode(data, doseq=True).encode() if data is not None else None
     response = browser.open(base + '/index.php?' + page, body, timeout=15)
     text = response.read().decode('utf-8')
@@ -54,6 +58,12 @@ def register(browser, source):
     result = request(browser, page, data)
     return data, result
 
+def start_current(browser, page):
+    text, _ = request(browser, page)
+    assert not re.search(r'<button\b[^>]*disabled[^>]*>\s*Bắt đầu', text), 'Start button must allow early execution'
+    assert 'Bắt đầu giai đoạn' in text or 'Bắt đầu dự án &amp; khảo sát' in text or 'Bắt đầu dự án & khảo sát' in text
+    return request(browser, page, {'csrf': field(text, 'csrf'), 'stage_id': field(text, 'stage_id'), 'action': 'start_stage'})
+
 def upload_evidence(browser, page, text):
     boundary = '----SolarisTest' + secrets.token_hex(8)
     image = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aN1cAAAAASUVORK5CYII=')
@@ -70,6 +80,7 @@ log = tempfile.TemporaryFile(mode='w+b')
 checks = 0
 try:
     fixture('init')
+    today = state()['today']
     with socket.socket() as sock:
         sock.bind(('127.0.0.1', 0))
         port = sock.getsockname()[1]
@@ -106,8 +117,12 @@ try:
     request(admin, page, {'csrf': field(text, 'csrf'), 'action': 'approve_project', 'review_note': 'Approved HTTP'})
     text, _ = request(admin, page)
     assert 'Chọn kỹ thuật viên' in text; checks += 1
-    request(admin, page, {'csrf': field(text, 'csrf'), 'action': 'assign', 'start_date': '2026-11-09', 'end_date': '2026-11-20', 'technicians[]': ['3'], 'hours_per_day': '4'})
-    assert state()['projects'][0]['status'] == 'in_progress'; checks += 1
+    request(admin, page, {'csrf': field(text, 'csrf'), 'action': 'assign', 'start_date': (date.fromisoformat(today) + timedelta(days=1)).isoformat(), 'end_date': (date.fromisoformat(today) + timedelta(days=14)).isoformat(), 'technicians[]': ['3'], 'hours_per_day': '4'})
+    assert state()['projects'][0]['status'] == 'scheduled' and state()['projects'][0]['started_at'] is None; checks += 1
+    start_current(technician, page)
+    assert state()['projects'][0]['status'] == 'in_progress' and state()['projects'][0]['started_at'] is not None; checks += 1
+    survey = next(stage for stage in state()['stages'] if stage['project_id'] == first['id'] and stage['stage'] == 'survey')
+    assert survey['planned_start'] > today and survey['started_at'][:10] == today; checks += 1
     text, _ = request(admin, page)
     assert 'Phát sinh vật tư' in text and 'tv4-material-dialog' in text; checks += 1
     request(admin, page, {'csrf': field(text, 'csrf'), 'action': 'add_material', 'product_id': '1', 'quantity': '2', 'material_reason': 'Extra cable for HTTP test', 'unit_price': '1'})
@@ -125,9 +140,12 @@ try:
     assert len(state()['documents']) == 1; checks += 1
     request(technician, page, {'csrf': field(text, 'csrf'), 'action': 'submit_stage'})
     text, _ = request(admin, page)
-    assert 'Duyệt &amp; mở bước tiếp theo' in text or 'Duyệt & mở bước tiếp theo' in text; checks += 1
+    assert 'Duyệt hoàn thành &amp; lịch bước tiếp theo' in text or 'Duyệt hoàn thành & lịch bước tiếp theo' in text; checks += 1
     request(admin, page, {'csrf': field(text, 'csrf'), 'action': 'approve_stage'})
     assert state()['projects'][0]['current_stage'] == 'design'; checks += 1
+    design = next(stage for stage in state()['stages'] if stage['project_id'] == first['id'] and stage['stage'] == 'design')
+    assert design['status'] == 'scheduled' and design['started_at'] is None; checks += 1
+    start_current(technician, page)
     text, _ = request(customer, page + '&invoice=1')
     assert 'Chỉ in hóa đơn từ bước' in text; checks += 1
     # Đã thanh toán trước đó, nhưng phát sinh mới phải được trả đủ trước khi qua bước 3.
@@ -139,6 +157,7 @@ try:
     text, _ = request(admin, page)
     request(admin, page, {'csrf': field(text, 'csrf'), 'action': 'approve_stage'})
     assert state()['projects'][0]['current_stage'] == 'procurement'; checks += 1
+    start_current(technician, page)
     text, _ = request(customer, page + '&invoice=1')
     assert 'SOLARIS — HÓA ĐƠN DỰ ÁN' in text and 'window.print()' in text and 'Extra cable for HTTP test' in text; checks += 1
     text, _ = request(other, page + '&invoice=1')
@@ -161,6 +180,8 @@ try:
     assert not re.search(approve_button, text); checks += 1
     request(admin, page, {'csrf': field(text, 'csrf'), 'action': 'approve_stage'})
     assert state()['projects'][0]['current_stage'] == 'installation'; checks += 1
+    installation = next(stage for stage in state()['stages'] if stage['project_id'] == first['id'] and stage['stage'] == 'installation')
+    assert installation['status'] == 'scheduled' and installation['started_at'] is None; checks += 1
 
     for product in [1, 2]:
         request(customer, 'page=products', {'cart_action': 'add', 'product_id': product})

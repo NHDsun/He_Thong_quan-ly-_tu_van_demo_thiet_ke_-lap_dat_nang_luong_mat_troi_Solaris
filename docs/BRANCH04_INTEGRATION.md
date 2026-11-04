@@ -12,7 +12,7 @@ Các phần được tích hợp trên `quanLyLapDat05`:
 
 Điều chỉnh để tương thích quy trình hiện tại:
 
-- Giữ bước admin duyệt yêu cầu dự án trước phân công, giữ phân công là bắt đầu ngay.
+- Giữ bước admin duyệt yêu cầu dự án trước phân công. Quy trình thời gian hiện tại dùng nút bắt đầu thực thi và ngày bước kế tiếp theo [PROJECT_WORKFLOW.md](PROJECT_WORKFLOW.md).
 - Chỉ thanh toán khi dự án đang thực hiện hoặc đã hoàn tất. Giữ cho khách hàng chỉ được xem/thanh toán dự án của mình.
 - Các sự kiện vật tư/thanh toán dùng chung nhật ký hiện tại, cho phép các sự kiện cấp dự án không gắn giai đoạn.
 

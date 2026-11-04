@@ -26,13 +26,13 @@ return static function (PDO $db): void {
     $db->exec("ALTER TABLE solar_quotes MODIFY status ENUM('draft','pending_approval','approved','rejected') NOT NULL DEFAULT 'draft'");
     $db->exec("ALTER TABLE projects MODIFY status VARCHAR(30) NOT NULL DEFAULT 'pending_approval'");
     // Bảo toàn dự án đã có công việc, kể cả bản ghi cũ mang nhãn new/approved.
-    $db->exec("UPDATE projects p SET status='in_progress' WHERE status NOT IN ('in_progress','completed','cancelled','rejected') AND (
+    $db->exec("UPDATE projects p SET status='in_progress' WHERE status NOT IN ('scheduled','in_progress','completed','cancelled','rejected') AND (
         EXISTS (SELECT 1 FROM project_assignments a WHERE a.project_id=p.id AND a.ended_at IS NULL)
         OR EXISTS (SELECT 1 FROM project_documents d WHERE d.project_id=p.id)
         OR EXISTS (SELECT 1 FROM project_stages s WHERE s.project_id=p.id AND (s.started_at IS NOT NULL OR s.status IN ('approved','pending_approval','revision_required'))))");
     $db->exec("UPDATE projects SET status='new' WHERE status='approved'");
-    $db->exec("UPDATE projects SET status='pending_approval' WHERE status NOT IN ('pending_approval','new','in_progress','completed','cancelled','rejected')");
-    $db->exec("ALTER TABLE projects MODIFY status ENUM('pending_approval','rejected','new','in_progress','completed','cancelled') NOT NULL DEFAULT 'pending_approval', MODIFY current_stage ENUM('survey','design','procurement','installation','grid_connection','handover','cancelled') NULL DEFAULT NULL");
+    $db->exec("UPDATE projects SET status='pending_approval' WHERE status NOT IN ('pending_approval','new','scheduled','in_progress','completed','cancelled','rejected')");
+    $db->exec("ALTER TABLE projects MODIFY status ENUM('pending_approval','rejected','new','scheduled','in_progress','completed','cancelled') NOT NULL DEFAULT 'pending_approval', MODIFY current_stage ENUM('survey','design','procurement','installation','grid_connection','handover','cancelled') NULL DEFAULT NULL");
     $db->exec("UPDATE projects SET current_stage=NULL,technician_id=NULL WHERE status IN ('pending_approval','new','rejected')");
     $db->exec("UPDATE project_stages s JOIN projects p ON p.id=s.project_id SET s.status='locked',s.started_at=NULL WHERE p.status IN ('pending_approval','new','rejected')");
     $db->exec("UPDATE projects SET current_stage=NULL WHERE current_stage='cancelled'");

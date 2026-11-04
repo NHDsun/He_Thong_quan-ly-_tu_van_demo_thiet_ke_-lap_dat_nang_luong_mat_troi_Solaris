@@ -61,7 +61,10 @@ try {
         return $q->fetchColumn();
     };
     $status = static fn (int $id): string => (string) $scalar('SELECT status FROM projects WHERE id=?', [$id]);
-    $assignment = ['start_date' => '2026-11-09', 'end_date' => '2026-11-20', 'technicians' => [3, 5], 'hours_per_day' => 4];
+    $today = $w->today();
+    $tomorrow = (new DateTimeImmutable($today))->modify('+1 day')->format('Y-m-d');
+    $yesterday = (new DateTimeImmutable($today))->modify('-1 day')->format('Y-m-d');
+    $assignment = ['start_date' => $today, 'end_date' => (new DateTimeImmutable($today))->modify('+14 days')->format('Y-m-d'), 'technicians' => [3, 5], 'hours_per_day' => 4];
 
     $denied(fn () => $w->registerQuote(0, $data, $calc, 'bill', true, bin2hex(random_bytes(32))), 'Guest cannot register');
     $denied(fn () => $w->registerQuote(1, $data, $calc, 'bill', true, bin2hex(random_bytes(32))), 'Admin cannot impersonate customer');
@@ -82,30 +85,43 @@ try {
     $check($status($id) === 'new', 'Approved request becomes new project');
     $check((int) $scalar('SELECT reviewed_by FROM projects WHERE id=?', [$id]) === 1, 'Approval actor saved');
     $denied(fn () => $w->act($admin, $id, 'approve_project', []), 'Repeated approval rejected');
-    $denied(fn () => $w->act($admin, $id, 'assign', array_replace($assignment, ['end_date' => '2026-11-10'])), 'Require six workdays');
+    $denied(fn () => $w->act($admin, $id, 'assign', array_replace($assignment, ['end_date' => $yesterday])), 'Reject reversed dates');
     $denied(fn () => $w->act($admin, $id, 'assign', array_replace($assignment, ['technicians' => [3, 2]])), 'Invalid crew rolls back');
     $check((int) $scalar('SELECT COUNT(*) FROM project_assignments WHERE project_id=?', [$id]) === 0, 'Failed assignment leaves no partial crew');
     $w->act($admin, $id, 'assign', $assignment);
-    $check($status($id) === 'in_progress', 'Assignment starts project immediately');
+    $check($status($id) === 'scheduled', 'Assignment schedules project without starting');
+    $check($scalar('SELECT started_at FROM projects WHERE id=?', [$id]) === null, 'Project actual start remains empty');
     $check($scalar('SELECT current_stage FROM projects WHERE id=?', [$id]) === 'survey', 'Survey is first stage');
-    $check((int) $scalar("SELECT COUNT(*) FROM project_stages WHERE project_id=? AND status='in_progress'", [$id]) === 1, 'Only one stage active');
-    $check(count($w->listing($tech, 'in_progress', 1)['projects']) === 1, 'Assigned technician sees work');
+    $check((int) $scalar("SELECT COUNT(*) FROM project_stages WHERE project_id=? AND status='scheduled'", [$id]) === 1, 'Only first stage scheduled');
+    $check(count($w->listing($tech, 'scheduled', 1)['projects']) === 1, 'Assigned technician sees work');
     $denied(fn () => $w->act($admin, $id, 'assign', $assignment), 'Cannot duplicate crew');
     $denied(fn () => $w->act($tech, $id, 'submit_stage', []), 'Evidence image required');
     foreach (array_keys(Workflow::STAGES) as $i => $stageCode) {
         $stageId = (int) $scalar('SELECT id FROM project_stages WHERE project_id=? AND stage=?', [$id, $stageCode]);
+        $denied(fn () => $w->act($admin, $id, 'start_stage', ['stage_id' => $stageId]), 'Admin cannot start for technician');
+        $w->act($tech, $id, 'start_stage', ['stage_id' => $stageId]);
+        $denied(fn () => $w->act($tech, $id, 'start_stage', ['stage_id' => $stageId]), 'Cannot start twice');
+        $check($scalar('SELECT started_at FROM project_stages WHERE id=?', [$stageId]) !== null, 'Real start recorded: ' . $stageCode);
+        $denied(fn () => $w->act($tech, $id, 'submit_stage', ['next_start_date' => $today]), 'Evidence required after starting');
         $w->run("INSERT INTO project_documents (project_id,stage_id,document_type,file_name,file_hash,file_path,file_size_kb,file_type,uploaded_by) VALUES (?,?,'stage_photo','test.png',?,'tests/fixture.png',1,'image/png',3)", [$id, $stageId, hash('sha256', $stageCode)]);
         if ($i === 0) {
-            $w->act($tech, $id, 'postpone', ['reason' => 'Mưa lớn', 'proposed_start' => '2026-11-09', 'proposed_end' => '2026-11-11']);
+            $w->act($tech, $id, 'postpone', ['reason' => 'Mưa lớn', 'proposed_start' => $today, 'proposed_end' => $tomorrow]);
             $denied(fn () => $w->act($tech, $id, 'submit_stage', []), 'Pending postponement requires acknowledgement');
         }
-        $w->act($tech, $id, 'submit_stage', ['acknowledge_postpone' => '1']);
+        if ($i < 5) {
+            $denied(fn () => $w->act($tech, $id, 'submit_stage', ['acknowledge_postpone' => '1']), 'Next execution date required');
+            $denied(fn () => $w->act($tech, $id, 'submit_stage', ['acknowledge_postpone' => '1', 'next_start_date' => $yesterday]), 'Next execution date cannot be past');
+        }
+        $w->act($tech, $id, 'submit_stage', ['acknowledge_postpone' => '1', 'next_start_date' => $today]);
         $check($scalar('SELECT status FROM project_stages WHERE id=?', [$stageId]) === 'pending_approval', 'Stage submitted: ' . $stageCode);
+        if ($i < 5) {
+            $check($scalar('SELECT status FROM project_stages WHERE project_id=? AND position=?', [$id,$i+2]) === 'locked', 'Submitting evidence does not open next stage');
+        }
         if ($i === 0) {
             $denied(fn () => $w->act($admin, $id, 'reject_stage', []), 'Revision reason required');
             $w->act($admin, $id, 'reject_stage', ['review_note' => 'Bổ sung góc chụp']);
             $check($scalar('SELECT status FROM project_stages WHERE id=?', [$stageId]) === 'revision_required', 'Stage returned for revision');
-            $w->act($tech, $id, 'submit_stage', ['acknowledge_postpone' => '1']);
+            $w->act($tech, $id, 'submit_stage', ['acknowledge_postpone' => '1', 'next_start_date' => $today]);
         }
         if ($stageCode === 'procurement') {
             $denied(fn () => $w->act($admin, $id, 'approve_stage', []), 'Procurement requires full payment');
@@ -131,13 +147,43 @@ try {
     $denied(fn () => $w->reviewQuote($plan['quote_id'], 1, true, ''), 'Repeated quote approval rejected');
     $w->act($admin, $planProject, 'approve_project', []);
     $w->act($admin, $planProject, 'assign', $assignment);
-    $check($status($planProject) === 'in_progress', 'Plan path starts after assignment');
+    $check($status($planProject) === 'scheduled', 'Plan path waits for technician start');
+    $surveyId = (int) $scalar("SELECT id FROM project_stages WHERE project_id=? AND stage='survey'", [$planProject]);
+    $denied(fn () => $w->act($customer, $planProject, 'start_stage', ['stage_id' => $surveyId]), 'Customer cannot start stage');
+    $w->run('UPDATE project_stages SET planned_start=? WHERE id=?', [$tomorrow, $surveyId]);
+    $w->act($tech, $planProject, 'start_stage', ['stage_id' => $surveyId]);
+    $projectStart = $scalar('SELECT started_at FROM projects WHERE id=?', [$planProject]);
+    $check($projectStart !== null && $status($planProject) === 'in_progress', 'First click starts project clock');
+    $check(substr($projectStart,0,10) === $today && $scalar('SELECT planned_start FROM project_stages WHERE id=?',[$surveyId]) === $tomorrow,'Survey can start early and preserves planned date');
+    $w->run("INSERT INTO project_documents (project_id,stage_id,document_type,file_name,file_hash,file_path,file_size_kb,file_type,uploaded_by) VALUES (?,?,'stage_photo','test.png',?,'tests/fixture.png',1,'image/png',3)", [$planProject,$surveyId,hash('sha256','planned-survey')]);
+    $future = (new DateTimeImmutable($today))->modify('+20 days')->format('Y-m-d');
+    $w->act($tech,$planProject,'submit_stage',['next_start_date'=>$future]);
+    $w->run('UPDATE project_stages SET proposed_next_start=NULL WHERE id=?',[$surveyId]);
+    $denied(fn () => $w->act($admin,$planProject,'approve_stage',[]),'Legacy submission without next date cannot advance');
+    $w->act($admin,$planProject,'reject_stage',['review_note'=>'Bổ sung lịch bước kế tiếp']);
+    $w->act($tech,$planProject,'submit_stage',['next_start_date'=>$future]);
+    $w->act($admin,$planProject,'approve_stage',[]);
+    $nextId=(int)$scalar("SELECT id FROM project_stages WHERE project_id=? AND stage='design'",[$planProject]);
+    $check($scalar('SELECT planned_start FROM project_stages WHERE id=?',[$nextId])===$future, 'Approval uses technician proposed date');
+    $check($scalar('SELECT started_at FROM project_stages WHERE id=?',[$nextId])===null, 'Approval never starts next stage clock');
+    $check($scalar('SELECT planned_end_date FROM projects WHERE id=?',[$planProject])===$future, 'Approved execution date extends project estimate when needed');
+    $check($scalar('SELECT MIN(planned_end) FROM project_assignments WHERE project_id=? AND ended_at IS NULL',[$planProject])===$future,'Approved execution date extends crew reservations');
+    $check((int)$scalar('SELECT COUNT(*) FROM project_stages WHERE project_id=? AND position>2 AND planned_start IS NULL',[$planProject])===4, 'Future stages have no equal time allocation');
+    $denied(fn () => $w->act($tech,$planProject,'start_stage',['stage_id'=>$surveyId]),'Stale start form cannot start next stage');
+    $w->act($tech,$planProject,'postpone',['reason'=>'Đổi lịch thực địa','proposed_start'=>(new DateTimeImmutable($future))->modify('+2 days')->format('Y-m-d')]);
+    $requestId=(int)$scalar("SELECT id FROM project_requests WHERE project_id=? AND status='pending'",[$planProject]);
+    $w->act($admin,$planProject,'approve_request',['request_id'=>$requestId]);
+    $check($scalar('SELECT started_at FROM projects WHERE id=?',[$planProject])===$projectStart,'Postpone preserves project actual start');
+    $approvedPlan=$scalar('SELECT planned_start FROM project_stages WHERE id=?',[$nextId]);
+    $w->act($tech,$planProject,'start_stage',['stage_id'=>$nextId]);
+    $check(substr((string)$scalar('SELECT started_at FROM project_stages WHERE id=?',[$nextId]),0,10)===$today && $scalar('SELECT planned_start FROM project_stages WHERE id=?',[$nextId])===$approvedPlan,'Later stage can start early without changing approved plan');
+    $check($scalar('SELECT started_at FROM projects WHERE id=?',[$planProject])===$projectStart,'Starting next stage never resets project actual start');
     $denied(fn () => $w->act($tech, $planProject, 'replacement', ['reason' => 'Đổi lịch', 'old_technician_id' => 3, 'proposed_technician_id' => 5]), 'Replacement must be outside crew');
     $denied(fn () => $w->act($admin, $planProject, 'cancel_project', []), 'Cancellation requires reason');
     $w->act($admin, $planProject, 'cancel_project', ['review_note' => 'Khách đề nghị dừng']);
     $check($status($planProject) === 'cancelled', 'Cancellation saved');
     $check((int) $scalar('SELECT COUNT(*) FROM project_assignments WHERE project_id=? AND ended_at IS NULL', [$planProject]) === 0, 'Cancellation releases crew');
-    $check($scalar('SELECT current_stage FROM projects WHERE id=?', [$planProject]) === 'survey', 'Cancellation preserves last stage');
+    $check($scalar('SELECT current_stage FROM projects WHERE id=?', [$planProject]) === 'design', 'Cancellation preserves last stage');
     $reject = $make();
     $denied(fn () => $w->act($admin, $reject['project_id'], 'reject_project', []), 'Project rejection requires reason');
     $w->act($admin, $reject['project_id'], 'reject_project', ['review_note' => 'Ngoài khu vực hỗ trợ']);
@@ -176,6 +222,13 @@ try {
     $check($status($legacyActive['project_id']) === 'in_progress', 'Legacy project with crew remains in progress');
     $check($scalar('SELECT legacy_status FROM solar_quotes WHERE id=?', [$legacyEmpty['quote_id']]) === 'contacted', 'Preserve legacy contact status');
     $check($scalar('SELECT status FROM solar_quotes WHERE id=?', [$legacyEmpty['quote_id']]) === 'pending_approval', 'Normalize legacy quote status without auto-approval');
+    $clockBefore=$scalar('SELECT started_at FROM projects WHERE id=?',[$id]);
+    $stageDatesBefore=$w->rows('SELECT id,planned_start,planned_end,started_at FROM project_stages ORDER BY id');
+    $scheduleMigration=require dirname(__DIR__).'/database/migrations/20261104_stage_schedule.php';
+    $scheduleMigration($db);
+    $scheduleMigration($db);
+    $check($scalar('SELECT started_at FROM projects WHERE id=?',[$id])===$clockBefore,'Schedule migration preserves project actual clock');
+    $check($w->rows('SELECT id,planned_start,planned_end,started_at FROM project_stages ORDER BY id')===$stageDatesBefore,'Schedule migration preserves historical stage dates');
     echo "PASS: $checks assertions; isolated database $name\n";
 } finally {
     if (preg_match('/^solaris_workflow_test_[a-f0-9]{10}$/D', $name)) {

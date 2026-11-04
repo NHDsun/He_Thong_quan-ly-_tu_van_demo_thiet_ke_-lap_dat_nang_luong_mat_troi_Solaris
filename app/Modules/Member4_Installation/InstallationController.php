@@ -58,7 +58,8 @@ final class InstallationController
                 }
                 $this->redirect($id, $action === 'add_material');
             }
-            $view['filter'] = (string) ($_GET['filter'] ?? ($actor['role'] === 'admin' ? 'pending' : ($actor['role'] === 'customer' ? 'all' : 'in_progress')));
+            $view['today'] = $workflow->today();
+            $view['filter'] = (string) ($_GET['filter'] ?? ($actor['role'] === 'admin' ? 'pending' : 'all'));
             $view['listing'] = $workflow->listing($actor, $view['filter'], (int) ($_GET['p'] ?? 1));
             if ($id) {
                 $view['detail'] = $workflow->detail($id, $actor, (int) ($_GET['log_page'] ?? 1), (int) ($_GET['request_page'] ?? 1));
