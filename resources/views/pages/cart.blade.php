@@ -13,11 +13,31 @@ $resolveCartImage = static function (array $item): ?string {
 $compat = $compatibility ?? (class_exists(\App\Hooks\UseSolarCalculator::class) 
     ? \App\Hooks\UseSolarCalculator::analyzeCompatibility($items) 
     : ['total_panels' => 0, 'total_panel_kwp' => 0, 'total_inverters' => 0, 'total_inverter_kw' => 0, 'total_batteries' => 0, 'total_battery_kwh' => 0, 'completion_score' => 0, 'rules' => []]);
+$diagramCategories = [
+    ['slug' => 'tam-pin', 'label' => 'Tấm pin', 'icon' => '☀️', 'keys' => ['tấm pin', 'tam pin']],
+    ['slug' => 'inverter', 'label' => 'Inverter', 'icon' => '⚡', 'keys' => ['inverter', 'biến tần']],
+    ['slug' => 'tu-dien', 'label' => 'Tủ điện', 'icon' => '🛡️', 'keys' => ['tủ điện', 'đóng cắt']],
+    ['slug' => 'khung-gia', 'label' => 'Khung giá', 'icon' => '🔩', 'keys' => ['khung giá', 'khung nhôm', 'ray']],
+    ['slug' => 'day-cap', 'label' => 'Cáp & MC4', 'icon' => '🔌', 'keys' => ['cáp', 'mc4', 'dây']],
+    ['slug' => 'dong-ho', 'label' => 'Công tơ', 'icon' => '📟', 'keys' => ['đồng hồ', 'công tơ', 'meter']],
+    ['slug' => 'pin-luu-tru', 'label' => 'Pin lưu trữ', 'icon' => '🔋', 'keys' => ['pin lưu trữ', 'lithium', 'battery', 'bess']],
+];
+$diagramState = array_fill(0, count($diagramCategories), null);
+foreach ($items as $item) {
+    $categoryName = mb_strtolower((string) ($item['category_name'] ?? ''));
+    foreach ($diagramCategories as $index => $category) {
+        foreach ($category['keys'] as $key) {
+            if (str_contains($categoryName, $key)) { $diagramState[$index] = $item; break 2; }
+        }
+    }
+}
 ?>
 <link rel="stylesheet" href="resources/css/products.css">
 <link rel="stylesheet" href="resources/css/cart.css">
 <link rel="stylesheet" href="resources/css/cart-grid.css">
 <link rel="stylesheet" href="resources/css/cart-polish.css">
+<link rel="stylesheet" href="resources/css/cart-system-map.css">
+<link rel="stylesheet" href="resources/css/cart-system-map-fix.css">
 
 <section class="sol-container products-page cart-page" style="padding-top: 2rem; padding-bottom: 5rem;">
     <header class="products-hero" style="margin-bottom: 2rem;">
@@ -35,6 +55,11 @@ $compat = $compatibility ?? (class_exists(\App\Hooks\UseSolarCalculator::class)
             <?php endif; ?>
         </div>
     </header>
+
+    <section class="solar-system-map sol-glass-card" aria-labelledby="system-map-title">
+        <div class="system-map-heading"><div><span class="sol-badge sol-badge--amber">Sơ đồ cấu hình</span><h2 id="system-map-title">7 nhóm thiết bị cho một hệ thống hoàn chỉnh</h2><p>Chọn các nhóm còn thiếu để hệ thống chuyển sang member3 kiểm tra tương thích và tính toán.</p></div><span class="system-map-progress"><?= count(array_filter($diagramState)) ?>/7 nhóm đã chọn</span></div>
+        <div class="system-map-flow"><?php foreach ($diagramCategories as $index => $category): $selected = $diagramState[$index]; ?><div class="system-map-node <?= $selected ? 'is-selected' : 'is-missing' ?>"><div class="system-map-icon"><?= $category['icon'] ?></div><div class="system-map-node-text"><strong><?= $category['label'] ?></strong><?php if ($selected): ?><small><?= htmlspecialchars($selected['product_code']) ?></small><span class="system-map-status">Đã chọn</span><?php else: ?><small>Chưa chọn</small><a href="index.php?page=products&category=<?= $category['slug'] ?>">Chọn thiết bị →</a><?php endif; ?></div></div><?php if ($index < count($diagramCategories) - 1): ?><span class="system-map-connector" aria-hidden="true">→</span><?php endif; ?><?php endforeach; ?></div>
+    </section>
 
     <?php if (!$items): ?>
         <div class="sol-glass-card products-empty" style="text-align: center; padding: 3.5rem 2rem;">
@@ -107,7 +132,7 @@ $compat = $compatibility ?? (class_exists(\App\Hooks\UseSolarCalculator::class)
                         Tạo dòng điện DC. <strong>Cần ghép đôi với:</strong> Biến tần Inverter có công suất tương đương.
                     </div>
                     <?php if ($compat['total_panels'] === 0): ?>
-                        <a href="index.php?page=products&category=tam-pin-mat-troi" style="display: inline-block; margin-top: 0.5rem; font-size: 0.75rem; color: var(--accent-gold); text-decoration: underline;">+ Chọn tấm pin phù hợp</a>
+                        <a href="index.php?page=products&category=tam-pin" style="display: inline-block; margin-top: 0.5rem; font-size: 0.75rem; color: var(--accent-gold); text-decoration: underline;">+ Chọn tấm pin phù hợp</a>
                     <?php endif; ?>
                 </div>
 
@@ -132,7 +157,7 @@ $compat = $compatibility ?? (class_exists(\App\Hooks\UseSolarCalculator::class)
                         Biến đổi DC $\to$ AC. <strong>Cần ghép đôi với:</strong> Giàn pin tỷ lệ DC/AC từ 1.0 - 1.25.
                     </div>
                     <?php if ($compat['total_inverters'] === 0): ?>
-                        <a href="index.php?page=products&category=bien-tan-inverter" style="display: inline-block; margin-top: 0.5rem; font-size: 0.75rem; color: var(--accent-gold); text-decoration: underline;">+ Chọn Inverter tương thích</a>
+                        <a href="index.php?page=products&category=inverter" style="display: inline-block; margin-top: 0.5rem; font-size: 0.75rem; color: var(--accent-gold); text-decoration: underline;">+ Chọn Inverter tương thích</a>
                     <?php endif; ?>
                 </div>
 
@@ -153,7 +178,7 @@ $compat = $compatibility ?? (class_exists(\App\Hooks\UseSolarCalculator::class)
                         Bảo vệ chống sét SPD & chống quá tải. <strong>Cần ghép đôi với:</strong> Toàn bộ giàn pin & Inverter.
                     </div>
                     <?php if (!$compat['has_protection_box']): ?>
-                        <a href="index.php?page=products&category=phu-kien-lap-dat" style="display: inline-block; margin-top: 0.5rem; font-size: 0.75rem; color: var(--accent-gold); text-decoration: underline;">+ Chọn tủ điện đóng cắt</a>
+                        <a href="index.php?page=products&category=tu-dien" style="display: inline-block; margin-top: 0.5rem; font-size: 0.75rem; color: var(--accent-gold); text-decoration: underline;">+ Chọn tủ điện đóng cắt</a>
                     <?php endif; ?>
                 </div>
 
@@ -178,7 +203,9 @@ $compat = $compatibility ?? (class_exists(\App\Hooks\UseSolarCalculator::class)
                         Lưu trữ điện ban đêm. <strong>Cần ghép đôi với:</strong> Bắt buộc dùng <strong>Biến tần Inverter HYBRID</strong>.
                     </div>
                     <?php if ($compat['total_batteries'] === 0): ?>
-                        <a href="index.php?page=products&category=pin-luu-tru-lithium" style="display: inline-block; margin-top: 0.5rem; font-size: 0.75rem; color: var(--accent-gold); text-decoration: underline;">+ Thêm pin lưu trữ nếu cần</a>
+                        <a href="index.php?page=products&category=pin-luu-tru" style="display: inline-block; margin-top: 0.5rem; font-size: 0.75rem; color: var(--accent-gold); text-decoration: underline;">+ Thêm pin lưu trữ nếu cần</a>
+                    <?php elseif (!$compat['has_hybrid_inverter']): ?>
+                        <a href="index.php?page=products&category=inverter&system_type=Hybrid" style="display: inline-block; margin-top: 0.5rem; font-size: 0.75rem; color: var(--accent-gold); text-decoration: underline;">+ Chọn Inverter Hybrid phù hợp</a>
                     <?php endif; ?>
                 </div>
 
@@ -190,7 +217,7 @@ $compat = $compatibility ?? (class_exists(\App\Hooks\UseSolarCalculator::class)
                     <div style="font-size: 0.8rem; font-weight: 700; color: var(--accent-gold); text-transform: uppercase;">
                         📋 Đánh giá tương thích & Khuyến nghị kỹ thuật từ Kỹ Sư Solaris:
                     </div>
-                    <?php foreach ($compat['rules'] as $rule): ?>
+                    <?php foreach ($compat['rules'] as $rule): $ruleText = mb_strtolower($rule['title'] . ' ' . $rule['detail']); $ruleLink = null; $ruleLinkLabel = null; if ($rule['type'] !== 'success') { if (str_contains($ruleText, 'inverter')) { $ruleLink = 'index.php?page=products&category=inverter' . (str_contains($ruleText, 'hybrid') ? '&system_type=Hybrid' : ''); $ruleLinkLabel = str_contains($ruleText, 'hybrid') ? 'Chọn Inverter Hybrid phù hợp →' : 'Xem Inverter phù hợp →'; } elseif (str_contains($ruleText, 'tấm pin') || str_contains($ruleText, 'pin')) { $ruleLink = 'index.php?page=products&category=tam-pin'; $ruleLinkLabel = 'Chọn tấm pin phù hợp →'; } elseif (str_contains($ruleText, 'tủ điện')) { $ruleLink = 'index.php?page=products&category=tu-dien'; $ruleLinkLabel = 'Chọn tủ điện an toàn →'; } elseif (str_contains($ruleText, 'khung')) { $ruleLink = 'index.php?page=products&category=khung-gia'; $ruleLinkLabel = 'Chọn khung giá phù hợp →'; } } ?>
                         <div style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); background: <?= $rule['type'] === 'success' ? 'rgba(16, 185, 129, 0.1)' : ($rule['type'] === 'warning' ? 'rgba(245, 158, 11, 0.1)' : ($rule['type'] === 'danger' ? 'rgba(244, 63, 94, 0.1)' : 'rgba(56, 189, 248, 0.1)')) ?>; border-left: 3px solid <?= $rule['type'] === 'success' ? '#10b981' : ($rule['type'] === 'warning' ? '#f59e0b' : ($rule['type'] === 'danger' ? '#f43f5e' : '#38bdf8')) ?>;">
                             <span style="font-size: 1.1rem; line-height: 1;"><?= $rule['icon'] ?></span>
                             <div>
@@ -200,6 +227,7 @@ $compat = $compatibility ?? (class_exists(\App\Hooks\UseSolarCalculator::class)
                                 <span style="color: var(--text-secondary); font-size: 0.8rem; line-height: 1.4;">
                                     <?= htmlspecialchars($rule['detail']) ?>
                                 </span>
+                                <?php if ($ruleLink): ?><a class="compatibility-action-link" href="<?= htmlspecialchars($ruleLink, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($ruleLinkLabel) ?></a><?php endif; ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
