@@ -966,20 +966,21 @@ if ($page === 'profile') {
             </div>
 
             <div class="sol-sidebar__footer">
-                <!-- Thẻ Profile cá nhân (Full-Width) -->
-                <a href="index.php?page=profile" class="sol-nav-profile-pill sol-nav-profile-pill--sidebar <?= $page === 'profile' ? 'active' : '' ?>" title="Hồ sơ tài khoản">
-                    <div style="display: flex; align-items: center; gap: 0.5rem; min-width: 0;">
-                        <span class="sol-nav-profile-pill__icon">👤</span>
-                        <span class="sol-nav-profile-pill__text">Profile</span>
-                    </div>
-                    <span class="sol-nav-profile-pill__badge"><?= htmlspecialchars(strtoupper($currentUser['username'] ?? 'GUEST')) ?></span>
-                </a>
+                <!-- Hàng hiển thị Profile và Nút Đăng Xuất trên cùng 1 dòng -->
+                <div class="sol-sidebar-footer-row">
+                    <a href="index.php?page=profile" class="sol-nav-profile-pill sol-nav-profile-pill--sidebar <?= $page === 'profile' ? 'active' : '' ?>" title="Hồ sơ tài khoản">
+                        <div style="display: flex; align-items: center; gap: 0.45rem; min-width: 0;">
+                            <span class="sol-nav-profile-pill__icon">👤</span>
+                            <span class="sol-nav-profile-pill__text">Profile</span>
+                        </div>
+                        <span class="sol-nav-profile-pill__badge"><?= htmlspecialchars(strtoupper($currentUser['username'] ?? 'GUEST')) ?></span>
+                    </a>
 
-                <!-- Nút Đăng Xuất độc lập 100%, không bao giờ bị chèn ép -->
-                <a href="index.php?page=auth&action=logout" class="sol-sidebar-logout-btn" title="Đăng xuất khỏi hệ thống">
-                    <span style="font-size: 1rem; line-height: 1;">🚪</span>
-                    <span>Đăng Xuất</span>
-                </a>
+                    <a href="index.php?page=auth&action=logout" class="sol-sidebar-logout-btn" title="Đăng xuất khỏi hệ thống">
+                        <span style="font-size: 0.95rem; line-height: 1;">🚪</span>
+                        <span>Đăng Xuất</span>
+                    </a>
+                </div>
 
                 <div class="sol-sidebar__hotline">
                     <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 6px #10b981;"></span>
