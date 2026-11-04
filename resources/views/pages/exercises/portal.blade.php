@@ -70,12 +70,12 @@
             </div>
             <h3 style="font-size: 1.1rem; color: #ffffff; margin-bottom: 0.85rem;">MySQL Nâng Cao & Bán Sữa</h3>
             <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.55rem; font-size: 0.825rem;">
-                <li><span style="color: var(--accent-gold);">19.</span> Lưới sữa phân trang tự động (> 20 dòng)</li>
-                <li><span style="color: var(--accent-gold);">20.</span> Lưới sản phẩm sữa kèm ảnh sản phẩm</li>
-                <li><span style="color: var(--accent-gold);">21.</span> Xem chi tiết thông tin sản phẩm sữa</li>
-                <li><span style="color: var(--accent-gold);">22.</span> Form thêm mới sản phẩm vào CSDL</li>
-                <li><span style="color: var(--accent-gold);">23.</span> Tìm kiếm sản phẩm sữa đơn giản</li>
-                <li><span style="color: var(--accent-gold);">24.</span> Tìm kiếm nâng cao đa tiêu chí</li>
+                <li><a href="index.php?page=exercises&exercise=19" style="color: var(--accent-gold); text-decoration: none; display: flex; align-items: center; justify-content: space-between; gap: .75rem;"><span style="color: var(--text-secondary);"><strong style="color: var(--accent-gold);">19.</strong> Lưới sữa phân trang tự động (> 20 dòng)</span><span style="color: var(--accent-gold); font-size: 0.75rem; white-space: nowrap;">Mở bài ➔</span></a></li>
+                <li><a href="index.php?page=exercises&exercise=20" style="color: var(--accent-gold); text-decoration: none; display: flex; align-items: center; justify-content: space-between; gap: .75rem;"><span style="color: var(--text-secondary);"><strong style="color: var(--accent-gold);">20.</strong> Lưới sản phẩm sữa kèm ảnh sản phẩm</span><span style="color: var(--accent-gold); font-size: 0.75rem; white-space: nowrap;">Mở bài ➔</span></a></li>
+                <li><a href="index.php?page=exercises&exercise=21" style="color: var(--accent-gold); text-decoration: none; display: flex; align-items: center; justify-content: space-between; gap: .75rem;"><span style="color: var(--text-secondary);"><strong style="color: var(--accent-gold);">21.</strong> Xem chi tiết thông tin sản phẩm sữa</span><span style="color: var(--accent-gold); font-size: 0.75rem; white-space: nowrap;">Mở bài ➔</span></a></li>
+                <li><a href="index.php?page=exercises&exercise=22" style="color: var(--accent-gold); text-decoration: none; display: flex; align-items: center; justify-content: space-between; gap: .75rem;"><span style="color: var(--text-secondary);"><strong style="color: var(--accent-gold);">22.</strong> Form thêm mới sản phẩm vào CSDL</span><span style="color: var(--accent-gold); font-size: 0.75rem; white-space: nowrap;">Mở bài ➔</span></a></li>
+                <li><a href="index.php?page=exercises&exercise=23" style="color: var(--accent-gold); text-decoration: none; display: flex; align-items: center; justify-content: space-between; gap: .75rem;"><span style="color: var(--text-secondary);"><strong style="color: var(--accent-gold);">23.</strong> Tìm kiếm sản phẩm sữa đơn giản</span><span style="color: var(--accent-gold); font-size: 0.75rem; white-space: nowrap;">Mở bài ➔</span></a></li>
+                <li><a href="index.php?page=exercises&exercise=24" style="color: var(--accent-gold); text-decoration: none; display: flex; align-items: center; justify-content: space-between; gap: .75rem;"><span style="color: var(--text-secondary);"><strong style="color: var(--accent-gold);">24.</strong> Tìm kiếm nâng cao đa tiêu chí</span><span style="color: var(--accent-gold); font-size: 0.75rem; white-space: nowrap;">Mở bài ➔</span></a></li>
             </ul>
         </div>
     </div>

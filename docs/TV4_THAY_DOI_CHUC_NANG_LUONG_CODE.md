@@ -42,7 +42,7 @@ TV4 quản lý dự án sau khi báo giá được chấp thuận: phân công �
 | Duyệt hoặc từ chối yêu cầu | Có | Không |
 | Xem lịch sử yêu cầu và nhật ký | Có | Trong dự án được phân công |
 
-Khách hàng và khách vãng lai không sử dụng trang quản lý nội bộ này. Đăng ký tư vấn, tra cứu công khai và Bài 19–24 chưa nằm trong phạm vi triển khai này.
+Khách hàng có giao diện chỉ xem riêng: danh sách dự án theo `projects.user_id`, thông tin dự án và quy trình sáu giai đoạn trong `customer-detail.php`. Không trả hồ sơ, yêu cầu và nhật ký nội bộ cho khách hàng; không cho phép các thao tác ghi kể cả gửi POST thủ công. Khách chưa đăng nhập xem `guest.php` với quy trình, quyền lợi giám sát và form đăng nhập; không truy cập dữ liệu dự án riêng. Đăng ký tư vấn, tra cứu công khai bằng mã hợp đồng và Bài 19–24 chưa nằm trong phạm vi triển khai này.
 
 ## 1.1. Sáu giai đoạn
 
@@ -106,6 +106,8 @@ Các đường dẫn trong bảng có thể nhấn để mở mã nguồn. File 
 | [View.php](../app/Modules/Member4_Installation/View.php) | Các hàm hỗ trợ xuất HTML, component, form, nhãn và phân trang |
 | [installations.blade.php](../resources/views/pages/installations.blade.php) | Ghép giao diện đăng nhập, danh sách hoặc chi tiết |
 | [detail.php](../resources/views/components/installation/detail.php) | Thông tin dự án, sáu bước, minh chứng, yêu cầu và nhật ký |
+| [customer-detail.php](../resources/views/components/installation/customer-detail.php) | Chi tiết chỉ xem của khách hàng, không có thao tác và hồ sơ nội bộ |
+| [guest.php](../resources/views/components/installation/guest.php) | Quy trình sáu bước và quyền lợi giám sát cho khách chưa đăng nhập |
 | [staff.php](../resources/views/components/installation/staff.php) | Bảng phân công: danh sách nhân viên 20%, lịch biểu 80% |
 | [atomic.php](../resources/views/components/installation/atomic.php) | HTML của button, badge và input |
 | [installation.css](../resources/css/installation.css) | CSS riêng TV4, sử dụng biến của theme chung |
@@ -153,11 +155,11 @@ index.php?page=installations
 3. Bootstrap gọi `(new InstallationController())->index()`.
 4. Controller tạo `UseInstallationWorkflow` bằng kết nối trả về từ `Config::database()`.
 5. Controller lấy ID người dùng từ Session và đọc lại vai trò từ bảng `users`.
-6. Chưa đăng nhập: trả dữ liệu để page hiển thị form đăng nhập. Người có vai trò khác admin/technician: báo không có quyền dùng trang nội bộ.
+6. Chưa đăng nhập: trả trang giới thiệu và form đăng nhập; GET công khai được trả trước khi tạo kết nối PDO. Sau đăng nhập, chấp nhận admin, technician hoặc customer và chọn giao diện tương ứng.
 7. Đã đăng nhập: gọi `listing()` để đọc danh sách theo quyền và bộ lọc.
 8. Controller trả mảng `$installationView`; page gán sang `$viewData` và duyệt từng dự án để hiển thị card.
 
-Admin mặc định vào bộ lọc `new`; kỹ thuật viên mặc định vào `in_progress`.
+Admin mặc định vào bộ lọc `new`; kỹ thuật viên mặc định vào `in_progress`; khách hàng mặc định vào `all` nhưng chỉ lấy dự án có `user_id` thuộc tài khoản của mình.
 
 ### 4.2. Khi mở chi tiết dự án
 
@@ -307,7 +309,7 @@ Trừ những hàm có ghi rõ class khác, các hàm sau nằm trong [UseInstal
 **Xử lý:**
 
 1. Tạo `$where` và `$params` để ghép điều kiện truy vấn.
-2. Nếu không phải admin, thêm điều kiện có phân công `ended_at IS NULL` cho người hiện tại.
+2. Với technician, thêm điều kiện có phân công `ended_at IS NULL`. Với customer, lọc `projects.user_id` theo ID tài khoản; không yêu cầu khách hàng có phân công kỹ thuật.
 3. Thêm trạng thái `new`, `in_progress`, `completed` nếu chọn bộ lọc tương ứng. Bộ lọc `pending` của admin kiểm tra dự án có yêu cầu hoặc giai đoạn chờ duyệt.
 4. `SELECT COUNT(*)` lấy tổng số dự án và gọi `UsePaginationState::make()`.
 5. `SELECT p.*` lấy thông tin dự án cùng số bước đã duyệt, số thành viên và số yêu cầu chờ.
@@ -347,7 +349,7 @@ Muốn sửa điều kiện đọc danh sách thì tìm `listing()`. Muốn sử
 ### 6.2. `project($id, $actor, $lock = false)` — kiểm tra quyền dự án
 
 - Đọc dự án theo ID.
-- Chỉ chấp nhận vai trò admin hoặc technician.
+- Chấp nhận admin, technician hoặc customer. Customer phải là chủ sở hữu dự án qua `projects.user_id`.
 - Với technician, bắt buộc có dòng phân công của dự án với `ended_at IS NULL`.
 - Nếu `$lock=true`, thêm `FOR UPDATE` để khóa dòng dự án trong transaction đang xử lý.
 
@@ -358,6 +360,8 @@ Muốn sửa điều kiện đọc danh sách thì tìm `listing()`. Muốn sử
 ### 6.3. `detail($id, $actor, $logPage, $requestPage)` — đọc chi tiết
 
 Gọi `project()` trước, sau đó đọc:
+
+Riêng customer, hàm trả sớm mảng thông tin dự án đã chọn cột, sáu giai đoạn và tên nhóm đang phụ trách. Không truy vấn/trả yêu cầu, nhật ký, hồ sơ nội bộ hoặc danh sách nhân viên rảnh. Controller dùng dữ liệu này cho `customer-detail.php` và bỏ phần nạp lịch nhân viên/phân trang tài liệu nội bộ. Bảng dưới mô tả dữ liệu dành cho admin/technician.
 
 | Khóa trong mảng trả về | Ý nghĩa |
 | --- | --- |
@@ -391,7 +395,7 @@ Trong mỗi trang, người có % rảnh cao hơn được đưa lên trước; 
 
 ### 6.5. `act($actor, $id, $action, $data, $files)` — điều phối thao tác ghi
 
-Đây là hàm nên đọc đầu tiên khi tìm hiểu chức năng gửi form:
+Đây là hàm nên đọc đầu tiên khi tìm hiểu chức năng gửi form. Hàm từ chối mọi vai trò ngoài admin/technician trước khi mở transaction; khách hàng không thể gửi POST để cập nhật dù là dự án của chính mình.
 
 ```text
 beginTransaction
@@ -737,7 +741,7 @@ Database chuẩn cần chứa ba bảng mới và các cột/ràng buộc đã b
 
 ### 12.1. Những phần đã có kiểm tra
 
-Bộ kiểm thử hiện có gồm 34 kiểm tra nghiệp vụ và 15 kiểm tra HTTP; đã chạy thành công ở các lượt xác minh mã nguồn trước khi bổ sung tài liệu này. Có các tình huống phân công nhiều người, mất quyền sau đổi người, duyệt tuần tự, hoãn lịch, cảnh báo khi gửi duyệt lúc có hoãn, CSRF, upload giả ảnh, quá 5MB, trùng nội dung và tải tài liệu của dự án khác.
+Bộ kiểm thử sau khi bổ sung khách hàng gồm 48 kiểm tra nghiệp vụ và 31 kiểm tra HTTP. Có các tình huống phân công nhiều người, mất quyền sau đổi người, duyệt tuần tự, hoãn lịch, cảnh báo khi gửi duyệt lúc có hoãn, CSRF, upload giả ảnh, quá 5MB, trùng nội dung và tải tài liệu của dự án khác. Các tình huống mới kiểm tra quyền sở hữu của khách hàng, chặn POST giả cho tất cả thao tác ghi, không lộ dữ liệu nội bộ và vẫn xem được dự án đã hoàn tất.
 
 Các kiểm tra dùng database thử nghiệm riêng. Không cần chạy test để sử dụng trang quản lý lắp đặt; hướng dẫn chạy và dọn dữ liệu nằm trong tài liệu cài đặt.
 

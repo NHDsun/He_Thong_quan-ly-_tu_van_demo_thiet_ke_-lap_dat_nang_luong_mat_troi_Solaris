@@ -43,10 +43,14 @@ final class UseInstallationWorkflow
     public function project(int $id, array $actor, bool $lock = false): array
     {
         $project = $this->rows('SELECT * FROM projects WHERE id=?' . ($lock ? ' FOR UPDATE' : ''), [$id])[0] ?? null;
-        if (!$project || !in_array($actor['role'], ['admin', 'technician'], true)) {
+        if (!$project || !in_array($actor['role'], ['admin', 'technician', 'customer'], true)) {
             throw new RuntimeException('Không tìm thấy dự án hoặc bạn không có quyền truy cập.');
         }
-        if ($actor['role'] !== 'admin' && !$this->rows('SELECT id FROM project_assignments WHERE project_id=? AND technician_id=? AND ended_at IS NULL', [$id, $actor['id']])) {
+        if ($actor['role'] === 'customer') {
+            if ((int) $project['user_id'] !== (int) $actor['id']) {
+                throw new RuntimeException('Bạn không có quyền xem dự án này.');
+            }
+        } elseif ($actor['role'] !== 'admin' && !$this->rows('SELECT id FROM project_assignments WHERE project_id=? AND technician_id=? AND ended_at IS NULL', [$id, $actor['id']])) {
             throw new RuntimeException('Bạn không còn được phân công trong dự án này.');
         }
         return $project;
@@ -54,9 +58,15 @@ final class UseInstallationWorkflow
 
     public function listing(array $actor, string $filter, int $page): array
     {
+        if (!in_array($actor['role'], ['admin', 'technician', 'customer'], true)) {
+            throw new RuntimeException('Vui lòng đăng nhập để xem dự án.');
+        }
         $where = '1=1';
         $params = [];
-        if ($actor['role'] !== 'admin') {
+        if ($actor['role'] === 'customer') {
+            $where .= ' AND p.user_id=?';
+            $params[] = $actor['id'];
+        } elseif ($actor['role'] !== 'admin') {
             $where .= ' AND EXISTS (SELECT 1 FROM project_assignments a WHERE a.project_id=p.id AND a.technician_id=? AND a.ended_at IS NULL)';
             $params[] = $actor['id'];
         }
@@ -81,6 +91,20 @@ final class UseInstallationWorkflow
     public function detail(int $id, array $actor, int $logPage = 1, int $requestPage = 1): array
     {
         $project = $this->project($id, $actor);
+        if ($actor['role'] === 'customer') {
+            // Chỉ trả thông tin giám sát; không trả hồ sơ và nhật ký xử lý nội bộ.
+            $summary = [];
+            foreach (['id', 'contract_code', 'project_name', 'capacity_kwp', 'total_amount',
+                'installation_address', 'status', 'current_stage', 'start_date',
+                'planned_end_date', 'completion_date', 'completed_at'] as $field) {
+                $summary[$field] = $project[$field];
+            }
+            return [
+                'project' => $summary,
+                'stages' => $this->rows('SELECT stage,position,status,planned_start,planned_end,started_at,completed_at FROM project_stages WHERE project_id=? ORDER BY position', [$id]),
+                'crew' => $this->rows('SELECT u.full_name FROM project_assignments a JOIN users u ON u.id=a.technician_id WHERE a.project_id=? AND a.ended_at IS NULL ORDER BY a.id', [$id]),
+            ];
+        }
         $stages = $this->rows('SELECT * FROM project_stages WHERE project_id=? ORDER BY position', [$id]);
         $documents = $this->rows('SELECT d.*, u.full_name FROM project_documents d JOIN users u ON u.id=d.uploaded_by WHERE project_id=? ORDER BY d.id DESC', [$id]);
         $crew = $this->rows('SELECT a.*,u.full_name FROM project_assignments a JOIN users u ON u.id=a.technician_id WHERE project_id=? AND ended_at IS NULL ORDER BY a.id', [$id]);
@@ -185,6 +209,9 @@ final class UseInstallationWorkflow
     // Một lần gửi form tương ứng với một nhánh xử lý bên dưới.
     public function act(array $actor, int $id, string $action, array $data, array $files = []): void
     {
+        if (!in_array($actor['role'], ['admin', 'technician'], true)) {
+            throw new RuntimeException('Khách hàng chỉ có quyền xem tiến độ dự án.');
+        }
         $stored = null;
         $this->db->beginTransaction();
 

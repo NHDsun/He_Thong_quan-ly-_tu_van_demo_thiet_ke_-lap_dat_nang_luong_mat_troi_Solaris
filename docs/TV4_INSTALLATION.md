@@ -4,6 +4,14 @@ Tài liệu giải thích chi tiết các thay đổi, chức năng và hàm x�
 
 ## Đọc code theo một chức năng
 
+### Bổ sung giao diện khách hàng và khách chưa đăng nhập
+
+- Khách chưa đăng nhập xem trang giới thiệu sáu giai đoạn, quyền lợi giám sát và form đăng nhập. Trang giới thiệu không cần truy vấn database.
+- Tài khoản `customer` xem các dự án có `projects.user_id` bằng ID của mình, gồm dự án mới, đang thực hiện và đã hoàn tất. Tài khoản mẫu có sẵn: `khachhang.demo`, mật khẩu `Solaris@2026`.
+- Trang chi tiết khách hàng dùng `customer-detail.php`, chỉ hiển thị thông tin dự án, lịch, tiến độ sáu bước và nhóm đang phụ trách. Không có upload, gửi yêu cầu, phê duyệt, nhật ký hoặc hồ sơ xử lý nội bộ.
+- Hook kiểm tra quyền sở hữu khi mở chi tiết; chặn toàn bộ thao tác ghi của khách hàng ngay trong `act()`. Route download tài liệu nội bộ cũng chặn khách hàng.
+- `guest.php` chứa nội dung công khai; không tra cứu dự án riêng bằng ID/mã hợp đồng khi chưa đăng nhập. Cấu trúc database không thay đổi.
+
 Phân hệ dùng PHP thuần, PDO và JavaScript thông thường. Không cần cài framework hoặc thư viện giao diện. Đợt chỉnh sửa này giữ nguyên cấu trúc database và các chức năng; nếu đã import database trước đó thì không cần import lại.
 
 Nên đọc theo thứ tự:

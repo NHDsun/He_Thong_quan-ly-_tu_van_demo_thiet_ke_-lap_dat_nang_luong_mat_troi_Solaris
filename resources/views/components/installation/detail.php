@@ -197,10 +197,6 @@ foreach ($detail['crew'] as $member) {
                             <?php UI::component('button', 'Duyệt & mở bước tiếp theo', ['type' => 'submit'], ['name' => 'action', 'value' => 'approve_stage']); UI::component('button', 'Yêu cầu bổ sung', ['type' => 'submit', 'variant' => 'outline'], ['name' => 'action', 'value' => 'reject_stage']); ?>
                         </div>
                     </form>
-                <?php elseif ($stage['status'] === 'locked'): ?>
-                    <p class="tv4-muted">Giai đoạn mở sau khi bước trước được quản lý duyệt.</p>
-                <?php elseif ($stage['status'] === 'pending_approval'): ?>
-                    <p class="tv4-muted">Đã gửi minh chứng, đang chờ quản lý phê duyệt.</p>
                 <?php endif; ?>
             </article>
         <?php endforeach; ?>
@@ -284,7 +280,6 @@ foreach ($detail['crew'] as $member) {
         <?php if (!$admin && $editable && $current && in_array($current['status'], ['in_progress','revision_required'], true)): ?>
             <section class="sol-glass-card tv4-panel">
                 <h3>Đề xuất hoãn lịch</h3>
-                <p class="tv4-muted">Áp dụng cho giai đoạn đang làm. Bạn vẫn có thể tiếp tục công việc và gửi duyệt khi hoàn thành.</p>
                 <form method="post">
                     <?php UI::form('postpone'); ?>
                     <label>
@@ -334,7 +329,7 @@ foreach ($detail['crew'] as $member) {
                         </select>
                     </label>
                     <?php UI::pager($viewData['availability']['pager'], 'staff_page'); ?>
-                    <small class="tv4-muted">Mức rảnh trong lịch dự kiến dự án; số dự án tính toàn bộ dự án đang làm.</small>
+                    <small class="tv4-muted">% rảnh theo lịch dự án · Tổng số dự án đang làm</small>
                     <label>
                         Lý do
                         <textarea name="reason" required maxlength="5000"></textarea>

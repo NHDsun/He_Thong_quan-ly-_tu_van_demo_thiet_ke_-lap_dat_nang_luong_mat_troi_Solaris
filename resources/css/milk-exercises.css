@@ -1,0 +1,72 @@
+.milk-exercises { padding: 2rem; max-width: 1100px; margin: 0 auto; }
+.milk-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding-bottom: 1.25rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-subtle); }
+.milk-exercises .milk-heading h2 { font-size: 1.5rem; font-family: var(--font-heading); margin: .5rem 0 0; }
+.milk-exercises h2 { font-size: 1.1rem; margin: .8rem 0; }
+.milk-exercises h3 { margin: 1rem 0 .5rem; }
+.milk-exercises p { color: var(--text-secondary); margin: .7rem 0; }
+.milk-exercises a,.milk-exercises strong { color: var(--accent-gold); }
+.milk-actions { display: flex; flex-wrap: wrap; gap: .7rem; align-items: center; margin: 1rem 0; }
+.milk-panel { padding: 1.25rem; margin: 1rem 0; }
+.milk-panel:hover { transform: none; }
+.milk-notice { padding: 1rem 2rem; margin: 1rem 0; background: var(--bg-elevated); border-left: 3px solid var(--accent-gold); border-radius: var(--radius-sm); }
+.milk-form,.milk-detail { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; }
+.milk-form label { display: grid; gap: .4rem; font-size: .9rem; }
+.milk-form input,.milk-form select,.milk-form textarea { min-width: 0; width: 100%; padding: .7rem; font: inherit; color: var(--text-primary); background: var(--bg-base); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color-scheme: dark; }
+.milk-exercises :focus-visible { outline: 2px solid var(--accent-gold); outline-offset: 3px; }
+.milk-scroll { overflow-x: auto; }
+.milk-exercises table { width: 100%; border-collapse: collapse; font-size: .85rem; text-align: left; }
+.milk-exercises th,.milk-exercises td { padding: .8rem; border-bottom: 1px solid var(--border-subtle); }
+.milk-exercises th { color: var(--accent-gold); white-space: nowrap; }
+.milk-exercises tr:nth-child(even) { background: var(--bg-surface); }
+.milk-cards { display: grid; grid-template-columns: repeat(auto-fill,minmax(230px,1fr)); gap: 1rem; }
+.milk-photo { display: block; width: 100%; height: 200px; object-fit: contain; border-radius: var(--radius-sm); }
+.milk-no-photo { display: grid; place-items: center; height: 200px; background: var(--bg-elevated); color: var(--text-secondary); }
+.milk-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.milk-pager { justify-content: flex-end; }
+@media(max-width:650px) { .milk-form,.milk-detail { grid-template-columns: 1fr; } }
+
+.milk-search .milk-heading h2 { font-style: italic; color: var(--accent-gold); }
+.milk-search .milk-search-form { display: block; margin: 1rem 0; padding: .8rem; background: var(--bg-elevated); border-radius: var(--radius-sm); }
+.milk-search-selects,.milk-search-name { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: .8rem; }
+.milk-search-selects { margin-bottom: .8rem; }
+.milk-search .milk-search-selects label { display: flex; align-items: center; gap: .5rem; }
+.milk-search-selects select { width: auto; max-width: 260px; }
+.milk-search .milk-search-name input { width: min(320px,100%); }
+.milk-search .milk-search-count { text-align: center; font-weight: 700; color: var(--text-primary); margin: 1rem 0 1.4rem; }
+.milk-search-results { border: 1px solid var(--accent-amber); border-radius: var(--radius-sm); overflow: hidden; }
+.milk-search-result + .milk-search-result { border-top: 1px solid var(--accent-amber); }
+.milk-search .milk-search-result h3 { margin: 0; padding: .65rem 1rem; text-align: center; font-size: 1.2rem; font-style: italic; color: var(--accent-gold); background: var(--bg-elevated); border-bottom: 1px solid var(--border-subtle); }
+.milk-search-product { display: grid; grid-template-columns: 180px minmax(0,1fr); }
+.milk-search-image { display: grid; place-items: center; padding: .8rem; border-right: 1px solid var(--border-subtle); color: var(--text-secondary); }
+.milk-search-image img { width: 100%; height: 200px; object-fit: contain; }
+.milk-search-info { padding: .8rem 1rem; min-width: 0; }
+.milk-search .milk-search-info p { margin: 0 0 .65rem; overflow-wrap: anywhere; }
+.milk-search .milk-search-info p:last-child { margin-bottom: 0; }
+.milk-search .milk-search-info strong { color: var(--text-primary); }
+.milk-search-price { color: var(--accent-gold); white-space: nowrap; }
+.milk-search-empty { text-align: center; }
+@media(max-width:560px) {
+    .milk-search-product { grid-template-columns: 1fr; }
+    .milk-search-image { border-right: 0; border-bottom: 1px solid var(--border-subtle); }
+    .milk-search-image img { max-width: 180px; }
+    .milk-search .milk-search-selects label { width: 100%; justify-content: space-between; }
+    .milk-search-selects select { width: 65%; }
+}
+
+.milk-product-list { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); border-top: 1px solid var(--border-subtle); border-left: 1px solid var(--border-subtle); }
+.milk-product-cell { text-align: center; padding: .8rem .5rem; border-right: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); min-width: 0; }
+.milk-product-cell .milk-product-name { display: block; font-weight: 700; text-decoration: underline; }
+.milk-product-cell p { font-size: .75rem; margin: .4rem 0; }
+.milk-product-cell img { width: 100%; height: 150px; object-fit: contain; }
+.milk-product-cell .milk-no-photo { height: 150px; }
+.milk-product-back,.milk-create-result-title { text-align: center; }
+.milk-create .milk-create-form { display: grid; grid-template-columns: 1fr; max-width: 720px; margin: 0 auto; padding: 1rem; background: var(--bg-elevated); border-radius: var(--radius-sm); }
+.milk-create-form > label { display: grid; grid-template-columns: 170px minmax(0,1fr); align-items: center; column-gap: .8rem; }
+.milk-create-form .milk-actions { justify-content: center; }
+.milk-create .milk-upload-hint { margin: 0; font-size: .75rem; text-align: right; }
+.milk-create .milk-create-result-title { margin-top: 2rem; }
+@media(max-width:850px) { .milk-product-list { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media(max-width:560px) {
+    .milk-product-list { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .milk-create-form > label { grid-template-columns: 1fr; }
+}
