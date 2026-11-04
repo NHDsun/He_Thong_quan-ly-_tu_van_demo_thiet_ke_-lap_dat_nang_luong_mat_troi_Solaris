@@ -55,13 +55,15 @@ final class InstallationController
             $view['listing'] = $workflow->listing($actor, $view['filter'], (int) ($_GET['p'] ?? 1));
             if ($id) {
                 $view['detail'] = $workflow->detail($id, $actor, (int) ($_GET['log_page'] ?? 1), (int) ($_GET['request_page'] ?? 1));
-                $project = $view['detail']['project'];
-                $start = (string) ($_GET['from'] ?? $project['start_date'] ?? date('Y-m-d'));
-                $end = (string) ($_GET['to'] ?? $project['planned_end_date'] ?? date('Y-m-d', strtotime('+20 days')));
-                $view['availability'] = $workflow->availability($start, $end, (int) ($_GET['staff_page'] ?? 1), $id);
-                $docPager = \App\Hooks\UsePaginationState::make(count($view['detail']['documents']), (int) ($_GET['doc_page'] ?? 1));
-                $view['detail']['documents'] = array_slice($view['detail']['documents'], $docPager['offset'], $docPager['limit']);
-                $view['detail']['docPager'] = $docPager;
+                if ($actor['role'] !== 'customer') {
+                    $project = $view['detail']['project'];
+                    $start = (string) ($_GET['from'] ?? $project['start_date'] ?? date('Y-m-d'));
+                    $end = (string) ($_GET['to'] ?? $project['planned_end_date'] ?? date('Y-m-d', strtotime('+20 days')));
+                    $view['availability'] = $workflow->availability($start, $end, (int) ($_GET['staff_page'] ?? 1), $id);
+                    $docPager = \App\Hooks\UsePaginationState::make(count($view['detail']['documents'] ?? []), (int) ($_GET['doc_page'] ?? 1));
+                    $view['detail']['documents'] = array_slice($view['detail']['documents'] ?? [], $docPager['offset'], $docPager['limit']);
+                    $view['detail']['docPager'] = $docPager;
+                }
             }
         } catch (PDOException $error) {
             error_log('Installation database: ' . $error->getMessage());
