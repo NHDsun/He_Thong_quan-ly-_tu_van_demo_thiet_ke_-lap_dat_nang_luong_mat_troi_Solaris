@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 use App\Hooks\UseProductSpecifications;
+use App\Hooks\UseProductCsrf;
 
 $editorProduct = $editorProduct ?? [];
 $editing = !empty($editorProduct['id']);
@@ -37,6 +38,8 @@ foreach ($editorSpecs as $specKey => $specValue) {
     }
 }
 $escapeEditor = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+$editorErrors = $viewData['fieldErrors'] ?? [];
+$editorError = static fn (string $key): string => isset($editorErrors[$key]) ? '<small class="admin-field-error" role="alert">' . $escapeEditor($editorErrors[$key]) . '</small>' : '';
 $editorImageName = basename((string) ($editorProduct['image_url'] ?? ''));
 $editorPreviewName = $editorImageName;
 $editorImageRoot = dirname(__DIR__, 3) . '/assets/products/';
@@ -44,27 +47,29 @@ if ($editorPreviewName !== '' && !is_file($editorImageRoot . $editorPreviewName)
 $editorImagePath = $editorImageName !== '' && is_file($editorImageRoot . $editorPreviewName) ? 'assets/products/' . rawurlencode($editorPreviewName) : '';
 ?>
 <form class="admin-product-editor sol-glass-card" method="post" enctype="multipart/form-data" data-product-editor>
+    <?= UseProductCsrf::field() ?>
     <input type="hidden" name="MAX_FILE_SIZE" value="5242880">
     <input type="hidden" name="cart_action" value="<?= $editing ? 'admin_update' : 'admin_create' ?>">
     <?php if ($editing): ?><input type="hidden" name="product_id" value="<?= (int) $editorProduct['id'] ?>"><?php endif; ?>
-    <h2><?= $editing ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới' ?></h2>
-    <p class="admin-editor-hint">Thông số kỹ thuật thay đổi theo danh mục: tấm pin dùng W, inverter dùng kW, pin lưu trữ dùng kWh.</p>
-    <fieldset>
-        <legend>Thông tin cơ bản</legend>
+    <div class="admin-editor-heading"><div><span class="products-eyebrow"><?= $editing ? 'CẬP NHẬT THIẾT BỊ' : 'HỒ SƠ SẢN PHẨM MỚI' ?></span><h2>Thông tin sản phẩm</h2><p class="admin-editor-hint">Nhập thông tin cơ bản, chọn ảnh và hoàn thiện thông số theo danh mục.</p></div><span class="admin-editor-required-note">* Thông tin bắt buộc</span></div>
+    <?php if ($editorErrors): ?><div class="admin-validation-summary" role="alert"><strong>Vui lòng kiểm tra lại thông tin</strong><ul><?php foreach ($editorErrors as $message): ?><li><?= $escapeEditor($message) ?></li><?php endforeach; ?></ul></div><?php endif; ?>
+    <fieldset class="admin-editor-basic">
+        <legend><span class="admin-section-number">01</span> Thông tin cơ bản & hình ảnh</legend>
         <div class="admin-editor-grid">
-            <label>Tên sản phẩm<input class="products-input" name="name" maxlength="255" required value="<?= $escapeEditor($editorProduct['name'] ?? '') ?>"></label>
-            <label>Mã sản phẩm<input class="products-input" name="product_code" maxlength="50" required value="<?= $escapeEditor($editorProduct['product_code'] ?? '') ?>"></label>
-            <label>Danh mục<select class="products-input" name="category_id" required><?php foreach ($editorCategories as $editorCategory): ?><option value="<?= (int) $editorCategory['id'] ?>" data-slug="<?= $escapeEditor($editorCategory['slug']) ?>" <?= $editorCategoryId === (int) $editorCategory['id'] ? 'selected' : '' ?>><?= $escapeEditor($editorCategory['name']) ?></option><?php endforeach; ?></select></label>
+            <label class="admin-editor-name">Tên sản phẩm *<input class="products-input" name="name" maxlength="255" required placeholder="Ví dụ: Inverter Deye Hybrid 5 kW" aria-invalid="<?= isset($editorErrors['name']) ? 'true' : 'false' ?>" value="<?= $escapeEditor($editorProduct['name'] ?? '') ?>"><?= $editorError('name') ?></label>
+            <label>Mã sản phẩm *<input class="products-input" name="product_code" maxlength="50" required placeholder="Mã duy nhất, ví dụ INV-DEYE-5K" aria-invalid="<?= isset($editorErrors['product_code']) ? 'true' : 'false' ?>" value="<?= $escapeEditor($editorProduct['product_code'] ?? '') ?>"><?= $editorError('product_code') ?></label>
+            <label>Danh mục *<select class="products-input" name="category_id" required><?php foreach ($editorCategories as $editorCategory): ?><option value="<?= (int) $editorCategory['id'] ?>" data-slug="<?= $escapeEditor($editorCategory['slug']) ?>" <?= $editorCategoryId === (int) $editorCategory['id'] ? 'selected' : '' ?>><?= $escapeEditor($editorCategory['name']) ?></option><?php endforeach; ?></select><?= $editorError('category_id') ?></label>
             <?php
             $priceCategorySlug = $editorCategorySlug;
             $priceInputName = 'price';
             $priceInputLabel = 'Giá sản phẩm (VNĐ)';
             $priceInputValue = $editorProduct['price'] ?? '';
             $priceInputRequired = true;
+            $priceInputInvalid = isset($editorErrors['price']);
             $pricePlaceholder = 'Nhập giá sản phẩm';
             ?>
-            <label for="product-price-price"><?= $priceInputLabel ?><?php include __DIR__ . '/product-price-input.blade.php'; ?></label>
-            <label>Bảo hành (năm)<input class="products-input" type="number" name="warranty_years" min="0" step="1" value="<?= $escapeEditor($editorProduct['warranty_years'] ?? 5) ?>"></label>
+            <label for="product-price-price"><?= $priceInputLabel ?> *<?php include __DIR__ . '/product-price-input.blade.php'; ?><?= $editorError('price') ?></label>
+            <label>Bảo hành (năm)<input class="products-input" type="number" name="warranty_years" min="0" max="100" step="1" value="<?= $escapeEditor($editorProduct['warranty_years'] ?? 5) ?>"><?= $editorError('warranty_years') ?></label>
             <div class="admin-editor-image admin-image-upload">
                 <label for="product-image-file">Ảnh sản phẩm từ máy tính<input id="product-image-file" class="products-input" type="file" name="product_image" accept=".jpg,.jpeg,.png,image/jpeg,image/png" aria-describedby="product-image-help product-image-status"></label>
                 <input type="hidden" name="image_url" value="<?= $escapeEditor($editorImageName) ?>">
@@ -79,8 +84,9 @@ $editorImagePath = $editorImageName !== '' && is_file($editorImageRoot . $editor
             </div>
         </div>
     </fieldset>
-    <fieldset>
+    <fieldset class="admin-editor-specifications">
         <legend data-editor-spec-title>Thông số kỹ thuật · <?= $escapeEditor($editorCategoryName) ?></legend>
+        <p class="admin-editor-hint">Tấm pin: W · Inverter: kW · Pin lưu trữ: kWh. Thông số cần cho tính toán phải lớn hơn 0.</p>
         <div class="admin-editor-grid">
             <?php foreach ($editorFields as $specKey => $specField): $specValue = $editorSpecs[$specKey] ?? ''; $specVisible = UseProductSpecifications::appliesTo($specField, $editorCategorySlug); ?>
                 <?php if (is_array($specValue)) continue; ?>
@@ -96,7 +102,7 @@ $editorImagePath = $editorImageName !== '' && is_file($editorImageRoot . $editor
         </div>
         <datalist id="product-system-types"><option value="Hybrid"><option value="On-grid"><option value="Off-grid"></datalist>
     </fieldset>
-    <fieldset class="admin-editor-metadata">
+    <details class="admin-editor-extra"><summary>Nguồn dữ liệu & cách trình bày giá, hình ảnh</summary><fieldset class="admin-editor-metadata">
         <legend>Nguồn dữ liệu, giá và hình ảnh</legend>
         <p class="admin-editor-hint">Chỉ chọn dữ liệu thực tế khi đã kiểm chứng. Các mục này không phải thông số kỹ thuật của thiết bị.</p>
         <div class="admin-editor-grid">
@@ -109,9 +115,10 @@ $editorImagePath = $editorImageName !== '' && is_file($editorImageRoot . $editor
                 <label><?= $escapeEditor($metaField['label']) ?><select class="products-input" name="spec_metadata[<?= $escapeEditor($metaKey) ?>]"><?php foreach ($metaOptions as $optionValue => $optionLabel): ?><option value="<?= $escapeEditor($optionValue) ?>" <?= (string) $optionValue === $metaValue ? 'selected' : '' ?>><?= $escapeEditor($optionLabel) ?></option><?php endforeach; ?></select></label>
             <?php endforeach; ?>
         </div>
-    </fieldset>
+    </fieldset></details>
     <div class="admin-editor-actions">
-        <?php if ($editing): ?><button class="sol-btn sol-btn--outline" type="submit" name="cart_action" value="admin_delete" formnovalidate onclick="return confirm('Ẩn sản phẩm này khỏi catalog?')">Ẩn sản phẩm</button><?php endif; ?>
+        <a class="sol-btn sol-btn--outline" href="<?= $escapeEditor($returnUrl ?? 'index.php?page=products&action=manage') ?>">Hủy / Quay lại</a>
+        <?php if ($editing): ?><button class="sol-btn sol-btn--outline" type="submit" name="cart_action" value="<?= !empty($editorProduct['is_active']) ? 'admin_delete' : 'admin_restore' ?>" formnovalidate onclick="return confirm('Thay đổi trạng thái hiển thị sản phẩm này?')"><?= !empty($editorProduct['is_active']) ? 'Ẩn sản phẩm' : 'Khôi phục sản phẩm' ?></button><?php endif; ?>
         <button class="sol-btn sol-btn--solar" type="submit"><?= $editing ? 'Lưu thay đổi' : 'Thêm sản phẩm' ?></button>
     </div>
 </form>
@@ -135,6 +142,10 @@ $editorImagePath = $editorImageName !== '' && is_file($editorImageRoot . $editor
             const visible = !groups.length || groups.includes(slug);
             label.hidden = !visible;
             control.disabled = !visible;
+            if (['specs[power_w]', 'specs[rated_kw]', 'specs[energy_kwh]'].includes(control.name)) {
+                control.required = visible;
+                control.min = '0.001';
+            }
         });
     };
     category.addEventListener('change', updateFields);

@@ -96,6 +96,60 @@ final class UseProductSpecifications
         return self::fields()[$key]['label'] ?? ucwords(str_replace('_', ' ', $key));
     }
 
+    public static function categorySlug(array $product): string
+    {
+        if (!empty($product['category_slug'])) return (string) $product['category_slug'];
+        $name = mb_strtolower((string) ($product['category_name'] ?? ''));
+        foreach (['pin-luu-tru' => ['pin lưu trữ', 'ắc quy', 'lithium'], 'tam-pin' => ['tấm pin'], 'inverter' => ['inverter', 'biến tần'], 'tu-dien' => ['tủ điện'], 'khung-gia' => ['khung', 'ray'], 'day-cap' => ['cáp', 'dây'], 'dong-ho' => ['đồng hồ', 'công tơ']] as $slug => $words) {
+            foreach ($words as $word) if (str_contains($name, $word)) return $slug;
+        }
+        return '';
+    }
+
+    public static function number(float $number): string
+    {
+        return rtrim(rtrim(number_format($number, 3, ',', '.'), '0'), ',');
+    }
+
+    public static function capacityLabel(array $product, int $quantity = 1): string
+    {
+        $category = self::categorySlug($product);
+        $specs = self::decode($product['technical_specs'] ?? null);
+        $watts = $product['capacity_watts'] ?? null;
+        if ($category === 'pin-luu-tru') {
+            $energy = $specs['energy_kwh'] ?? (is_numeric($watts) ? (float) $watts / 1000 : null);
+            return is_numeric($energy) ? self::number((float) $energy * $quantity) . ' kWh' : 'Dung lượng đang cập nhật';
+        }
+        if (in_array($category, ['inverter', 'tam-pin'], true)) {
+            if (!is_numeric($watts)) return 'Công suất đang cập nhật';
+            $useKw = $category === 'inverter' || $quantity > 1;
+            return self::number((float) $watts * $quantity / ($useKw ? 1000 : 1)) . ($useKw ? ($category === 'tam-pin' ? ' kWp' : ' kW') : ' W');
+        }
+        return 'Thiết bị phụ trợ';
+    }
+
+    public static function pricingUnit(array $product): string
+    {
+        $value = self::decode($product['technical_specs'] ?? null)['pricing_unit'] ?? '';
+        if (is_scalar($value) && trim((string) $value) !== '') return trim((string) $value);
+        return self::categorySlug($product) === 'tam-pin' ? 'tấm' : 'thiết bị';
+    }
+
+    public static function priceLabel(array $product): string
+    {
+        if ((self::decode($product['technical_specs'] ?? null)['price_type'] ?? '') === 'lien_he_bao_gia') return 'Liên hệ báo giá';
+        return number_format((float) $product['price'], 0, ',', '.') . ' đ/' . self::pricingUnit($product);
+    }
+
+    public static function imageUrl(array $product): ?string
+    {
+        $name = basename((string) ($product['image_url'] ?? ''));
+        if ($name === '') return null;
+        $root = dirname(__DIR__, 2) . '/assets/products/';
+        if (!is_file($root . $name)) $name = pathinfo($name, PATHINFO_FILENAME) . '.jpg';
+        return is_file($root . $name) ? 'assets/products/' . rawurlencode($name) : null;
+    }
+
     public static function displayValue(mixed $value): string
     {
         if (is_bool($value)) return $value ? 'Có' : 'Không';

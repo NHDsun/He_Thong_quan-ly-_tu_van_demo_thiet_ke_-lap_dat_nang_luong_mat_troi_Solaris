@@ -78,7 +78,7 @@ $_GET = ['category' => 'pin-luu-tru', 'min_energy' => '9', 'max_energy' => '11']
 $demo = $offline->index();
 $check($demo['usingFallback'] && count($demo['products']) === 1, 'Dữ liệu minh họa không lọc theo kWh.');
 $check(UseProductFilters::capacityLabel($demo['products'][0]) === '10 kWh', 'Hiển thị sai đơn vị pin lưu trữ.');
-$check(UseProductFilters::capacityLabel(['category_slug' => 'inverter', 'capacity_watts' => 5500]) === '5.5 kW', 'Hiển thị sai đơn vị inverter.');
+$check(UseProductFilters::capacityLabel(['category_slug' => 'inverter', 'capacity_watts' => 5500]) === '5,5 kW', 'Hiển thị sai đơn vị inverter.');
 $check(UseProductFilters::capacityLabel(['category_slug' => 'tam-pin', 'capacity_watts' => 550]) === '550 W', 'Hiển thị sai đơn vị tấm pin.');
 
 $_GET = ['category' => 'tam-pin', 'q' => 'Device', 'p' => 2, 'sort' => 'price_asc'];

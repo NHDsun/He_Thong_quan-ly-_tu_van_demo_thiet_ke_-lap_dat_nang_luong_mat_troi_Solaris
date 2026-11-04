@@ -16,10 +16,12 @@ $pdo->exec("CREATE TABLE users (id INTEGER PRIMARY KEY, role TEXT); INSERT INTO 
 $pdo->exec("CREATE TABLE categories (id INTEGER PRIMARY KEY, slug TEXT); INSERT INTO categories VALUES (2,'inverter')");
 $pdo->exec('CREATE TABLE products (id INTEGER PRIMARY KEY AUTOINCREMENT, category_id INTEGER, product_code TEXT UNIQUE, name TEXT, capacity_watts INTEGER, price REAL, warranty_years INTEGER, technical_specs TEXT, image_url TEXT, stock_quantity INTEGER, is_active INTEGER)');
 $pdo->exec("INSERT INTO products VALUES (1,2,'EXISTING','Existing inverter',5000,10000000,5,'{}','old.jpg',0,1)");
+$pdo->exec("CREATE TRIGGER reject_test_insert BEFORE INSERT ON products WHEN NEW.product_code='DB-FAIL' BEGIN SELECT RAISE(ABORT,'Synthetic storage failure'); END");
 $controller = new ProductController($pdo);
 
 if (PHP_SAPI === 'cli-server') {
     $_SESSION = ['user_id' => ($_SERVER['HTTP_X_TEST_CASE'] ?? '') === 'unauthorized' ? 2 : 1];
+    $_SESSION['tv2_csrf_token'] = getenv('TV2_IMAGE_TEST_TOKEN');
     $pattern = dirname(__DIR__) . '/assets/products/*';
     $before = glob($pattern) ?: [];
     $result = $controller->adminProductAction((string) ($_POST['cart_action'] ?? ''));
@@ -44,7 +46,7 @@ $check = static function (bool $condition, string $message) use (&$checks): void
 session_set_save_handler(static fn () => true, static fn () => true, static fn () => '', static fn () => true, static fn () => true, static fn () => 0);
 session_start();
 $_SESSION = ['user_id' => 42, 'other_state' => 'keep', 'solar_cart' => [1 => ['id' => 1, 'quantity' => 20], 2 => ['id' => 2, 'quantity' => 1]], 'solar_demo_selection' => [1]];
-$_POST = ['selected' => [1]];
+$_POST = ['selected' => [1], 'csrf_token' => \App\Hooks\UseProductCsrf::token()];
 $controller->handleCart('clear');
 $check(ProductController::cartItems() === [] && ProductController::cartCount() === 0, 'Chưa xóa toàn bộ kế hoạch.');
 $check(ProductController::demoItems() === [] && !isset($_SESSION['solar_demo_selection']), 'Còn lựa chọn Demo sau khi xóa toàn bộ.');
@@ -79,7 +81,7 @@ for ($attempt = 0; $attempt < 40; $attempt++) {
 }
 $check($started, 'Máy chủ kiểm thử không sẵn sàng.');
 $request = static function (string $case, array $changes = [], ?CURLFile $file = null) use ($address, $token): array {
-    $fields = array_merge(['cart_action' => 'admin_create', 'name' => 'Upload test', 'product_code' => 'NEW', 'category_id' => 2, 'price' => 10000000, 'warranty_years' => 5, 'specs[rated_kw]' => 5, 'spec_metadata[demo_data]' => '0'], $changes);
+    $fields = array_merge(['csrf_token' => $token, 'cart_action' => 'admin_create', 'name' => 'Upload test', 'product_code' => 'NEW', 'category_id' => 2, 'price' => 10000000, 'warranty_years' => 5, 'specs[rated_kw]' => 5, 'spec_metadata[demo_data]' => '0'], $changes);
     if ($file) $fields['product_image'] = $file;
     $curl = curl_init('http://' . $address . '/');
     curl_setopt_array($curl, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $fields, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10, CURLOPT_HTTPHEADER => ['X-Test-Token: ' . $token, 'X-Test-Case: ' . $case]]);
@@ -104,4 +106,8 @@ foreach ([['fake', new CURLFile($fake, 'image/png', 'fake.png')], ['script', new
 }
 $duplicate = $request('duplicate', ['product_code' => 'EXISTING'], $image());
 $check(!$duplicate['result']['ok'] && $duplicate['new_files'] === 0, 'Lưu CSDL lỗi còn để lại ảnh tải lên.');
+$failedSave = $request('db-failure', ['product_code' => 'DB-FAIL'], $image());
+$check(!$failedSave['result']['ok'] && $failedSave['new_files'] === 0 && !str_contains($failedSave['result']['message'], 'Synthetic'), 'Lỗi CSDL còn để lại ảnh hoặc lộ thông tin kỹ thuật.');
+$invalidToken = $request('csrf-failure', ['csrf_token' => 'invalid'], $image());
+$check(!$invalidToken['result']['ok'] && $invalidToken['new_files'] === 0, 'CSRF sai vẫn lưu ảnh được.');
 echo "PASS: {$checks} kiểm tra upload HTTP thật, ảnh giả / quá cỡ / phân quyền, thay và giữ ảnh, dọn ảnh khi lưu lỗi, xóa toàn bộ kế hoạch và lựa chọn Demo. Chỉ dùng CSDL bộ nhớ.\n";

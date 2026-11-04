@@ -7,6 +7,8 @@ use App\Hooks\UsePaginationState;
 use App\Hooks\UseProductFilters;
 use App\Hooks\UseProductSpecifications;
 use App\Hooks\UseProductImageUpload;
+use App\Hooks\UseProductCsrf;
+use App\Hooks\UseProductValidation;
 use App\Config\Database;
 use PDO;
 use Throwable;
@@ -40,24 +42,31 @@ final class ProductController
     public function adminProductAction(string $action): array
     {
         if (!$this->isAdmin()) return ['ok' => false, 'message' => 'Bạn không có quyền quản trị sản phẩm.'];
+        if (!UseProductCsrf::valid($_POST['csrf_token'] ?? null)) return ['ok' => false, 'status' => 403, 'message' => 'Phiên biểu mẫu đã hết hạn. Vui lòng tải lại trang và thử lại.'];
         $pdo = $this->pdo ?? $this->database();
         $uploadedImage = null;
         try {
-            if ($action === 'admin_delete') {
+            if (in_array($action, ['admin_delete', 'admin_restore'], true)) {
                 $id = max(0, (int) ($_POST['product_id'] ?? 0));
-                $query = $pdo->prepare('UPDATE products SET is_active=0 WHERE id=?');
-                $query->execute([$id]);
-                return ['ok' => true, 'message' => 'Đã ẩn sản phẩm khỏi catalog.'];
+                $exists = $pdo->prepare('SELECT id FROM products WHERE id=?'); $exists->execute([$id]);
+                if (!$exists->fetchColumn()) return ['ok' => false, 'message' => 'Không tìm thấy sản phẩm.'];
+                $query = $pdo->prepare('UPDATE products SET is_active=? WHERE id=?');
+                $query->execute([$action === 'admin_restore' ? 1 : 0, $id]);
+                return ['ok' => true, 'message' => $action === 'admin_restore' ? 'Đã khôi phục sản phẩm vào catalog.' : 'Đã ẩn sản phẩm khỏi catalog.'];
             }
             if (!in_array($action, ['admin_create', 'admin_update'], true)) return ['ok' => false, 'message' => 'Thao tác không hợp lệ.'];
-            $name = trim((string) ($_POST['name'] ?? ''));
-            $code = trim((string) ($_POST['product_code'] ?? ''));
-            $categoryId = (int) ($_POST['category_id'] ?? 0);
-            $price = max(0, (float) ($_POST['price'] ?? 0));
+            ['values' => $values, 'errors' => $errors] = UseProductValidation::check($_POST);
+            if ($errors) return ['ok' => false, 'message' => 'Vui lòng kiểm tra các trường được đánh dấu.', 'fieldErrors' => $errors];
+            $name = $values['name']; $code = $values['product_code'];
+            $categoryId = (int) $values['category_id'];
+            $price = $values['price'];
             $capacity = null;
-            $warranty = max(0, (int) ($_POST['warranty_years'] ?? 0));
+            $warranty = (int) $values['warranty_years'];
             $image = basename(trim((string) ($_POST['image_url'] ?? '')));
             if ($name === '' || $code === '' || $categoryId < 1) return ['ok' => false, 'message' => 'Vui lòng nhập đủ tên, mã và danh mục sản phẩm.'];
+            $duplicate = $pdo->prepare('SELECT id FROM products WHERE product_code=? AND id<>? LIMIT 1');
+            $duplicate->execute([$code, $action === 'admin_update' ? (int) ($_POST['product_id'] ?? 0) : 0]);
+            if ($duplicate->fetchColumn()) return ['ok' => false, 'message' => 'Mã sản phẩm đã tồn tại.', 'fieldErrors' => ['product_code' => 'Mã sản phẩm đã tồn tại. Vui lòng dùng mã khác.']];
             $categoryQuery = $pdo->prepare('SELECT slug FROM categories WHERE id=?');
             $categoryQuery->execute([$categoryId]);
             $category = $categoryQuery->fetchColumn();
@@ -87,6 +96,7 @@ final class ProductController
                 if (!is_finite($watts) || $watts > 2147483647) return ['ok' => false, 'message' => 'Công suất / dung lượng vượt giới hạn lưu trữ.'];
                 $capacity = (int) round($watts);
             }
+            if ($capacityKey !== null && ($capacity === null || $capacity <= 0)) return ['ok' => false, 'message' => 'Vui lòng nhập công suất / dung lượng lớn hơn 0 cho danh mục đã chọn.'];
             if (isset($_FILES['product_image']) && ($_FILES['product_image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
                 $uploadedImage = UseProductImageUpload::store($_FILES['product_image']);
                 $image = $uploadedImage;
@@ -104,7 +114,11 @@ final class ProductController
             return ['ok' => false, 'message' => $error->getMessage()];
         } catch (Throwable $error) {
             if ($uploadedImage !== null) UseProductImageUpload::discard($uploadedImage);
-            return ['ok' => false, 'message' => 'Không thể lưu sản phẩm: ' . $error->getMessage()];
+            error_log('TV2 product save: ' . $error->getMessage());
+            $errorText = mb_strtolower($error->getMessage());
+            if ($error instanceof \PDOException && in_array((string) $error->getCode(), ['23000', '23505'], true) && str_contains($errorText, 'product_code') && (str_contains($errorText, 'unique') || str_contains($errorText, 'duplicate'))) return ['ok' => false, 'message' => 'Mã sản phẩm đã tồn tại.', 'fieldErrors' => ['product_code' => 'Mã sản phẩm đã tồn tại.']];
+            if ($error instanceof \RuntimeException && !$error instanceof \PDOException) return ['ok' => false, 'message' => $error->getMessage()];
+            return ['ok' => false, 'message' => 'Không thể lưu sản phẩm. Vui lòng thử lại sau.'];
         }
     }
 
@@ -125,43 +139,62 @@ final class ProductController
         return array_values(array_filter($cart, static fn (array $item): bool => in_array((int) $item['id'], $selected, true)));
     }
 
-    public function handleCart(string $action): void
+    public function handleCart(string $action): array
     {
         if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+        if (!UseProductCsrf::valid($_POST['csrf_token'] ?? null)) return ['ok' => false, 'status' => 403, 'message' => 'Phiên thao tác đã hết hạn. Vui lòng tải lại trang.'];
         $_SESSION['solar_cart'] ??= [];
         $id = max(0, (int) ($_POST['product_id'] ?? 0));
-        if ($action === 'remove') { unset($_SESSION['solar_cart'][$id]); return; }
+        if ($action === 'remove') {
+            unset($_SESSION['solar_cart'][$id]);
+            if (isset($_SESSION['solar_demo_selection'])) $_SESSION['solar_demo_selection'] = array_values(array_diff($_SESSION['solar_demo_selection'], [$id]));
+            return ['ok' => true, 'message' => 'Đã xóa thiết bị khỏi kế hoạch.'];
+        }
         if ($action === 'clear') {
             $_SESSION['solar_cart'] = [];
             unset($_SESSION['solar_demo_selection']);
-            return;
+            return ['ok' => true, 'message' => 'Đã xóa toàn bộ sản phẩm trong kế hoạch.'];
         }
-        if ($action === 'demo_selected') {
-            $_SESSION['solar_demo_selection'] = array_values(array_filter(array_map('intval', (array) ($_POST['selected'] ?? []))));
-            return;
-        }
-        if ($action === 'update') {
-            foreach ((array) ($_POST['quantity'] ?? []) as $productId => $quantity) {
-                $productId = (int) $productId; $quantity = max(1, min(99, (int) $quantity));
-                if (isset($_SESSION['solar_cart'][$productId])) $_SESSION['solar_cart'][$productId]['quantity'] = $quantity;
+        if (in_array($action, ['demo_selected', 'update'], true)) {
+            $selected = $_POST['selected'] ?? [];
+            if ($action === 'demo_selected') {
+                if (!is_array($selected) || !$selected) return ['ok' => false, 'message' => 'Vui lòng chọn ít nhất một thiết bị để đồng bộ sang Demo.'];
+                foreach ($selected as $selectedId) {
+                    if (!is_scalar($selectedId) || !ctype_digit((string) $selectedId) || !isset($_SESSION['solar_cart'][(int) $selectedId])) return ['ok' => false, 'message' => 'Danh sách thiết bị đã chọn không hợp lệ. Vui lòng tải lại kế hoạch.'];
+                }
             }
-            return;
+            $quantities = $_POST['quantity'] ?? null;
+            if (!is_array($quantities)) return ['ok' => false, 'message' => 'Vui lòng nhập số lượng thiết bị.'];
+            $updated = $_SESSION['solar_cart'];
+            foreach ($quantities as $productId => $quantity) {
+                if (!ctype_digit((string) $productId) || !isset($updated[(int) $productId]) || !is_scalar($quantity) || !preg_match('/^[1-9]\d?$/D', (string) $quantity)) return ['ok' => false, 'message' => 'Số lượng của mỗi thiết bị phải là số nguyên từ 1 đến 99.'];
+                $updated[(int) $productId]['quantity'] = (int) $quantity;
+            }
+            if ($action === 'demo_selected') {
+                foreach ($selected as $selectedId) if (!array_key_exists((int) $selectedId, $quantities)) return ['ok' => false, 'message' => 'Thiếu số lượng của thiết bị đã chọn.'];
+            }
+            $_SESSION['solar_cart'] = $updated;
+            if ($action === 'demo_selected') $_SESSION['solar_demo_selection'] = array_values(array_unique(array_map('intval', $selected)));
+            return ['ok' => true, 'message' => $action === 'update' ? 'Đã cập nhật số lượng thiết bị.' : 'Đã đồng bộ thiết bị và số lượng mới sang Demo.'];
         }
-        if ($action !== 'add' || $id < 1) return;
+        if ($action !== 'add' || $id < 1) return ['ok' => false, 'message' => 'Thao tác không hợp lệ.'];
         $product = $this->findProduct($id);
-        if (!$product) return;
+        if (!$product) return ['ok' => false, 'message' => 'Sản phẩm không còn khả dụng.'];
+        if ((int) ($_SESSION['solar_cart'][$id]['quantity'] ?? 0) >= 99) return ['ok' => false, 'message' => 'Mỗi loại thiết bị được chọn tối đa 99 món.'];
         $_SESSION['solar_cart'][$id] = [
             'id' => (int) $product['id'], 'product_code' => $product['product_code'],
             'name' => $product['name'], 'category_name' => $product['category_name'],
             'capacity_watts' => $product['capacity_watts'], 'price' => (float) $product['price'],
             'image_url' => $product['image_url'], 'quantity' => (int) ($_SESSION['solar_cart'][$id]['quantity'] ?? 0) + 1,
+            'category_slug' => $product['category_slug'], 'technical_specs' => $product['technical_specs'],
         ];
+        return ['ok' => true, 'message' => 'Đã thêm thiết bị vào kế hoạch.', 'count' => self::cartCount()];
     }
 
     private function findProduct(int $id): ?array
     {
         try {
-            $query = ($this->pdo ?? $this->database())->prepare('SELECT p.*, c.name AS category_name FROM products p JOIN categories c ON c.id=p.category_id WHERE p.id=? AND p.is_active=1');
+            $query = ($this->pdo ?? $this->database())->prepare('SELECT p.*, c.name AS category_name, c.slug AS category_slug FROM products p JOIN categories c ON c.id=p.category_id WHERE p.id=? AND p.is_active=1');
             $query->execute([$id]); return $query->fetch() ?: null;
         } catch (Throwable) { return null; }
     }
@@ -173,9 +206,11 @@ final class ProductController
         try {
             $pdo = $this->pdo ?? $this->database();
             $categories = $pdo->query('SELECT id, name, slug, description FROM categories ORDER BY name')->fetchAll();
-            $brands = $pdo->query("SELECT DISTINCT JSON_UNQUOTE(JSON_EXTRACT(technical_specs, '$.brand')) AS value FROM products WHERE is_active=1 AND JSON_UNQUOTE(JSON_EXTRACT(technical_specs, '$.brand')) IS NOT NULL ORDER BY value")->fetchAll(PDO::FETCH_COLUMN);
+            $brandRows = $pdo->query("SELECT c.slug AS category_slug, JSON_UNQUOTE(JSON_EXTRACT(p.technical_specs, '$.brand')) AS brand FROM products p JOIN categories c ON c.id=p.category_id WHERE p.is_active=1")->fetchAll();
+            $brandMap = self::brandMap($brandRows);
+            $brands = $brandMap[$filters['category']] ?? [];
             $systemTypes = $pdo->query("SELECT DISTINCT JSON_UNQUOTE(JSON_EXTRACT(p.technical_specs, '$.type')) AS value FROM products p JOIN categories c ON c.id=p.category_id WHERE p.is_active=1 AND c.slug='inverter' AND JSON_UNQUOTE(JSON_EXTRACT(p.technical_specs, '$.type')) IS NOT NULL ORDER BY value")->fetchAll(PDO::FETCH_COLUMN);
-            $filterOptions = ['brands' => $brands, 'system_types' => $systemTypes];
+            $filterOptions = ['brands' => $brands, 'brands_by_category' => $brandMap, 'system_types' => $systemTypes];
             $where = ['p.is_active = 1']; $params = [];
             if ($filterErrors) $where[] = '1 = 0';
             if ($filters['q'] !== '') {
@@ -212,6 +247,9 @@ final class ProductController
         } catch (Throwable) {
             $categories = self::fallbackCategories(); $fallback = self::fallbackProducts(); $products = ($filterErrors ? [] : UseProductFilters::filterProducts($fallback, $filters)); $pager = UsePaginationState::make(count($products), $page, 12); $products = array_slice($products, $pager['offset'], $pager['limit']); $filterOptions = ['brands' => array_values(array_unique(array_filter(array_map(static fn (array $item): ?string => json_decode((string) $item['technical_specs'], true)['brand'] ?? null, $fallback)))), 'system_types' => array_values(array_unique(array_filter(array_map(static fn (array $item): ?string => json_decode((string) $item['technical_specs'], true)['type'] ?? null, $fallback))))];
             $error = 'Chưa kết nối được CSDL sản phẩm; đang hiển thị dữ liệu minh họa.'; $usingFallback = true;
+            $brandMap = self::brandMap(array_map(static fn (array $item): array => ['category_slug' => $item['category_slug'], 'brand' => UseProductSpecifications::decode($item['technical_specs'])['brand'] ?? null], $fallback));
+            $filterOptions['brands_by_category'] = $brandMap;
+            $filterOptions['brands'] = $brandMap[$filters['category']] ?? [];
         }
         return compact('categories', 'products', 'filters', 'pager', 'filterOptions', 'error', 'usingFallback', 'filterErrors');
     }
@@ -219,8 +257,79 @@ final class ProductController
     public function detail(int $id): array
     {
         if ($id < 1) return ['product' => null, 'error' => 'Sản phẩm không hợp lệ.'];
-        try { $pdo = $this->pdo ?? $this->database(); $categories = $pdo->query('SELECT id,name,slug FROM categories ORDER BY name')->fetchAll(); $query = $pdo->prepare('SELECT p.*, c.name AS category_name, c.slug AS category_slug FROM products p JOIN categories c ON c.id = p.category_id WHERE p.id = :id AND p.is_active = 1'); $query->execute(['id' => $id]); return ['product' => $query->fetch() ?: null, 'categories' => $categories, 'error' => null]; }
+        try { $pdo = $this->pdo ?? $this->database(); $categories = $pdo->query('SELECT id,name,slug FROM categories ORDER BY name')->fetchAll(); $active = $this->isAdmin() ? '' : ' AND p.is_active=1'; $query = $pdo->prepare('SELECT p.*, c.name AS category_name, c.slug AS category_slug FROM products p JOIN categories c ON c.id = p.category_id WHERE p.id = :id' . $active); $query->execute(['id' => $id]); return ['product' => $query->fetch() ?: null, 'categories' => $categories, 'error' => null]; }
         catch (Throwable) { $product = self::fallbackProducts()[$id - 1] ?? null; return ['product' => $product, 'categories' => self::fallbackCategories(), 'error' => $product ? 'Dữ liệu minh họa.' : 'Không tìm thấy sản phẩm.']; }
+    }
+
+    private static function brandMap(array $rows): array
+    {
+        $map = ['' => []];
+        foreach ($rows as $row) {
+            $brand = trim((string) ($row['brand'] ?? ''));
+            if ($brand === '' || $brand === 'null') continue;
+            $map[''][] = $brand; $map[$row['category_slug']][] = $brand;
+        }
+        foreach ($map as &$brands) { $brands = array_values(array_unique($brands)); sort($brands, SORT_NATURAL | SORT_FLAG_CASE); }
+        return $map;
+    }
+
+    public function manage(): array
+    {
+        $base = ['mode' => 'manage', 'allowed' => $this->isAdmin(), 'products' => [], 'categories' => [], 'counts' => ['total' => 0, 'active' => 0, 'hidden' => 0]];
+        if (!$base['allowed']) return $base + ['error' => 'Chỉ quản trị viên được quản lý sản phẩm.'];
+        $filters = ['q' => UseProductFilters::text($_GET['q'] ?? ''), 'category' => UseProductFilters::text($_GET['category'] ?? ''), 'visibility' => UseProductFilters::text($_GET['visibility'] ?? 'all')];
+        if (!in_array($filters['visibility'], ['all', 'active', 'hidden'], true)) $filters['visibility'] = 'all';
+        try {
+            $pdo = $this->pdo ?? $this->database();
+            $base['categories'] = $pdo->query('SELECT id,name,slug FROM categories ORDER BY name')->fetchAll();
+            $total = (int) $pdo->query('SELECT COUNT(*) FROM products')->fetchColumn();
+            $active = (int) $pdo->query('SELECT COUNT(*) FROM products WHERE is_active=1')->fetchColumn();
+            $base['counts'] = ['total' => $total, 'active' => $active, 'hidden' => $total - $active];
+            $where = ['1=1']; $params = [];
+            if ($filters['q'] !== '') { $where[] = '(p.name LIKE ? OR p.product_code LIKE ?)'; $params[] = '%' . $filters['q'] . '%'; $params[] = '%' . $filters['q'] . '%'; }
+            if ($filters['category'] !== '') { $where[] = 'c.slug=?'; $params[] = $filters['category']; }
+            if ($filters['visibility'] !== 'all') { $where[] = 'p.is_active=?'; $params[] = $filters['visibility'] === 'active' ? 1 : 0; }
+            $from = ' FROM products p JOIN categories c ON c.id=p.category_id WHERE ' . implode(' AND ', $where);
+            $count = $pdo->prepare('SELECT COUNT(*)' . $from); $count->execute($params);
+            $pager = UsePaginationState::make((int) $count->fetchColumn(), (int) UseProductFilters::text($_GET['p'] ?? 1), 15);
+            $query = $pdo->prepare('SELECT p.*, c.name AS category_name, c.slug AS category_slug' . $from . ' ORDER BY p.id DESC LIMIT ? OFFSET ?');
+            foreach ($params as $index => $value) $query->bindValue($index + 1, $value);
+            $query->bindValue(count($params) + 1, $pager['limit'], PDO::PARAM_INT); $query->bindValue(count($params) + 2, $pager['offset'], PDO::PARAM_INT); $query->execute();
+            $base['products'] = $query->fetchAll();
+            return $base + compact('filters', 'pager') + ['error' => null];
+        } catch (Throwable) { return $base + ['filters' => $filters, 'error' => 'Không thể tải danh sách quản trị. Vui lòng thử lại sau.']; }
+    }
+
+    public function compare(): array
+    {
+        $base = ['mode' => 'compare', 'products' => [], 'error' => null];
+        $raw = $_GET['ids'] ?? [];
+        if (!is_array($raw) || count($raw) < 2 || count($raw) > 3) return array_replace($base, ['error' => 'Chọn từ 2 đến 3 sản phẩm cùng danh mục để so sánh.']);
+        foreach ($raw as $id) if (!is_scalar($id) || !ctype_digit((string) $id) || (int) $id < 1) return array_replace($base, ['error' => 'Danh sách sản phẩm không hợp lệ.']);
+        $ids = array_values(array_unique(array_map('intval', $raw)));
+        if (count($ids) < 2) return array_replace($base, ['error' => 'Vui lòng chọn các sản phẩm khác nhau.']);
+        try {
+            $query = ($this->pdo ?? $this->database())->prepare('SELECT p.*, c.name AS category_name, c.slug AS category_slug FROM products p JOIN categories c ON c.id=p.category_id WHERE p.is_active=1 AND p.id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')');
+            $query->execute($ids); $products = $query->fetchAll();
+            if (count($products) !== count($ids)) return array_replace($base, ['error' => 'Một sản phẩm đã được ẩn hoặc không còn tồn tại. Vui lòng chọn lại.']);
+            if (count(array_unique(array_column($products, 'category_id'))) !== 1) return array_replace($base, ['error' => 'Chỉ so sánh các sản phẩm thuộc cùng một danh mục.']);
+            usort($products, static fn (array $a, array $b): int => array_search((int) $a['id'], $ids, true) <=> array_search((int) $b['id'], $ids, true));
+            return array_replace($base, ['products' => $products]);
+        } catch (Throwable) { return array_replace($base, ['error' => 'Không thể tải sản phẩm so sánh. Vui lòng thử lại sau.']); }
+    }
+
+    public function cartDisplayItems(array $items): array
+    {
+        if (!$items) return [];
+        try {
+            $ids = array_map(static fn (array $item): int => (int) $item['id'], $items);
+            $query = ($this->pdo ?? $this->database())->prepare('SELECT id,technical_specs FROM products WHERE id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')');
+            $query->execute($ids); $metadata = $query->fetchAll(PDO::FETCH_KEY_PAIR);
+            foreach ($items as &$item) {
+                if (!isset($item['technical_specs'])) $item['technical_specs'] = ['pricing_unit' => UseProductSpecifications::decode($metadata[$item['id']] ?? null)['pricing_unit'] ?? ''];
+            }
+        } catch (Throwable) {}
+        return $items;
     }
 
     private function database(): PDO { require_once dirname(__DIR__, 2) . '/Config/Database.php'; return Database::connection(); }

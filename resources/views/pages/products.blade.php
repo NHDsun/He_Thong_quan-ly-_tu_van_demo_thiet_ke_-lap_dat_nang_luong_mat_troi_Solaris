@@ -17,10 +17,12 @@ $resolveImage = static function (array $product): ?string {
 <link rel="stylesheet" href="resources/css/products-price.css">
 <script src="resources/js/products-price.js" defer></script>
 <script src="resources/js/products-image.js" defer></script>
+<link rel="stylesheet" href="resources/css/products-workspace.css">
+<script src="resources/js/products-catalog.js" defer></script>
 <?php
 $viewData = $productView;
-if (($viewData['mode'] ?? '') === 'create') {
-    include __DIR__ . '/product-create.blade.php';
+if (in_array($viewData['mode'] ?? '', ['create', 'manage', 'compare'], true)) {
+    include __DIR__ . '/product-' . $viewData['mode'] . '.blade.php';
     return;
 }
 if (array_key_exists('product', $viewData)):
@@ -38,7 +40,7 @@ if (array_key_exists('product', $viewData)):
                     <span class="sol-badge sol-badge--emerald"><?= htmlspecialchars($product['category_name'], ENT_QUOTES, 'UTF-8') ?></span>
                     <h1><?= htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') ?></h1>
                     <p class="product-code"><?= htmlspecialchars($product['product_code'], ENT_QUOTES, 'UTF-8') ?></p>
-                    <strong class="product-price"><?= number_format((float) $product['price'], 0, ',', '.') ?> VNĐ</strong>
+                    <strong class="product-price"><?= htmlspecialchars(UseProductSpecifications::priceLabel($product), ENT_QUOTES, 'UTF-8') ?></strong>
                     <p>Bảo hành <?= (int) $product['warranty_years'] ?> năm · <?= htmlspecialchars(UseProductFilters::capacityLabel($product), ENT_QUOTES, 'UTF-8') ?></p>
                     <?php
                     $detailSpecs = UseProductSpecifications::decode($product['technical_specs'] ?? null);
@@ -86,13 +88,30 @@ $pager = $viewData['pager']; $visiblePages = [];
 for ($pageNumber = 1; $pageNumber <= $pager['pages']; $pageNumber++) if ($pageNumber <= 4 || $pageNumber >= $pager['pages'] - 1 || abs($pageNumber - $pager['page']) <= 1) $visiblePages[] = $pageNumber;
 $visiblePages = array_values(array_unique($visiblePages));
 ?>
-<section class="sol-container products-page">
-    <header class="products-hero"><div><span class="sol-badge sol-badge--emerald">Khu vực 2 · Catalog thiết bị</span><h1>Giải pháp & Sản phẩm Solar</h1><p>Thiết bị được chọn theo công suất, nhu cầu lưu trữ và điều kiện lắp đặt thực tế.</p></div><a class="sol-btn sol-btn--solar cart-page-button" href="index.php?page=cart">📋 Kế hoạch dự định <span><?= \App\Modules\Member2_Products\ProductController::cartCount() ?></span></a></header>
+<section class="sol-container products-page products-page--catalog">
+    <header class="products-hero catalog-header">
+        <div class="catalog-header-copy">
+            <span class="products-eyebrow">SOLARIS / DANH MỤC THIẾT BỊ</span>
+            <h1>Giải pháp & Sản phẩm Solar</h1>
+            <p>Thiết bị được chọn theo công suất, nhu cầu lưu trữ và điều kiện lắp đặt thực tế.</p>
+        </div>
+        <div class="catalog-header-actions" role="group" aria-label="Thao tác sản phẩm và kế hoạch">
+            <?php if (!empty($viewData['isAdmin'])): ?>
+                <a class="sol-btn catalog-create-button" href="<?= $query() ?>&amp;action=create">
+                    <svg class="catalog-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+                    Thêm sản phẩm
+                </a>
+            <?php endif; ?>
+            <a class="sol-btn cart-page-button catalog-plan-button" href="index.php?page=cart" title="Xem các thiết bị đã chọn">
+                <svg class="catalog-ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 5H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3" transform="translate(0 -1)"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M8 11h8M8 15h5" stroke-linecap="round"/></svg>
+                Kế hoạch dự định
+                <span class="catalog-plan-count" aria-live="polite" aria-atomic="true"><?= \App\Modules\Member2_Products\ProductController::cartCount() ?></span>
+                <svg class="catalog-ui-icon catalog-plan-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+        </div>
+    </header>
     <?php if ($viewData['error']): ?><div class="products-status" role="status"><span><?= htmlspecialchars($viewData['error'], ENT_QUOTES, 'UTF-8') ?></span><a class="sol-btn sol-btn--outline sol-btn--sm" href="index.php?page=products">Thử lại</a></div><?php endif; ?>
 <?php if (!empty($viewData['flash'])): ?><div class="products-notice" role="status"><?= htmlspecialchars($viewData['flash'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
-<?php if (!empty($viewData['isAdmin'])): ?>
-    <div class="products-admin-toolbar"><a class="sol-btn sol-btn--solar" href="<?= $query() ?>&amp;action=create">＋ Thêm sản phẩm</a></div>
-<?php endif; ?>
     <?php if (!empty($viewData['filterErrors'])): ?>
         <div class="products-notice" role="alert"><?php foreach ($viewData['filterErrors'] as $message): ?><p><?= htmlspecialchars($message, ENT_QUOTES, 'UTF-8') ?></p><?php endforeach; ?></div>
     <?php endif; ?>
@@ -127,7 +146,7 @@ $visiblePages = array_values(array_unique($visiblePages));
                     <a class="products-filter-chip" href="<?= $query([$key => '', 'p' => 1]) ?>" aria-label="<?= htmlspecialchars('Bỏ lọc ' . $chipText, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($chipText, ENT_QUOTES, 'UTF-8') ?><span aria-hidden="true">×</span></a>
                 <?php endforeach; ?>
             </div>
-        <?php if (!$viewData['products']): ?><div class="sol-glass-card products-empty">Không tìm thấy sản phẩm phù hợp.</div><?php else: ?><div class="products-grid"><?php foreach ($viewData['products'] as $product): $image = $resolveImage($product); ?><article id="product-<?= (int) $product['id'] ?>" class="sol-glass-card product-card"><div class="product-visual"><?php if ($image): ?><img src="<?= htmlspecialchars($image, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') ?>" loading="lazy"><?php else: ?><span>☀</span><?php endif; ?></div><div class="product-card-body"><span class="sol-badge sol-badge--emerald"><?= htmlspecialchars($product['category_name'], ENT_QUOTES, 'UTF-8') ?></span><h2><?= htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') ?></h2><p class="product-code"><?= htmlspecialchars($product['product_code'], ENT_QUOTES, 'UTF-8') ?></p><div class="product-meta"><span><?= htmlspecialchars(UseProductFilters::capacityLabel($product), ENT_QUOTES, 'UTF-8') ?></span><span><?= htmlspecialchars((string) $product['warranty_years']) ?> năm</span></div><strong class="product-price"><?= number_format((float) $product['price'], 0, ',', '.') ?> VNĐ</strong><div class="product-actions"><a class="sol-btn sol-btn--outline" href="<?= $query(['product' => (int) $product['id']]) ?>">Chi tiết</a><form method="post" action="<?= $query(['p' => $pager['page']]) ?>#product-<?= (int) $product['id'] ?>"><input type="hidden" name="cart_action" value="add"><input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>"><button class="sol-btn sol-btn--solar" type="submit">Thêm vào kế hoạch</button></form></div></div></article><?php endforeach; ?></div><?php endif; ?>
+        <?php if (!$viewData['products']): ?><div class="sol-glass-card products-empty"><strong>Không có sản phẩm phù hợp</strong><p>Thử bỏ bớt điều kiện hoặc mở rộng khoảng giá.</p></div><?php else: ?><div class="products-grid"><?php foreach ($viewData['products'] as $product) include dirname(__DIR__) . '/components/product-card.blade.php'; ?></div><?php endif; ?>
         <nav class="products-pager" aria-label="Phân trang">
             <?php if ($pager['page'] > 1): ?><a href="<?= $query(['p' => $pager['page'] - 1]) ?>" rel="prev">← Trước</a><?php endif; ?>
             <?php $previous = 0; foreach ($visiblePages as $pageNumber): ?>
@@ -139,57 +158,6 @@ $visiblePages = array_values(array_unique($visiblePages));
         </nav>
         </div>
     </div>
+<div class="products-feedback" role="status" data-products-feedback></div><div class="products-compare-tray sol-glass-card" data-compare-tray hidden></div>
 </section>
 <script src="resources/js/products-filter.js" defer></script>
-<script>
-(() => {
-    const key = 'solaris-products-return-position';
-    document.querySelectorAll('form[action*="#product-"]').forEach(form => {
-        form.addEventListener('submit', () => {
-            const id = form.querySelector('input[name="product_id"]')?.value;
-            if (id) sessionStorage.setItem(key, JSON.stringify({ id, top: window.scrollY }));
-        });
-    });
-    const saved = sessionStorage.getItem(key);
-    if (!saved) return;
-    try {
-        const position = JSON.parse(saved);
-        const product = document.getElementById('product-' + position.id);
-        if (product) {
-            window.setTimeout(() => {
-                product.scrollIntoView({ behavior: 'instant', block: 'center' });
-                sessionStorage.removeItem(key);
-            }, 120);
-        }
-    } catch (error) {
-        sessionStorage.removeItem(key);
-    }
-})();
-</script>
-<script>
-(() => {
-    const forms = document.querySelectorAll('form[action*="#product-"]');
-    const count = document.querySelector('.cart-page-button span');
-    forms.forEach(form => form.addEventListener('submit', async event => {
-        event.preventDefault();
-        const button = form.querySelector('button[type="submit"]');
-        if (!button || form.dataset.submitting === '1') return;
-        form.dataset.submitting = '1';
-        const originalText = button.textContent;
-        button.disabled = true;
-        button.textContent = 'Đang thêm...';
-        try {
-            const response = await fetch(form.action, { method: 'POST', body: new FormData(form), credentials: 'same-origin' });
-            if (!response.ok) throw new Error('Không thể thêm sản phẩm');
-            if (count) count.textContent = String((Number.parseInt(count.textContent, 10) || 0) + 1);
-            button.textContent = 'Đã thêm ✓';
-            sessionStorage.removeItem('solaris-products-return-position');
-            window.setTimeout(() => { button.textContent = originalText; button.disabled = false; form.dataset.submitting = '0'; }, 900);
-        } catch (error) {
-            button.textContent = 'Thử lại';
-            button.disabled = false;
-            form.dataset.submitting = '0';
-        }
-    }));
-})();
-</script>

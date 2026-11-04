@@ -1,5 +1,7 @@
 <?php
 declare(strict_types=1);
+use App\Hooks\UseProductCsrf;
+use App\Hooks\UseProductSpecifications;
 $items = $cartItems;
 $resolveCartImage = static function (array $item): ?string {
     $name = basename(trim((string) ($item['image_url'] ?? '')));
@@ -52,10 +54,11 @@ foreach ($items as $item) {
         <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
             <a class="sol-btn sol-btn--outline" href="index.php?page=products">← Tiếp tục chọn thiết bị</a>
             <?php if (!empty($items)): ?>
-                <a class="sol-btn sol-btn--solar" href="index.php?page=calculator&source=plan">⚡ Tính Toán & Demo Thiết Kế →</a>
+                <button class="sol-btn sol-btn--solar" type="submit" form="cart-form">⚡ Tính Toán & Demo Thiết Kế →</button>
             <?php endif; ?>
         </div>
     </header>
+    <?php if (!empty($cartFlash)): ?><div class="products-notice" role="status"><?= htmlspecialchars($cartFlash, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
 
     <section class="solar-system-map sol-glass-card" aria-labelledby="system-map-title">
         <div class="system-map-heading"><div><span class="sol-badge sol-badge--amber">Sơ đồ cấu hình</span><h2 id="system-map-title">7 nhóm thiết bị cho một hệ thống hoàn chỉnh</h2><p>Chọn các nhóm còn thiếu để hệ thống chuyển sang member3 kiểm tra tương thích và tính toán.</p></div><span class="system-map-progress"><?= count(array_filter($diagramState)) ?>/7 nhóm đã chọn</span></div>
@@ -220,6 +223,7 @@ foreach ($items as $item) {
         <!-- DANH SÁCH THIẾT BỊ ĐÃ CHỌN TRONG KẾ HOẠCH DỰ ĐỊNH                -->
         <!-- ================================================================= -->
         <form method="post" class="sol-glass-card cart-table" id="cart-form">
+            <?= UseProductCsrf::field() ?>
             <input type="hidden" name="cart_action" value="demo_selected">
             <div class="cart-toolbar" style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border-subtle);">
                 <label class="cart-select-all" style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: 600; color: #ffffff;">
@@ -248,10 +252,11 @@ foreach ($items as $item) {
                                 <span class="sol-badge sol-badge--amber" style="padding: 0.1rem 0.45rem;"><?= htmlspecialchars($item['product_code']) ?></span>
                                 <span class="sol-badge sol-badge--emerald" style="padding: 0.1rem 0.45rem;"><?= htmlspecialchars($item['category_name']) ?></span>
                                 <?php if (!empty($item['capacity_watts'])): ?>
-                                    <span style="color: var(--accent-cyan); font-weight: 600;"><?= (int)$item['capacity_watts'] ?> W/món</span>
-                                    <span style="color: var(--accent-gold); font-weight: 600;">(Tổng: <?= round(((int)$item['capacity_watts'] * (int)$item['quantity']) / 1000, 2) ?> kW)</span>
+                                    <span style="color: var(--accent-cyan); font-weight: 600;"><?= htmlspecialchars(UseProductSpecifications::capacityLabel($item), ENT_QUOTES, 'UTF-8') ?>/thiết bị</span>
+                                    <span style="color: var(--accent-gold); font-weight: 600;">(Tổng: <?= htmlspecialchars(UseProductSpecifications::capacityLabel($item, (int) $item['quantity']), ENT_QUOTES, 'UTF-8') ?>)</span>
                                 <?php endif; ?>
                             </div>
+                            <div class="cart-unit-price"><?= htmlspecialchars(UseProductSpecifications::priceLabel($item), ENT_QUOTES, 'UTF-8') ?></div>
                         </div>
 
                         <div class="quantity-control" style="display: flex; align-items: center; gap: 0.25rem;">
@@ -290,6 +295,14 @@ foreach ($items as $item) {
     if (!form) return;
     const all = document.getElementById('select-all');
     const checks = [...form.querySelectorAll('.cart-check')];
+    form.addEventListener('submit', event => {
+        if ((event.submitter?.value || 'demo_selected') === 'demo_selected' && !checks.some(check => check.checked)) {
+            event.preventDefault();
+            const status = document.getElementById('selected-count');
+            status.textContent = 'Vui lòng chọn ít nhất một thiết bị để mở Demo.';
+            status.setAttribute('role', 'alert');
+        }
+    });
     const refresh = () => {
         let totalQty = 0;
         let selectedCount = 0;

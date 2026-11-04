@@ -149,11 +149,9 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
                         <?php foreach ($planItems as $item): ?>
                             <div style="padding: 1rem 1.15rem; background: rgba(8, 12, 20, 0.65); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
-                                <div style="display: flex; align-items: center; gap: 0.85rem;">
-                                    <div style="width: 44px; height: 44px; border-radius: 8px; background: rgba(14, 22, 38, 0.8); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0;">
-                                        <?= str_contains(mb_strtolower($item['name']), 'pin') ? '☀️' : (str_contains(mb_strtolower($item['name']), 'biến tần') ? '⚡' : (str_contains(mb_strtolower($item['name']), 'lưu trữ') ? '🔋' : '🔧')) ?>
-                                    </div>
-                                    <div>
+                                <div style="display: flex; align-items: center; gap: 0.85rem; min-width: 0; flex: 1;">
+                                    <?php include dirname(__DIR__) . '/components/product-device-thumbnail.blade.php'; ?>
+                                    <div style="min-width: 0; overflow-wrap: anywhere;">
                                         <strong style="color: #ffffff; font-size: 0.9rem; display: block; line-height: 1.3;">
                                             <?= htmlspecialchars($item['name'] ?? 'Thiết bị') ?>
                                         </strong>

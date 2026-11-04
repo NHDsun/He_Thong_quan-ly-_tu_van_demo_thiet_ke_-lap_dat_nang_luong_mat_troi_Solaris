@@ -78,16 +78,7 @@ final class UseProductFilters
 
     public static function capacityLabel(array $product): string
     {
-        $specs = UseProductSpecifications::decode($product['technical_specs'] ?? null);
-        $category = $product['category_slug'] ?? '';
-        $number = static fn (float $value): string => rtrim(rtrim(number_format($value, 3, '.', ''), '0'), '.');
-        if ($category === 'pin-luu-tru') {
-            $energy = $specs['energy_kwh'] ?? null;
-            return is_numeric($energy) ? $number((float) $energy) . ' kWh' : 'Dung lượng đang cập nhật';
-        }
-        if ($category === 'inverter') return !empty($product['capacity_watts']) ? $number((float) $product['capacity_watts'] / 1000) . ' kW' : 'Công suất đang cập nhật';
-        if ($category === 'tam-pin') return !empty($product['capacity_watts']) ? $number((float) $product['capacity_watts']) . ' W' : 'Công suất đang cập nhật';
-        return 'Thiết bị phụ trợ';
+        return UseProductSpecifications::capacityLabel($product);
     }
 
     public static function filterProducts(array $products, array $filters): array

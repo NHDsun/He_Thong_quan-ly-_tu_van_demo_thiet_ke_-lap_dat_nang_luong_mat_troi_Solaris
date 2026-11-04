@@ -5,6 +5,8 @@ if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 
 require_once dirname(__DIR__) . '/app/Hooks/UseProductSpecifications.php';
 require_once dirname(__DIR__) . '/app/Hooks/UseProductFilters.php';
+require_once dirname(__DIR__) . '/app/Hooks/UseProductCsrf.php';
+require_once dirname(__DIR__) . '/app/Hooks/UseProductValidation.php';
 require_once dirname(__DIR__) . '/app/Modules/Member2_Products/ProductController.php';
 
 use App\Hooks\UseProductSpecifications;
@@ -19,6 +21,7 @@ $pdo->exec("CREATE TABLE categories (id INTEGER PRIMARY KEY, name TEXT, slug TEX
 $pdo->exec('CREATE TABLE products (id INTEGER PRIMARY KEY AUTOINCREMENT, category_id INTEGER, product_code TEXT UNIQUE, name TEXT, capacity_watts INTEGER, price REAL, warranty_years INTEGER, technical_specs TEXT, image_url TEXT, stock_quantity INTEGER, is_active INTEGER)');
 $_SESSION = ['user_id' => 1];
 $controller = new ProductController($pdo);
+$adminAction = static function (string $action) use ($controller): array { $_POST['csrf_token'] = \App\Hooks\UseProductCsrf::token(); return $controller->adminProductAction($action); };
 $check($controller->create()['allowed'] && count($controller->create()['categories']) === 7, 'Admin không mở được trang thêm sản phẩm.');
 $_POST = [
     'name' => 'Inverter kiểm thử', 'product_code' => 'TEST-INV', 'category_id' => '2',
@@ -26,7 +29,7 @@ $_POST = [
     'specs' => ['brand' => 'Solis', 'type' => 'Hybrid', 'rated_kw' => '6', 'efficiency' => '98.5%'],
     'spec_metadata' => ['demo_data' => '0', 'price_type' => 'gia_tham_khao_vnd', 'image_type' => 'anh_san_pham_thuc_te'],
 ];
-$result = $controller->adminProductAction('admin_create');
+$result = $adminAction('admin_create');
 $check($result['ok'], 'Không tạo được sản phẩm từ các ô nhập.');
 $record = $pdo->query('SELECT * FROM products')->fetch();
 $specs = UseProductSpecifications::decode($record['technical_specs']);
@@ -39,7 +42,7 @@ $save = $pdo->prepare('UPDATE products SET technical_specs=? WHERE id=?');
 $save->execute([json_encode($specs), $record['id']]);
 $_POST['product_id'] = (string) $record['id'];
 $_POST['specs'] = ['brand' => 'Deye', 'type' => 'Hybrid', 'rated_kw' => '6.5', 'efficiency' => '', 'custom_note' => 'Đã sửa'];
-$check($controller->adminProductAction('admin_update')['ok'], 'Không cập nhật được thông số.');
+$check($adminAction('admin_update')['ok'], 'Không cập nhật được thông số.');
 $updated = $pdo->query('SELECT * FROM products')->fetch();
 $saved = UseProductSpecifications::decode($updated['technical_specs']);
 $check($saved['brand'] === 'Deye' && $saved['rated_kw'] === 6.5, 'Cập nhật trường chữ / số không đúng.');
@@ -47,21 +50,21 @@ $check((int) $updated['capacity_watts'] === 6500, 'Công suất lọc chưa đ�
 $check($saved['legacy_nested'] === $specs['legacy_nested'] && $saved['custom_note'] === 'Đã sửa', 'Mất thông số cũ không có trong biểu mẫu.');
 $check(!array_key_exists('efficiency', $saved), 'Không xóa được thông số khi để trống.');
 $_POST['specs']['rated_kw'] = '-5';
-$check(!$controller->adminProductAction('admin_update')['ok'], 'Không được chấp nhận công suất âm.');
+$check(!$adminAction('admin_update')['ok'], 'Không được chấp nhận công suất âm.');
 $check($pdo->query('SELECT technical_specs FROM products')->fetchColumn() === $updated['technical_specs'], 'Dữ liệu đã thay đổi sau khi nhập sai.');
 $_POST['specs']['rated_kw'] = 'NaN';
-$check(!$controller->adminProductAction('admin_update')['ok'], 'Không được chấp nhận giá trị không phải số.');
+$check(!$adminAction('admin_update')['ok'], 'Không được chấp nhận giá trị không phải số.');
 $_POST['specs']['rated_kw'] = '6.5';
 $_POST['spec_metadata']['demo_data'] = 'false';
-$check(!$controller->adminProductAction('admin_update')['ok'], 'Không được chấp nhận nguồn dữ liệu ngoài danh sách.');
+$check(!$adminAction('admin_update')['ok'], 'Không được chấp nhận nguồn dữ liệu ngoài danh sách.');
 $_POST['spec_metadata']['demo_data'] = '0';
 $_SESSION['user_id'] = 2;
 $check(!$controller->create()['allowed'], 'Khách hàng mở được trang thêm sản phẩm.');
-$check(!$controller->adminProductAction('admin_update')['ok'], 'Khách hàng không được sửa sản phẩm.');
+$check(!$adminAction('admin_update')['ok'], 'Khách hàng không được sửa sản phẩm.');
 $check($pdo->query('SELECT technical_specs FROM products')->fetchColumn() === $updated['technical_specs'], 'Thao tác bị từ chối đã làm thay đổi dữ liệu.');
 $_SESSION = [];
 $check(!$controller->create()['allowed'], 'Khách vãng lai mở được trang thêm sản phẩm.');
-$check(!$controller->adminProductAction('admin_create')['ok'], 'Khách vãng lai không được tạo sản phẩm.');
+$check(!$adminAction('admin_create')['ok'], 'Khách vãng lai không được tạo sản phẩm.');
 
 $editorCategories = [
     ['id' => 1, 'name' => 'Tấm pin năng lượng mặt trời', 'slug' => 'tam-pin'],
@@ -79,7 +82,7 @@ $check(str_contains($form, 'data-product-price') && str_contains($form, 'Bước
 $check(str_contains($form, 'enctype="multipart/form-data"') && str_contains($form, 'type="file" name="product_image"'), 'Form chưa nhận ảnh từ máy tính.');
 if (str_starts_with($preview, '--preview-')) {
     echo '<!doctype html><html lang="vi"><meta charset="utf-8"><style>';
-    foreach (['solaris-theme.css', 'products.css', 'products-admin.css', 'products-price.css'] as $css) echo file_get_contents(dirname(__DIR__) . '/resources/css/' . $css);
+    foreach (['solaris-theme.css', 'products.css', 'products-admin.css', 'products-price.css', 'products-workspace.css'] as $css) echo file_get_contents(dirname(__DIR__) . '/resources/css/' . $css);
     echo '</style><body><main class="products-page">' . $form . '</main><script>' . file_get_contents(dirname(__DIR__) . '/resources/js/products-price.js') . '</script><script>' . file_get_contents(dirname(__DIR__) . '/resources/js/products-image.js') . '</script></body></html>';
     exit;
 }
@@ -114,7 +117,7 @@ foreach ([1 => ['power_w', '585', 585], 2 => ['rated_kw', '5.5', 5500], 7 => ['e
     $_POST = ['name' => 'Thiết bị kiểm thử', 'product_code' => 'CATEGORY-' . $categoryId, 'category_id' => $categoryId, 'price' => '1000000', 'warranty_years' => 5, 'specs' => [$key => $value], 'spec_metadata' => []];
     if ($categoryId !== 7) $_POST['specs']['energy_kwh'] = '999';
     if ($categoryId !== 2) $_POST['specs']['rated_kw'] = '-100';
-    $result = $controller->adminProductAction('admin_create');
+    $result = $adminAction('admin_create');
     $check($result['ok'], 'Không lưu được danh mục ' . $categoryId);
     $categoryProduct = $pdo->query('SELECT * FROM products WHERE id=' . (int) $result['product_id'])->fetch();
     $check($categoryProduct['capacity_watts'] === $capacity, 'Sai dữ liệu công suất / dung lượng theo danh mục.');
@@ -136,7 +139,7 @@ foreach ([1 => ['power_w', '585', 585], 2 => ['rated_kw', '5.5', 5500], 7 => ['e
     $check(!str_contains($categoryForm, 'name="capacity_watts"'), 'Biểu mẫu còn yêu cầu nhập công suất W cho mọi danh mục.');
 }
 $_POST['category_id'] = 999;
-$check(!$controller->adminProductAction('admin_create')['ok'], 'Lưu được danh mục không tồn tại.');
+$check(!$adminAction('admin_create')['ok'], 'Lưu được danh mục không tồn tại.');
 $productView = $controller->create();
 ob_start();
 include dirname(__DIR__) . '/resources/views/pages/products.blade.php';
