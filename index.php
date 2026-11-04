@@ -79,27 +79,37 @@ if ($page === 'products') {
         if (str_starts_with($cartAction, 'admin_')) {
             $adminResult = $productController->adminProductAction($cartAction);
             $_SESSION['product_flash'] = $adminResult['message'];
-            $redirect = 'index.php?page=products';
-            if (!empty($_POST['product_id'])) $redirect .= '&product=' . (int) $_POST['product_id'];
+            $_SESSION['product_form_input'] = $adminResult['ok'] ? null : $_POST;
+            $redirect = \App\Hooks\UseProductFilters::url(\App\Hooks\UseProductFilters::read($_GET)['filters'], ['p' => $_GET['p'] ?? 1]);
+            if ($cartAction === 'admin_create' && !$adminResult['ok']) {
+                $redirect .= '&action=create';
+            } elseif ($cartAction !== 'admin_delete' || !$adminResult['ok']) {
+                $productId = (int) ($adminResult['product_id'] ?? $_POST['product_id'] ?? 0);
+                if ($productId > 0) $redirect .= '&product=' . $productId;
+            }
             header('Location: ' . $redirect); exit;
         }
         $productController->handleCart((string) ($_POST['cart_action'] ?? ''));
         if (($_POST['cart_action'] ?? '') === 'add') {
-            $returnParams = ['page' => 'products'];
-            foreach (['p', 'q', 'category', 'min_price', 'max_price'] as $key) {
-                if (isset($_GET[$key]) && $_GET[$key] !== '') $returnParams[$key] = $_GET[$key];
-            }
+            $returnFilters = \App\Hooks\UseProductFilters::read($_GET)['filters'];
             $anchor = !empty($_POST['product_id']) ? '#product-' . (int) $_POST['product_id'] : '';
-            header('Location: index.php?' . http_build_query($returnParams) . $anchor);
+            header('Location: ' . \App\Hooks\UseProductFilters::url($returnFilters, ['p' => $_GET['p'] ?? 1]) . $anchor);
             exit;
         }
         header('Location: index.php?page=cart');
         exit;
     }
-    $productView = isset($_GET['product']) ? $productController->detail((int) $_GET['product']) : $productController->index();
+    $productView = ($_GET['action'] ?? '') === 'create'
+        ? $productController->create()
+        : (isset($_GET['product']) ? $productController->detail((int) $_GET['product']) : $productController->index());
+    if (($productView['mode'] ?? '') === 'create') {
+        $title = 'Thêm sản phẩm - SOLARIS';
+        if (!$productView['allowed']) http_response_code(403);
+    }
     $productView['isAdmin'] = $productController->isAdmin();
     $productView['flash'] = $_SESSION['product_flash'] ?? null;
-    unset($_SESSION['product_flash']);
+    $productView['formInput'] = $_SESSION['product_form_input'] ?? null;
+    unset($_SESSION['product_flash'], $_SESSION['product_form_input']);
 }
 
 if ($page === 'cart') {
