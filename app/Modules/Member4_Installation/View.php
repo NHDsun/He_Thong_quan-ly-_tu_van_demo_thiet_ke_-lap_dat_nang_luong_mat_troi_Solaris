@@ -95,7 +95,7 @@ final class View
     {
         return ['new' => 'Chờ phân công', 'in_progress' => 'Đang thực hiện', 'completed' => 'Hoàn tất',
             'cancelled' => 'Đã hủy', 'locked' => 'Chưa mở', 'pending_approval' => 'Chờ duyệt',
-            'revision_required' => 'Cần bổ sung', 'approved' => 'Đã duyệt', 'pending' => 'Chờ xử lý',
+            'revision_required' => 'Cần bổ sung', 'approved' => 'Đã duyệt', 'pending' => 'Chờ duyệt',
             'rejected' => 'Từ chối', 'superseded' => 'Đã đóng'] [$status] ?? $status;
     }
 

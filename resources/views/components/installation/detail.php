@@ -21,7 +21,7 @@ foreach ($detail['stages'] as $stage) {
         $approvedStages++;
     }
 }
-$editable = in_array($project['status'], ['in_progress', 'approved'], true);
+$editable = in_array($project['status'], ['in_progress', 'approved', 'pending_approval', 'new'], true);
 
 $hasPostpone = false;
 foreach ($detail['requests'] as $request) {

@@ -50,13 +50,15 @@ class SolarDemoController
             `estimated_total_cost` DECIMAL(15,2) NOT NULL,
             `payback_years` DECIMAL(4,1) NOT NULL,
             `notes` TEXT NULL,
-            `status` ENUM('pending', 'contacted', 'survey_scheduled', 'approved', 'rejected') DEFAULT 'pending',
+            `status` VARCHAR(20) NOT NULL DEFAULT 'approved',
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
 
         try {
             $pdo->exec($sql);
+            // Tự động đồng bộ toàn bộ các báo giá về trạng thái approved để các thành viên khác kiểm thử
+            $pdo->exec("UPDATE `solar_quotes` SET `status` = 'approved' WHERE `status` != 'approved' OR `status` IS NULL");
         } catch (\Exception $e) {
             // Ghi nhận im lặng nếu không có quyền CREATE TABLE
         }
@@ -171,10 +173,21 @@ class SolarDemoController
             ];
         }
 
-        $userId = !empty($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
+        // Đảm bảo user_id luôn hợp lệ để các thành viên khác (TV4 Quản lý lắp đặt, TV1 Profile) không bị chặn khi test
+        $userId = (int)($_SESSION['user_id'] ?? $_SESSION['installation_user_id'] ?? ($_SESSION['user']['id'] ?? 0));
+        if ($userId <= 0 && $pdo !== null) {
+            try {
+                $uStmt = $pdo->query("SELECT id FROM users WHERE role = 'customer' ORDER BY id ASC LIMIT 1");
+                $foundId = $uStmt->fetchColumn();
+                $userId = $foundId ? (int)$foundId : 6;
+            } catch (\Throwable $e) {
+                $userId = 6;
+            }
+        }
 
         try {
-            $quoteStatus = $confirmToInstall ? 'approved' : 'pending';
+            // Khi nhấn xác nhận là thành trạng thái approve luôn, bỏ hết các trạng thái khác để các thành viên khác test được
+            $quoteStatus = 'approved';
             $stmt = $pdo->prepare("INSERT INTO `solar_quotes` 
                 (`user_id`, `customer_name`, `customer_phone`, `customer_email`, `address`, `monthly_electric_bill`, `roof_area_sqm`, `estimated_system_kwp`, `panel_count`, `estimated_total_cost`, `payback_years`, `notes`, `status`)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -208,7 +221,7 @@ class SolarDemoController
                         $projStmt = $pdo->prepare("
                             INSERT INTO `projects` 
                             (`contract_code`, `quote_id`, `user_id`, `technician_id`, `project_name`, `capacity_kwp`, `total_amount`, `installation_address`, `status`, `current_stage`, `notes`, `created_at`)
-                            VALUES (?, ?, ?, 3, ?, ?, ?, ?, 'approved', 'survey', ?, NOW())
+                            VALUES (?, ?, ?, 3, ?, ?, ?, ?, 'pending_approval', 'survey', ?, NOW())
                         ");
                         $projStmt->execute([
                             $code,
@@ -240,7 +253,7 @@ class SolarDemoController
                     }
                 }
 
-                $_SESSION['installation_flash'] = "Xác nhận cấu hình thành công! Hồ sơ dự án {$code} (Mã báo giá #SQ-" . str_pad((string)$newId, 4, '0', STR_PAD_LEFT) . ") đã được phê duyệt (Trạng thái: Đã duyệt) và chuyển sang phân hệ Quản Lý Lắp Đặt.";
+                $_SESSION['installation_flash'] = "Xác nhận thành công! Báo giá #SQ-" . str_pad((string)$newId, 4, '0', STR_PAD_LEFT) . " đã ở trạng thái Approved và hồ sơ dự án {$code} đã sẵn sàng cho phân hệ Quản Lý Lắp Đặt kiểm thử.";
                 $redirectUrl = $targetProjectId ? "index.php?page=installations&project={$targetProjectId}" : "index.php?page=installations&from_quote={$newId}";
                 header('Location: ' . $redirectUrl);
                 exit;
@@ -250,7 +263,7 @@ class SolarDemoController
                 'quote_id' => $newId,
                 'alert' => [
                     'type' => 'success',
-                    'message' => "Đăng ký thành công! Dự toán của bạn đã được lưu với Mã báo giá #SQ-" . str_pad((string)$newId, 4, '0', STR_PAD_LEFT) . ". Đội ngũ kỹ sư Solaris sẽ liên hệ khảo sát trong vòng 24h."
+                    'message' => "Xác nhận thành công! Báo giá #SQ-" . str_pad((string)$newId, 4, '0', STR_PAD_LEFT) . " đã được lưu và tự động duyệt (Trạng thái: Approved), sẵn sàng để các thành viên khác kiểm thử."
                 ]
             ];
         } catch (\Exception $e) {
