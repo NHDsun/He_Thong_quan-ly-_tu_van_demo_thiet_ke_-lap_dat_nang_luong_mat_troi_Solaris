@@ -236,14 +236,18 @@ foreach ($detail['crew'] as $member) {
                         <?php UI::component('button', 'Yêu cầu duyệt giai đoạn', ['type' => 'submit']); ?>
                     </form>
                 <?php elseif ($active && $admin && $stage['status'] === 'pending_approval'): ?>
+                    <?php $paymentRequired = $stage['stage'] === 'procurement' && $detail['billing']['summary']['remaining'] > 0; ?>
                     <form method="post" class="tv4-review">
                         <?php UI::csrf(); ?>
+                        <?php if ($paymentRequired): $remaining = $detail['billing']['summary']['remaining']; ?>
+                            <p class="tv4-notice" role="status">Chưa thể duyệt bước mua sắm. Khách hàng cần thanh toán đủ chi phí dự án, gồm vật tư phát sinh. Còn thiếu <?= number_format($remaining / 100, $remaining % 100 ? 2 : 0, ',', '.') ?> đ. Tải lại trang sau khi khách hàng thanh toán.</p>
+                        <?php endif; ?>
                         <label>
                             Nhận xét (bắt buộc khi yêu cầu bổ sung)
                             <textarea name="review_note" maxlength="5000"></textarea>
                         </label>
                         <div class="tv4-actions">
-                            <?php UI::component('button', 'Duyệt & mở bước tiếp theo', ['type' => 'submit'], ['name' => 'action', 'value' => 'approve_stage']); UI::component('button', 'Yêu cầu bổ sung', ['type' => 'submit', 'variant' => 'outline'], ['name' => 'action', 'value' => 'reject_stage']); ?>
+                            <?php UI::component('button', 'Duyệt & mở bước tiếp theo', ['type' => 'submit'], ['name' => 'action', 'value' => 'approve_stage', 'disabled' => $paymentRequired]); UI::component('button', 'Yêu cầu bổ sung', ['type' => 'submit', 'variant' => 'outline'], ['name' => 'action', 'value' => 'reject_stage']); ?>
                         </div>
                     </form>
                 <?php endif; ?>

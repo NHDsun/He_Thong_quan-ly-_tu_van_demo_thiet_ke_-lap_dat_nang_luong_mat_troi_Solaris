@@ -159,7 +159,7 @@ index.php?page=installations
 7. Đã đăng nhập: gọi `listing()` để đọc danh sách theo quyền và bộ lọc.
 8. Controller trả mảng `$installationView`; page gán sang `$viewData` và duyệt từng dự án để hiển thị card.
 
-Admin mặc định vào bộ lọc `new`; kỹ thuật viên mặc định vào `in_progress`; khách hàng mặc định vào `all` nhưng chỉ lấy dự án có `user_id` thuộc tài khoản của mình.
+Admin mặc định vào bộ lọc `pending` (Cần xử lý); kỹ thuật viên mặc định vào `in_progress`; khách hàng mặc định vào `all` nhưng chỉ lấy dự án có `user_id` thuộc tài khoản của mình.
 
 ### 4.2. Khi mở chi tiết dự án
 
@@ -204,20 +204,16 @@ Page thấy có `$viewData['detail']` thì nạp `detail.php`. Nếu admin xem d
 
 Các hàm nghiệp vụ trong bảng nằm trong `UseInstallationWorkflow`. `act()` xác định giai đoạn hiện tại từ database; form không được tự chọn một giai đoạn tương lai để cập nhật.
 
-### 5.2. Tạo dự án sau khi chấp thuận báo giá
+### 5.2. Tiếp nhận và duyệt yêu cầu dự án
 
-```text
-TV3 chấp thuận và lưu báo giá
-    -> gọi createFromApprovedQuote(quoteId, adminId)
-    -> kiểm tra báo giá approved và có user_id
-    -> kiểm tra người thực hiện là admin
-    -> nếu đã có dự án của báo giá thì trả lại ID cũ
-    -> tạo projects với status mặc định new
-    -> tạo đúng 6 dòng project_stages, ban đầu locked
-    -> ghi nhật ký project_created
-```
+Quy trình hiện tại được mô tả tại [PROJECT_WORKFLOW.md](PROJECT_WORKFLOW.md).
 
-Đây là điểm tích hợp đã chuẩn bị; controller TV3 chưa được sửa để tự gọi hàm. Không chạy demo tính toán là tự động có dự án. Dự án phải được tạo từ báo giá đã chấp thuận qua điểm tích hợp này.
+- TV3 gọi `registerQuote()` để lưu nháp hoặc gửi yêu cầu theo nguồn hóa đơn/kế hoạch.
+- Đăng ký khảo sát trực tiếp tạo dự án `pending_approval`. Phương án từ kế hoạch phải qua `reviewQuote()` trước khi tạo dự án.
+- Cả hai đường đều tạo sáu giai đoạn `locked`, chưa đặt `current_stage` và chưa phân công kỹ thuật viên.
+- Admin duyệt yêu cầu bằng `approve_project` để chuyển `new`, hoặc `reject_project` để từ chối có lý do.
+- `createFromApprovedQuote(quoteId, adminId)` vẫn là điểm tích hợp cho báo giá đã duyệt; trả lại ID cũ nếu đã có dự án, nếu chưa thì tạo yêu cầu `pending_approval`.
+- Admin phân công xong thì bắt đầu dự án ngay, không cần nhân viên xác nhận.
 
 ### 5.3. Phân công nhiều kỹ thuật viên
 

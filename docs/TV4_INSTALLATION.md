@@ -1,5 +1,8 @@
 # TV4 — Quản lý lắp đặt SOLARIS
 
+Quy trình và migration hiện tại: [PROJECT_WORKFLOW.md](PROJECT_WORKFLOW.md).
+
+
 Tài liệu giải thích chi tiết các thay đổi, chức năng và hàm xử lý: [TV4_THAY_DOI_CHUC_NANG_LUONG_CODE.md](TV4_THAY_DOI_CHUC_NANG_LUONG_CODE.md).
 
 ## Đọc code theo một chức năng

@@ -340,6 +340,13 @@ final class UseInstallationWorkflow
             throw new RuntimeException('Giai đoạn không còn chờ duyệt.');
         }
         $approved = $action === 'approve_stage';
+        if ($approved && $stage['stage'] === 'procurement') {
+            $billing = (new UseProjectBilling($this))->summary($project);
+            if ($billing['remaining'] > 0) {
+                $remaining = number_format($billing['remaining'] / 100, $billing['remaining'] % 100 ? 2 : 0, ',', '.');
+                throw new RuntimeException('Chưa thể duyệt bước Phê duyệt & mua sắm vật tư. Khách hàng cần thanh toán đủ chi phí dự án, gồm vật tư phát sinh. Còn thiếu ' . $remaining . ' đ.');
+            }
+        }
         $note = $approved ? trim((string) ($data['review_note'] ?? '')) : $this->note($data, 'review_note');
         $nextStatus = $approved ? 'approved' : 'revision_required';
         $this->run('UPDATE project_stages SET status=?,reviewed_at=NOW(),reviewed_by=?,review_note=?,completed_at=IF(?="approved",NOW(),NULL) WHERE id=?', [$nextStatus, $actor['id'], $note, $nextStatus, $stage['id']]);
