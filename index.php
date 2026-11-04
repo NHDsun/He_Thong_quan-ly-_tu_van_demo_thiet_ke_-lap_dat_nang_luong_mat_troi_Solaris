@@ -193,6 +193,47 @@ if ($page === 'profile') {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Montserrat:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="resources/css/solaris-theme.css?v=<?= file_exists(__DIR__ . '/resources/css/solaris-theme.css') ? filemtime(__DIR__ . '/resources/css/solaris-theme.css') : '2.3' ?>">
+    <!-- CƠ CHẾ DUY TRÌ VỊ TRÍ CUỘN KHI SOCKET.IO RELOAD HOẶC TẢI LẠI TRANG -->
+    <script>
+        (() => {
+            const posKey = 'solaris_scroll_pos';
+            const pathKey = 'solaris_scroll_path';
+            const savedPos = sessionStorage.getItem(posKey);
+            const savedPath = sessionStorage.getItem(pathKey);
+            const currentPath = window.location.pathname + window.location.search;
+
+            if (savedPos !== null && savedPath === currentPath) {
+                if ('scrollRestoration' in history) {
+                    history.scrollRestoration = 'manual';
+                }
+                const targetY = parseInt(savedPos, 10);
+                if (!isNaN(targetY) && targetY > 0) {
+                    const restoreScroll = () => {
+                        window.scrollTo({ top: targetY, behavior: 'instant' });
+                    };
+                    document.addEventListener('DOMContentLoaded', restoreScroll);
+                    window.addEventListener('load', () => {
+                        restoreScroll();
+                        setTimeout(() => {
+                            sessionStorage.removeItem(posKey);
+                            sessionStorage.removeItem(pathKey);
+                        }, 600);
+                    });
+                    setTimeout(restoreScroll, 30);
+                    setTimeout(restoreScroll, 100);
+                    setTimeout(restoreScroll, 250);
+                }
+            }
+
+            // Tự động lưu vị trí cuộn trước khi trang bị reload hoặc chuyển trang
+            window.addEventListener('beforeunload', () => {
+                try {
+                    sessionStorage.setItem(posKey, window.scrollY.toString());
+                    sessionStorage.setItem(pathKey, window.location.pathname + window.location.search);
+                } catch (e) {}
+            });
+        })();
+    </script>
 </head>
 <body class="solar-bg-grid <?= $page === 'home' ? 'solar-layout-home' : ($page === 'auth' ? 'solar-layout-auth' : 'solar-layout-app') ?>">
     <div class="glow-ambient-1"></div>
@@ -1160,6 +1201,35 @@ if ($page === 'profile') {
                 socket.on('solar:action', (payload) => {
                     console.log('⚡ [Realtime Action Event Received]:', payload);
                     showSolarToast(payload.message || 'Hành động dữ liệu năng lượng đã được đồng bộ');
+                    // Tự động tải lại trang và giữ nguyên vị trí cuộn nếu sự kiện yêu cầu reload
+                    if (payload && (payload.reload === true || payload.type === 'reload' || payload.action === 'reload')) {
+                        console.log('🔄 [Socket.io] Reloading page preserving current scroll position...');
+                        setTimeout(() => {
+                            window.reloadPreservingScroll();
+                        }, 500);
+                    }
+                });
+
+                // Nhận sự kiện reload chuyên biệt từ Socket.io Server
+                socket.on('solar:reload', (payload) => {
+                    console.log('⚡ [Realtime Reload Event Received]:', payload);
+                    if (payload && payload.message) {
+                        showSolarToast(payload.message);
+                    }
+                    setTimeout(() => {
+                        window.reloadPreservingScroll();
+                    }, 400);
+                });
+
+                // Nhận sự kiện cập nhật Kế hoạch thiết bị dự định
+                socket.on('solar:plan_update', (data) => {
+                    console.log('⚡ [Realtime Plan Update]:', data);
+                    if (data && (data.reload || data.type === 'reload')) {
+                        showSolarToast('Kế hoạch thiết bị đã thay đổi, đang đồng bộ...');
+                        setTimeout(() => {
+                            window.reloadPreservingScroll();
+                        }, 500);
+                    }
                 });
 
                 // Nhận đồng bộ vị trí slide từ các client khác
@@ -1172,6 +1242,15 @@ if ($page === 'profile') {
         } catch (e) {
             console.warn('[Socket.io Fallback Mode]:', e.message);
         }
+
+        // Hàm reload giữ nguyên vị trí cuộn hiện tại chuyên dụng cho Socket.io & Browser
+        window.reloadPreservingScroll = function() {
+            try {
+                sessionStorage.setItem('solaris_scroll_pos', window.scrollY.toString());
+                sessionStorage.setItem('solaris_scroll_path', window.location.pathname + window.location.search);
+            } catch (e) {}
+            window.location.reload();
+        };
 
         // Hàm phát hành động lên socket server
         window.triggerSolarAction = function(actionType, message) {

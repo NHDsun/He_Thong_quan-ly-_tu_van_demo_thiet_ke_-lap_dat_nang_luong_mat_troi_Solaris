@@ -952,8 +952,8 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
 </div>
 
 <script>
-    // Tự động cuộn mượt mà đến phần mô phỏng nếu có hash #step-2-simulation
-    if (window.location.hash) {
+    // Tự động cuộn mượt mà đến phần mô phỏng nếu có hash #step-2-simulation và không có vị trí reload cần giữ
+    if (window.location.hash && !sessionStorage.getItem('solaris_scroll_pos')) {
         const target = document.querySelector(window.location.hash);
         if (target) {
             target.scrollIntoView({ behavior: 'smooth' });
