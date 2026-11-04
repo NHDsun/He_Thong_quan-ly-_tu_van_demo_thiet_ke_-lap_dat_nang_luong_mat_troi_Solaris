@@ -44,7 +44,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
             Tư Vấn Kỹ Thuật & Mô Phỏng Cấu Hình Điện Mặt Trời
         </h1>
         <p class="sol-section-header__desc">
-            Quy trình khép kín: Đồng bộ thiết bị từ <strong>Kế hoạch dự định</strong> → Mô phỏng <strong>bố trí thiết bị trên mặt bằng 2D</strong> → Tính toán <strong>3 chỉ số cốt lõi</strong> (Số KW, Tiền tạo ra/tháng, Thời gian gỡ vốn) → <strong>Xác nhận chuyển sang Quản lý lắp đặt</strong>.
+            Quy trình khép kín: Đồng bộ thiết bị từ <strong>Kế hoạch dự định</strong> → Mô phỏng <strong>bố trí thiết bị trên mặt bằng 2D</strong> → Tính toán <strong>3 chỉ số cốt lõi</strong> (Số KW, Tiền tạo ra/tháng, Thời gian gỡ vốn) → <strong>Gửi yêu cầu để quản lý xem xét</strong>.
         </p>
     </div>
 
@@ -730,7 +730,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                 Xác Nhận Cấu Hình Phương Án
             </h2>
             <p style="color: var(--text-secondary); font-size: 0.925rem; line-height: 1.5;">
-                Sau khi kiểm tra mô phỏng mặt bằng 2D và hiệu quả tài chính, hãy điền thông tin công trình và nhấn <strong>Xác nhận cấu hình</strong> để lưu dự toán vào CSDL và tự động chuyển sang phân hệ Quản lý lắp đặt.
+                Sau khi kiểm tra phương án và hiệu quả tài chính, hãy điền thông tin công trình. <?= $isPlanSource ? "Phương án từ kế hoạch sẽ được quản lý duyệt trước khi tạo yêu cầu dự án." : "Yêu cầu khảo sát sẽ được chuyển đến quản lý để duyệt triển khai." ?>
             </p>
         </div>
 
@@ -753,8 +753,13 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
             </div>
         </div>
 
+        <?php if (($currentUser['role'] ?? '') !== 'customer'): ?>
+            <p class="sol-notice">Đăng nhập bằng tài khoản khách hàng để lưu dự toán hoặc đăng ký khảo sát. <a href="index.php?page=auth">Đăng nhập</a></p>
+        <?php endif; ?>
         <!-- Form xác nhận & gửi yêu cầu khảo sát thi công -->
         <form method="POST" action="index.php?page=calculator<?= $isPlanSource ? '&source=plan' : '' ?>" style="max-width: 820px; margin: 0 auto;">
+            <input type="hidden" name="csrf" value="<?= htmlspecialchars($_SESSION['solar_csrf'], ENT_QUOTES) ?>">
+            <input type="hidden" name="request_key" value="<?= htmlspecialchars($_POST['request_key'] ?? bin2hex(random_bytes(32)), ENT_QUOTES) ?>">
             <input type="hidden" name="calc_source" value="<?= htmlspecialchars($source ?? 'plan') ?>">
             <input type="hidden" name="monthly_bill" value="<?= (int)($calc['monthly_bill'] ?? $calc['monthly_money'] ?? 3000000) ?>">
             <input type="hidden" name="roof_area" value="<?= $calc['required_roof_area'] ?>">
@@ -840,7 +845,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                     class="sol-btn sol-btn--solar sol-btn--lg" 
                     style="width: 100%; max-width: 520px; font-size: 1.05rem; font-weight: 800; padding: 1rem 1.85rem; box-shadow: 0 6px 25px rgba(245, 158, 11, 0.45); display: flex; align-items: center; justify-content: center; gap: 0.65rem;"
                 >
-                    <span>🚀</span> Xác Nhận Cấu Hình
+                    <span>🚀</span> <?= $isPlanSource ? "Gửi Phương Án Cho Quản Lý Duyệt" : "Đăng Ký Khảo Sát" ?>
                 </button>
 
                 <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; justify-content: center;">
@@ -851,7 +856,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                         class="sol-btn sol-btn--outline sol-btn--sm" 
                         style="color: var(--text-secondary); font-size: 0.825rem;"
                     >
-                        💾 Lưu Dự Toán (Trạng Thái Approved)
+                        💾 Lưu Dự Toán Nháp
                     </button>
                     <a 
                         href="index.php?page=installations" 
@@ -868,12 +873,12 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
     <!-- ===================================================================== -->
     <!-- DANH SÁCH LỊCH SỬ BÁO GIÁ ĐÃ LƯU (CSDL MySQL solar_quotes)             -->
     <!-- ===================================================================== -->
-    <section class="sol-glass-card" style="padding: 2.25rem;">
+    <section id="quote-history" class="sol-glass-card" style="padding: 2.25rem;">
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1rem;">
             <div>
-                <span class="sol-badge sol-badge--cyan" style="margin-bottom: 0.4rem;">QUẢN TRỊ DỮ LIỆU CSDL (THÀNH VIÊN 3)</span>
+                <span class="sol-badge sol-badge--cyan" style="margin-bottom: 0.4rem;">PHƯƠNG ÁN & YÊU CẦU</span>
                 <h3 style="color: #ffffff; font-size: 1.35rem; font-family: var(--font-heading); margin: 0;">
-                    Danh Sách Yêu Cầu Báo Giá Đã Tiếp Nhận (solar_quotes)
+                    <?= ($currentUser['role'] ?? '') === 'admin' ? 'Phương Án Cần Xem Xét' : 'Dự Toán & Yêu Cầu Của Tôi' ?>
                 </h3>
             </div>
             <div style="display: flex; align-items: center; gap: 0.75rem;">
@@ -886,9 +891,9 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
         <?php if (empty($quotes_list)): ?>
             <div style="text-align: center; padding: 3rem 1.5rem; color: var(--text-muted);">
                 <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📋</div>
-                <div style="font-size: 1rem; color: #ffffff; margin-bottom: 0.35rem;">Chưa có yêu cầu báo giá nào trong cơ sở dữ liệu</div>
+                <div style="font-size: 1rem; color: #ffffff; margin-bottom: 0.35rem;">Chưa có phương án trong danh sách</div>
                 <p style="font-size: 0.85rem; max-width: 520px; margin: 0 auto;">
-                    Hãy điền form bên trên để đăng ký dự toán đầu tiên, dữ liệu sẽ tự động lưu vào bảng <code>solar_quotes</code> của CSDL MySQL.
+                    Đăng nhập bằng tài khoản khách hàng để lưu dự toán và theo dõi yêu cầu của bạn.
                 </p>
             </div>
         <?php else: ?>
@@ -905,6 +910,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                             <th style="padding: 0.75rem 0.85rem; text-align: right;">Dự Toán Chi Phí</th>
                             <th style="padding: 0.75rem 0.85rem; text-align: center;">Trạng Thái</th>
                             <th style="padding: 0.75rem 0.85rem; text-align: center;">Thời Gian</th>
+                            <th style="padding: 0.75rem 0.85rem;">Xử Lý</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -932,12 +938,39 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                                     <?= number_format((float)$q['estimated_total_cost'], 0, ',', '.') ?> đ
                                 </td>
                                 <td style="padding: 0.8rem 0.85rem; text-align: center;">
-                                    <span class="sol-badge sol-badge--emerald" style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase;">
-                                        ✓ Approved
+                                    <span class="sol-badge <?= $q['status'] === 'approved' ? 'sol-badge--emerald' : 'sol-badge--amber' ?>">
+                                        <?= htmlspecialchars(\App\Modules\Member4_Installation\View::label($q['status'])) ?>
                                     </span>
+                                    <?php if ($q['review_note']): ?><p><?= htmlspecialchars($q['review_note']) ?></p><?php endif; ?>
+                                    <?php if ($q['project_id']): ?><p>Dự án: <?= htmlspecialchars(\App\Modules\Member4_Installation\View::label($q['project_status'])) ?></p><?php endif; ?>
+                                    <details><summary>Thông tin phương án</summary>
+                                        <p>Nguồn: <?= $q['source'] === 'plan' ? 'Kế hoạch dự định' : 'Hóa đơn tiền điện' ?></p>
+                                        <p>Diện tích: <?= htmlspecialchars((string) $q['roof_area_sqm']) ?> m² · Tiền điện: <?= number_format((float) $q['monthly_electric_bill'], 0, ',', '.') ?> đ/tháng</p>
+                                        <p><?= htmlspecialchars($q['customer_email'] ?? '') ?></p>
+                                        <p><?= nl2br(htmlspecialchars($q['notes'] ?? '')) ?></p>
+                                    </details>
                                 </td>
                                 <td style="padding: 0.8rem 0.85rem; text-align: center; color: var(--text-muted); font-size: 0.75rem;">
                                     <?= !empty($q['created_at']) ? date('d/m/Y H:i', strtotime($q['created_at'])) : 'Vừa xong' ?>
+                                </td>
+                                <td style="padding: 0.8rem; min-width: 220px;">
+                                    <?php if ($q['project_id']): ?>
+                                        <a class="sol-btn sol-btn--secondary sol-btn--sm" href="index.php?page=installations&amp;project=<?= (int) $q['project_id'] ?>">Xem dự án</a>
+                                    <?php elseif (($currentUser['role'] ?? '') === 'customer' && $q['status'] === 'draft'): ?>
+                                        <form method="post" action="index.php?page=calculator">
+                                            <input type="hidden" name="csrf" value="<?= htmlspecialchars($_SESSION['solar_csrf'], ENT_QUOTES) ?>">
+                                            <input type="hidden" name="quote_id" value="<?= (int) $q['id'] ?>">
+                                            <button class="sol-btn sol-btn--solar sol-btn--sm" name="action" value="submit_quote"><?= $q['source'] === 'plan' ? 'Gửi duyệt phương án' : 'Đăng ký khảo sát' ?></button>
+                                        </form>
+                                    <?php elseif (($currentUser['role'] ?? '') === 'admin' && $q['status'] === 'pending_approval'): ?>
+                                        <form method="post" action="index.php?page=calculator">
+                                            <input type="hidden" name="csrf" value="<?= htmlspecialchars($_SESSION['solar_csrf'], ENT_QUOTES) ?>">
+                                            <input type="hidden" name="quote_id" value="<?= (int) $q['id'] ?>">
+                                            <textarea name="review_note" maxlength="5000" placeholder="Nhận xét; bắt buộc khi từ chối" aria-label="Nhận xét phương án"></textarea>
+                                            <button class="sol-btn sol-btn--solar sol-btn--sm" name="action" value="approve_quote">Duyệt phương án & tạo yêu cầu dự án</button>
+                                            <button class="sol-btn sol-btn--outline sol-btn--sm" name="action" value="reject_quote">Từ chối</button>
+                                        </form>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

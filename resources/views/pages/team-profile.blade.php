@@ -375,7 +375,7 @@ $roleName = match ($userRole) {
                                         </td>
                                         <td style="padding: 0.75rem 1rem; text-align: center;">
                                             <span class="sol-badge sol-badge--emerald" style="font-size: 0.7rem; padding: 0.15rem 0.5rem;">
-                                                <?= htmlspecialchars($q['status'] === 'approved' ? 'Đã duyệt' : ($q['status'] === 'survey_scheduled' ? 'Đã xếp lịch khảo sát' : 'Tiếp nhận')) ?>
+                                                <?= htmlspecialchars(\App\Modules\Member4_Installation\View::label($q['status'])) ?>
                                             </span>
                                         </td>
                                     </tr>
@@ -436,20 +436,14 @@ $roleName = match ($userRole) {
                                             <?= number_format((float)($p['capacity_kwp'] ?? 5.5), 1) ?> kWp
                                         </td>
                                         <td style="padding: 0.75rem 1rem; color: var(--accent-gold);">
-                                            <?= match ($p['current_stage'] ?? 'survey') {
-                                                'survey' => '1. Khảo sát hiện trường mái',
-                                                'material' => '2. Chuẩn bị vật tư thiết bị',
-                                                'installation' => '3. Thi công khung & tấm pin',
-                                                'handover' => '4. Nghiệm thu & Đóng điện EVN',
-                                                default => 'Đang thực hiện'
-                                            } ?>
+                                            <?= htmlspecialchars(\App\Hooks\UseInstallationWorkflow::STAGES[$p['current_stage'] ?? ''] ?? 'Chưa triển khai') ?>
                                         </td>
                                         <td style="padding: 0.75rem 1rem; text-align: right; font-weight: 700; color: var(--accent-emerald);">
                                             <?= number_format((float)($p['total_amount'] ?? 0)) ?> đ
                                         </td>
                                         <td style="padding: 0.75rem 1rem; text-align: center;">
                                             <span class="sol-badge <?= ($p['status'] ?? '') === 'completed' ? 'sol-badge--emerald' : 'sol-badge--amber' ?>" style="font-size: 0.7rem; padding: 0.15rem 0.5rem;">
-                                                <?= ($p['status'] ?? '') === 'completed' ? 'Hoàn thành' : 'Đang thi công' ?>
+                                                <?= htmlspecialchars(\App\Modules\Member4_Installation\View::label($p['status'] ?? 'pending_approval')) ?>
                                             </span>
                                         </td>
                                     </tr>
@@ -529,17 +523,11 @@ $roleName = match ($userRole) {
                                                 <?= number_format((float)($p['capacity_kwp'] ?? 7.7), 1) ?> kWp
                                             </td>
                                             <td style="padding: 0.75rem 1rem; color: var(--accent-gold);">
-                                                <?= match ($p['current_stage'] ?? 'survey') {
-                                                    'survey' => '1. Khảo sát hiện trường mái',
-                                                    'material' => '2. Chuẩn bị vật tư thiết bị',
-                                                    'installation' => '3. Thi công khung & tấm pin',
-                                                    'handover' => '4. Nghiệm thu & Đóng điện EVN',
-                                                    default => 'Đang thực hiện'
-                                                } ?>
+                                                <?= htmlspecialchars(\App\Hooks\UseInstallationWorkflow::STAGES[$p['current_stage'] ?? ''] ?? 'Chưa triển khai') ?>
                                             </td>
                                             <td style="padding: 0.75rem 1rem; text-align: center;">
                                                 <span class="sol-badge <?= ($p['status'] ?? '') === 'completed' ? 'sol-badge--emerald' : 'sol-badge--amber' ?>" style="font-size: 0.7rem; padding: 0.15rem 0.5rem;">
-                                                    <?= ($p['status'] ?? '') === 'completed' ? 'Hoàn thành' : 'Đang thi công' ?>
+                                                    <?= htmlspecialchars(\App\Modules\Member4_Installation\View::label($p['status'] ?? 'pending_approval')) ?>
                                                 </span>
                                             </td>
                                         </tr>
@@ -616,7 +604,7 @@ $roleName = match ($userRole) {
                                             </td>
                                             <td style="padding: 0.75rem 1rem; text-align: center;">
                                                 <span class="sol-badge sol-badge--emerald" style="font-size: 0.7rem; padding: 0.15rem 0.5rem;">
-                                                    <?= htmlspecialchars($q['status'] === 'approved' ? 'Đã duyệt' : ($q['status'] === 'survey_scheduled' ? 'Đã lên lịch khảo sát' : 'Tiếp nhận')) ?>
+                                                    <?= htmlspecialchars(\App\Modules\Member4_Installation\View::label($q['status'])) ?>
                                                 </span>
                                             </td>
                                         </tr>

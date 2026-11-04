@@ -1,3 +1,70 @@
+.tv4-material-dialog {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    width: min(640px, calc(100vw - 2rem));
+    height: fit-content;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 1.5rem;
+    border: 1px solid var(--border-hover);
+    border-radius: var(--radius-lg);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    color-scheme: dark;
+    box-shadow: 0 24px 80px var(--bg-base);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+}
+.tv4-material-dialog:not([open]) { display: none; }
+.tv4-material-dialog::backdrop {
+    background: var(--bg-base);
+    opacity: .8;
+}
+.tv4-material-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+.tv4-material-heading h3 { margin: 0; color: var(--accent-gold); }
+.tv4-material-dialog p { margin: .8rem 0; }
+.tv4-material-dialog h4 { margin: 1.2rem 0 .6rem; }
+.tv4-material-dialog .tv4-request {
+    padding: .75rem;
+    margin-bottom: .6rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+}
+.tv4-material-form {
+    display: grid;
+    gap: .65rem;
+    margin-top: 1rem;
+}
+.tv4-material-selects { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: .6rem; }
+.tv4-material-form > input { width: 100%; min-width: 0; }
+.tv4-material-form > p { margin: 0; font-size: .8rem; }
+.tv4-material-form > button { justify-self: end; }
+.tv4-material-dialog select,
+.tv4-material-dialog textarea {
+    width: 100%;
+    min-width: 0;
+    padding: .7rem;
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    font: inherit;
+}
+.tv4-material-dialog textarea { min-height: 70px; resize: vertical; }
+body:has(.tv4-material-dialog[open]) { overflow: hidden; }
+.tv4-stage-materials { margin-top: 1rem; padding: 1rem; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); }
+.tv4-stage-materials h4 { margin: 0 0 .5rem; color: var(--accent-gold); }
+.tv4-stage-material-row { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .5rem 1rem; padding: .65rem 0; border-bottom: 1px solid var(--border-subtle); overflow-wrap: anywhere; }
+.tv4-stage-material-row p { margin: .2rem 0; }
+.tv4-stage-material-row small { color: var(--text-secondary); }
+.tv4-stage-material-total { margin: .75rem 0 0; text-align: right; }
+
 .tv4 {
     padding-top:2.5rem;
     padding-bottom:3rem;
@@ -655,6 +722,31 @@
 
 .tv4-stage--active {
     border-color:var(--border-hover);
+}
+
+.tv4-stage-list > .tv4-stage {
+    width: 92%;
+    align-self: center;
+    min-width: 0;
+    transition: width .2s ease;
+}
+.tv4-stage-list > .tv4-stage--active { width: 100%; }
+.tv4-stage--upcoming { background: var(--bg-surface); border-color: var(--border-subtle); }
+.tv4-stage--upcoming > .tv4-stage-heading { color: var(--text-secondary); }
+.tv4-stage--upcoming > .tv4-stage-heading h3 { color: var(--text-secondary); }
+.tv4-stage--upcoming > .tv4-stage-heading .tv4-stage-number,
+.tv4-stage--upcoming > .tv4-stage-heading .sol-badge { background: var(--bg-elevated); color: var(--text-muted); border-color: var(--border-subtle); }
+.tv4-stage--upcoming > .tv4-stage-content > .tv4-meta { color: var(--text-muted); }
+details.tv4-stage > summary { cursor: pointer; list-style: none; margin-bottom: 0; }
+details.tv4-stage > summary::-webkit-details-marker { display: none; }
+details.tv4-stage > summary:focus-visible { outline: 2px solid var(--accent-gold); outline-offset: 6px; border-radius: var(--radius-sm); }
+details.tv4-stage[open] > .tv4-stage-content { padding-top: 1rem; }
+.tv4-stage-toggle::after { content: '▾'; color: var(--text-secondary); }
+details.tv4-stage[open] .tv4-stage-toggle::after { content: '▴'; }
+@media (max-width: 560px) {
+    .tv4-stage-list > .tv4-stage { width: 96%; }
+    .tv4-stage-list > .tv4-stage--active { width: 100%; }
+    .tv4-stage-heading { flex-wrap: wrap; }
 }
 
 .tv4-upload {

@@ -21,7 +21,7 @@ foreach ($detail['stages'] as $stage) {
         $approvedStages++;
     }
 }
-$editable = in_array($project['status'], ['in_progress', 'approved', 'pending_approval', 'new'], true);
+$editable = $project['status'] === 'in_progress';
 
 $hasPostpone = false;
 foreach ($detail['requests'] as $request) {
@@ -49,7 +49,7 @@ foreach ($detail['crew'] as $member) {
         <h2><?= UI::escape($project['project_name']) ?></h2>
         <p><?= UI::escape($project['installation_address']) ?></p>
     </div>
-    <?php UI::component('badge', UI::label($project['status']), ['variant' => in_array($project['status'], ['completed', 'approved'], true) ? 'emerald' : 'amber']); ?>
+    <?php UI::component('badge', UI::label($project['status']), ['variant' => $project['status'] === 'completed' ? 'emerald' : 'amber']); ?>
     <div class="tv4-summary-grid">
         <div>
             <span>Công suất</span>
@@ -82,6 +82,39 @@ foreach ($detail['crew'] as $member) {
         <p>Hoàn tất lúc <?= UI::escape($project['completed_at']) ?></p>
     <?php endif; ?>
 </article>
+<?php if ($project['reviewed_at']): ?>
+    <div class="tv4-notice">Kết quả duyệt lúc <?= UI::escape($project['reviewed_at']) ?>: <?= UI::escape($project['review_note'] ?: UI::label($project['status'])) ?></div>
+<?php endif; ?>
+<?php if ($project['cancel_reason']): ?>
+    <div class="tv4-notice">Lý do hủy: <?= UI::escape($project['cancel_reason']) ?></div>
+<?php endif; ?>
+<?php if ($admin && $project['status'] === 'pending_approval'): ?>
+    <section class="sol-glass-card tv4-panel">
+        <h2>Duyệt yêu cầu triển khai</h2>
+        <?php if ($quote = $detail['quote'] ?? null): ?>
+            <p>Khách hàng: <?= UI::escape($quote['customer_name']) ?> · <?= UI::escape($quote['customer_phone']) ?> · <?= UI::escape($quote['customer_email']) ?></p>
+            <p>Nguồn: <?= $quote['source'] === 'plan' ? 'Kế hoạch dự định' : 'Đăng ký khảo sát từ demo' ?> · Phương án: <?= UI::escape(UI::label($quote['status'])) ?></p>
+        <?php endif; ?>
+        <form method="post" class="tv4-review">
+            <?php UI::csrf(); ?>
+            <label>Nhận xét (bắt buộc khi từ chối)<textarea name="review_note" maxlength="5000"></textarea></label>
+            <div class="tv4-actions">
+                <?php UI::component('button', 'Duyệt thành dự án mới', ['type' => 'submit'], ['name' => 'action', 'value' => 'approve_project']); ?>
+                <?php UI::component('button', 'Từ chối yêu cầu', ['type' => 'submit', 'variant' => 'outline'], ['name' => 'action', 'value' => 'reject_project']); ?>
+            </div>
+        </form>
+    </section>
+<?php endif; ?>
+<?php if ($admin && in_array($project['status'], ['pending_approval','new','in_progress'], true)): ?>
+    <details class="sol-glass-card tv4-panel">
+        <summary>Hủy dự án</summary>
+        <form method="post" class="tv4-review">
+            <?php UI::form('cancel_project'); ?>
+            <label>Lý do hủy<textarea name="review_note" maxlength="5000" required></textarea></label>
+            <?php UI::component('button', 'Xác nhận hủy dự án', ['type' => 'submit', 'variant' => 'outline']); ?>
+        </form>
+    </details>
+<?php endif; ?>
 <ol class="tv4-steps" aria-label="Tiến độ sáu giai đoạn">
     <?php foreach ($detail['stages'] as $stage): ?>
         <li class="<?= $stage['status'] === 'approved' ? 'done' : ($stage['stage'] === $project['current_stage'] && $editable ? 'current' : '') ?>">
@@ -98,16 +131,32 @@ foreach ($detail['crew'] as $member) {
 <?php endif; ?>
 <div class="tv4-detail-grid">
     <div class="tv4-stage-list">
-        <?php foreach ($detail['stages'] as $stage): $active = $editable && $stage['stage'] === $project['current_stage']; ?>
-            <article class="sol-glass-card tv4-panel tv4-stage <?= $active ? 'tv4-stage--active' : '' ?>" id="stage-<?= $stage['id'] ?>">
-                <div class="tv4-stage-heading">
+        <?php require __DIR__ . '/billing.php'; ?>
+        <?php foreach ($detail['stages'] as $stage):
+            $active = $editable && $stage['stage'] === $project['current_stage'];
+            $finished = $stage['status'] === 'approved';
+            $stageTag = $finished ? 'details' : 'article';
+            $headingTag = $finished ? 'summary' : 'div';
+        ?>
+            <<?= $stageTag ?> class="sol-glass-card tv4-panel tv4-stage <?= $active ? 'tv4-stage--active' : ($finished ? 'tv4-stage--finished' : 'tv4-stage--upcoming') ?>" id="stage-<?= $stage['id'] ?>">
+                <<?= $headingTag ?> class="tv4-stage-heading">
                     <span class="tv4-stage-number"><?= (int) $stage['position'] ?></span>
                     <div>
                         <h3><?= UI::escape(Workflow::STAGES[$stage['stage']]) ?></h3>
+                        <?php if ($stage['stage'] === 'procurement' && $detail['billing']['canPrint']): ?>
+                            <a class="sol-btn sol-btn--outline sol-btn--sm" target="_blank" rel="noopener" href="index.php?page=installations&amp;project=<?= (int) $project['id'] ?>&amp;invoice=1">In hóa đơn</a>
+                        <?php endif; ?>
                         <p><?= UI::escape($stage['planned_start'] ?? 'Chưa xếp lịch') ?> → <?= UI::escape($stage['planned_end'] ?? '—') ?></p>
                     </div>
                     <?php UI::component('badge', UI::label($stage['status']), ['variant' => $stage['status'] === 'approved' ? 'emerald' : 'amber']); ?>
-                </div>
+                    <?php if ($finished): ?><span class="tv4-stage-toggle" aria-hidden="true"></span><?php endif; ?>
+                </<?= $headingTag ?>>
+                <div class="tv4-stage-content">
+                <?php if ($stage['stage'] === 'survey'): ?>
+                    <?php UI::component('button', 'Phát sinh vật tư', ['variant' => 'outline', 'size' => 'sm'], ['data-material-open' => 'tv4-material-dialog', 'aria-haspopup' => 'dialog', 'aria-controls' => 'tv4-material-dialog']); ?>
+                    <?php require __DIR__ . '/material-dialog.php'; ?>
+                    <?php require __DIR__ . '/stage-materials.php'; ?>
+                <?php endif; ?>
                 <?php $stageDocuments = $documentsByStage[$stage['id']] ?? []; ?>
                 <?php if ($stageDocuments): ?>
                     <div class="tv4-stage-docs">
@@ -198,7 +247,8 @@ foreach ($detail['crew'] as $member) {
                         </div>
                     </form>
                 <?php endif; ?>
-            </article>
+                </div>
+            </<?= $stageTag ?>>
         <?php endforeach; ?>
         <section class="sol-glass-card tv4-panel">
             <h3>Hồ sơ & ảnh minh chứng</h3>
@@ -230,7 +280,7 @@ foreach ($detail['crew'] as $member) {
                     <div>
                         <time><?= UI::escape($log['created_at']) ?></time>
                         <strong><?= UI::escape($log['full_name'] ?? 'Hệ thống') ?></strong>
-                        <p><?= UI::escape(UI::actionLabel($log['action'])) ?> · <?= UI::escape(Workflow::STAGES[$log['stage']]) ?></p>
+                        <p><?= UI::escape(UI::actionLabel($log['action'])) ?> · <?= UI::escape(Workflow::STAGES[$log['stage']] ?? 'Yêu cầu dự án') ?></p>
                         <p><?= UI::escape($log['note']) ?></p>
                         <?php if ($log['from_status'] || $log['to_status']): ?>
                             <small><?= UI::escape(UI::label($log['from_status'] ?? '')) ?> → <?= UI::escape(UI::label($log['to_status'] ?? '')) ?></small>

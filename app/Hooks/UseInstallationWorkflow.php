@@ -70,18 +70,18 @@ final class UseInstallationWorkflow
             $where .= ' AND EXISTS (SELECT 1 FROM project_assignments a WHERE a.project_id=p.id AND a.technician_id=? AND a.ended_at IS NULL)';
             $params[] = $actor['id'];
         }
-        if (in_array($filter, ['new', 'pending_approval', 'approved', 'in_progress', 'completed'], true)) {
+        if (in_array($filter, ['new', 'pending_approval', 'rejected', 'in_progress', 'completed', 'cancelled'], true)) {
             $where .= ' AND p.status=?';
             $params[] = $filter;
         } elseif ($filter === 'pending' && $actor['role'] === 'admin') {
-            $where .= " AND (p.status='pending_approval' OR EXISTS (SELECT 1 FROM project_requests r WHERE r.project_id=p.id AND r.status='pending') OR EXISTS (SELECT 1 FROM project_stages s WHERE s.project_id=p.id AND s.status='pending_approval'))";
+            $where .= " AND (p.status='pending_approval' OR (p.status='in_progress' AND (EXISTS (SELECT 1 FROM project_requests r WHERE r.project_id=p.id AND r.status='pending') OR EXISTS (SELECT 1 FROM project_stages s WHERE s.project_id=p.id AND s.status='pending_approval'))))";
         }
         $total = (int) $this->rows("SELECT COUNT(*) n FROM projects p WHERE {$where}", $params)[0]['n'];
         $pager = UsePaginationState::make($total, $page);
         $projects = $this->rows("SELECT p.*, (SELECT COUNT(*) FROM project_stages s WHERE s.project_id=p.id AND s.status='approved') approved_count,
             (SELECT COUNT(*) FROM project_assignments a WHERE a.project_id=p.id AND a.ended_at IS NULL) crew_count,
             (SELECT COUNT(*) FROM project_requests r WHERE r.project_id=p.id AND r.status='pending') request_count
-            FROM projects p WHERE {$where} ORDER BY FIELD(p.status,'pending_approval','new','in_progress','approved','completed','cancelled'), p.created_at DESC, p.id DESC LIMIT {$pager['limit']} OFFSET {$pager['offset']}", $params);
+            FROM projects p WHERE {$where} ORDER BY FIELD(p.status,'pending_approval','new','in_progress','completed','rejected','cancelled'), p.created_at DESC, p.id DESC LIMIT {$pager['limit']} OFFSET {$pager['offset']}", $params);
         return [
             'projects' => $projects,
             'pager' => $pager,
@@ -96,7 +96,7 @@ final class UseInstallationWorkflow
             $summary = [];
             foreach (['id', 'contract_code', 'project_name', 'capacity_kwp', 'total_amount',
                 'installation_address', 'status', 'current_stage', 'start_date',
-                'planned_end_date', 'completion_date', 'completed_at'] as $field) {
+                'planned_end_date', 'completion_date', 'completed_at', 'reviewed_at', 'review_note', 'cancel_reason'] as $field) {
                 $summary[$field] = $project[$field];
             }
             return [
@@ -204,14 +204,20 @@ final class UseInstallationWorkflow
     private function log(array $project, array $actor, string $action, ?string $from, ?string $to, string $note = ''): void
     {
         $this->run('INSERT INTO project_stage_logs (project_id,stage,started_at,completed_at,actor_id,action,from_status,to_status,note) VALUES (?,?,NOW(),IF(?="approved",NOW(),NULL),?,?,?,?,?)',
-            [$project['id'], $project['current_stage'], $to, $actor['id'], $action, $from, $to, $note]);
+            [$project['id'], $project['current_stage'] ?? null, $to, $actor['id'], $action, $from, $to, $note]);
+    }
+
+    public function recordEvent(array $project, array $actor, string $action, string $note): void
+    {
+        $this->log($project, $actor, $action, null, null, $note);
     }
 
     // Một lần gửi form tương ứng với một nhánh xử lý bên dưới.
     public function act(array $actor, int $id, string $action, array $data, array $files = []): void
     {
-        if (!in_array($actor['role'], ['admin', 'technician'], true)) {
-            throw new RuntimeException('Khách hàng chỉ có quyền xem tiến độ dự án.');
+        if (!in_array($actor['role'], ['admin', 'technician'], true)
+            && !($actor['role'] === 'customer' && $action === 'pay_project')) {
+            throw new RuntimeException('Bạn không có quyền thực hiện thao tác này.');
         }
         $stored = null;
         $this->db->beginTransaction();
@@ -219,8 +225,29 @@ final class UseInstallationWorkflow
         try {
             // Khóa dự án trong lúc ghi để tránh hai người duyệt cùng một lúc.
             $project = $this->project($id, $actor, true);
-            if ($project['status'] === 'completed' || $project['status'] === 'cancelled') {
+            if ($action === 'pay_project') {
+                (new UseProjectBilling($this))->pay($project, $actor, $data);
+                $this->db->commit();
+                return;
+            }
+            if (in_array($project['status'], ['completed', 'cancelled', 'rejected'], true)) {
                 throw new RuntimeException('Dự án đã kết thúc, không thể thay đổi.');
+            }
+
+            if (in_array($action, ['approve_project', 'reject_project', 'cancel_project'], true)) {
+                $this->admin($actor);
+                $this->reviewProject($project, $actor, $action, $data);
+                $this->db->commit();
+                return;
+            }
+            if ($action === 'assign') {
+                $this->admin($actor);
+                $this->assign($project, $actor, $data);
+                $this->db->commit();
+                return;
+            }
+            if ($project['status'] !== 'in_progress') {
+                throw new RuntimeException('Dự án chưa bắt đầu triển khai.');
             }
 
             $stages = $this->rows(
@@ -233,9 +260,8 @@ final class UseInstallationWorkflow
             }
 
             switch ($action) {
-                case 'assign':
-                    $this->admin($actor);
-                    $this->assign($project, $actor, $data);
+                case 'add_material':
+                    (new UseProjectBilling($this))->add($project, $actor, $data);
                     break;
                 case 'approve_stage':
                 case 'reject_stage':
@@ -281,6 +307,29 @@ final class UseInstallationWorkflow
         if ($actor['role'] !== 'technician' || $project['status'] !== 'in_progress') {
             throw new RuntimeException('Chỉ kỹ thuật viên được phân công mới được gửi cập nhật.');
         }
+    }
+
+    private function reviewProject(array $project, array $actor, string $action, array $data): void
+    {
+        if ($action === 'cancel_project') {
+            $reason = $this->note($data, 'review_note');
+            $this->run("UPDATE projects SET status='cancelled',cancelled_by=?,cancelled_at=NOW(),cancel_reason=? WHERE id=?", [$actor['id'], $reason, $project['id']]);
+            $this->run('UPDATE project_assignments SET ended_at=NOW() WHERE project_id=? AND ended_at IS NULL', [$project['id']]);
+            $this->run("UPDATE project_requests SET status='superseded',reviewed_by=?,reviewed_at=NOW(),review_note=? WHERE project_id=? AND status='pending'", [$actor['id'], 'Dự án đã hủy: ' . $reason, $project['id']]);
+            $this->log($project, $actor, 'project_cancelled', $project['status'], 'cancelled', $reason);
+            return;
+        }
+        if ($project['status'] !== 'pending_approval') {
+            throw new RuntimeException('Yêu cầu dự án không còn chờ duyệt.');
+        }
+        $approved = $action === 'approve_project';
+        $note = $approved ? trim((string) ($data['review_note'] ?? '')) : $this->note($data, 'review_note');
+        $status = $approved ? 'new' : 'rejected';
+        if (mb_strlen($note) > 5000) {
+            throw new RuntimeException('Nhận xét không được vượt quá 5000 ký tự.');
+        }
+        $this->run('UPDATE projects SET status=?,reviewed_by=?,reviewed_at=NOW(),review_note=? WHERE id=?', [$status, $actor['id'], $note, $project['id']]);
+        $this->log($project, $actor, $action, 'pending_approval', $status, $note);
     }
 
     // Quản lý duyệt hoặc yêu cầu bổ sung giai đoạn hiện tại.
@@ -359,7 +408,10 @@ final class UseInstallationWorkflow
     private function assign(array $project, array $actor, array $data): void
     {
         if ($project['status'] !== 'new') {
-            throw new RuntimeException('Dự án đã được phân công.');
+            throw new RuntimeException('Chỉ phân công dự án đã duyệt và đang chờ phân công.');
+        }
+        if (count($this->rows('SELECT id FROM project_stages WHERE project_id=?', [$project['id']])) !== 6) {
+            throw new RuntimeException('Dự án chưa có đủ sáu giai đoạn.');
         }
         $start = (string) ($data['start_date'] ?? '');
         $end = (string) ($data['end_date'] ?? '');
@@ -397,13 +449,15 @@ final class UseInstallationWorkflow
             $endIndex = (int) floor(($stageIndex + 1) * $totalDays / 6) - 1;
             $this->run('UPDATE project_stages SET planned_start=?,planned_end=?,status=?,started_at=IF(?=0,NOW(),NULL) WHERE project_id=? AND stage=?', [$workingDates[$startIndex], $workingDates[$endIndex], $stageIndex === 0 ? 'in_progress' : 'locked', $stageIndex, $project['id'], $stageCode]);
         }
-        $this->run("UPDATE projects SET status='in_progress',technician_id=?,start_date=?,planned_end_date=? WHERE id=?", [$technicianIds[0], $start, $end, $project['id']]);
+        $this->run("UPDATE projects SET status='in_progress',current_stage='survey',technician_id=?,start_date=?,planned_end_date=? WHERE id=?", [$technicianIds[0], $start, $end, $project['id']]);
         $this->log($project, $actor, 'crew_assigned', 'new', 'in_progress', 'Nhóm: ' . implode(', ', $technicianIds) . '; ' . $hours . ' giờ/người/ngày.');
+        $project['current_stage'] = 'survey';
+        $this->log($project, $actor, 'stage_started', 'locked', 'in_progress');
     }
 
     private function technician(int $id): void
     {
-        if (!$this->rows("SELECT id FROM users WHERE id=? AND role='technician'", [$id])) {
+        if (!$this->rows("SELECT id FROM users WHERE id=? AND role='technician' FOR UPDATE", [$id])) {
             throw new RuntimeException('Nhân viên được chọn không phải kỹ thuật viên.');
         }
     }
@@ -484,7 +538,132 @@ final class UseInstallationWorkflow
         }
     }
 
-    /** Điểm tích hợp TV3: gọi sau khi báo giá đã được chấp thuận. */
+    /** Lưu dự toán hoặc gửi yêu cầu; khóa request_key để gửi lại không tạo trùng. */
+    public function registerQuote(int $customerId, array $data, array $calc, string $source, bool $submit, string $requestKey): array
+    {
+        if (!preg_match('/^[a-f0-9]{64}$/D', $requestKey) || !in_array($source, ['bill', 'plan'], true)) {
+            throw new RuntimeException('Phiên đăng ký không hợp lệ. Hãy tải lại trang.');
+        }
+        $this->db->beginTransaction();
+        try {
+            $actor = $this->rows("SELECT id,role FROM users WHERE id=? AND role='customer' FOR UPDATE", [$customerId])[0] ?? null;
+            if (!$actor) {
+                throw new RuntimeException('Vui lòng đăng nhập bằng tài khoản khách hàng để đăng ký.');
+            }
+            $existing = $this->rows('SELECT id,user_id FROM solar_quotes WHERE request_key=?', [$requestKey])[0] ?? null;
+            if ($existing) {
+                if ((int) $existing['user_id'] !== $customerId) {
+                    throw new RuntimeException('Phiên đăng ký không hợp lệ.');
+                }
+                $id = (int) $existing['id'];
+            } else {
+                foreach (['customer_name' => 100, 'customer_phone' => 20, 'address' => 255] as $field => $max) {
+                    $value = trim((string) ($data[$field] ?? ''));
+                    if ($value === '' || mb_strlen($value) > $max) {
+                        throw new RuntimeException('Họ tên, số điện thoại và địa chỉ phải đầy đủ, đúng độ dài.');
+                    }
+                }
+                $email = trim((string) ($data['customer_email'] ?? ''));
+                if ($email !== '' && (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 100)) {
+                    throw new RuntimeException('Email liên hệ không hợp lệ.');
+                }
+                $this->run('INSERT INTO solar_quotes (user_id,customer_name,customer_phone,customer_email,address,monthly_electric_bill,roof_area_sqm,estimated_system_kwp,panel_count,estimated_total_cost,payback_years,notes,status,source,request_key) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', [
+                    $customerId, trim($data['customer_name']), trim($data['customer_phone']), $email,
+                    trim($data['address']), $calc['monthly_bill'] ?? $calc['monthly_money'] ?? 3000000,
+                    $calc['required_roof_area'], $calc['estimated_kwp'], $calc['panel_count'],
+                    $calc['estimated_total_cost'], $calc['payback_years'], trim((string) ($data['notes'] ?? '')),
+                    $submit && $source === 'plan' ? 'pending_approval' : 'draft', $source, $requestKey,
+                ]);
+                $id = (int) $this->db->lastInsertId();
+                $this->quoteLog($id, $actor, 'quote_created', null, $submit && $source === 'plan' ? 'pending_approval' : 'draft');
+                if ($submit && $source === 'bill') {
+                    $quote = $this->rows('SELECT * FROM solar_quotes WHERE id=?', [$id])[0];
+                    $this->createPendingProject($quote, $actor);
+                }
+            }
+            $project = $this->rows('SELECT id FROM projects WHERE quote_id=?', [$id])[0] ?? null;
+            $this->db->commit();
+            return ['quote_id' => $id, 'project_id' => $project ? (int) $project['id'] : null];
+        } catch (Throwable $error) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $error;
+        }
+    }
+
+    public function submitQuote(int $quoteId, int $customerId): void
+    {
+        $this->db->beginTransaction();
+        try {
+            $actor = $this->rows("SELECT id,role FROM users WHERE id=? AND role='customer'", [$customerId])[0] ?? null;
+            $quote = $this->rows('SELECT * FROM solar_quotes WHERE id=? FOR UPDATE', [$quoteId])[0] ?? null;
+            if (!$actor || !$quote || (int) $quote['user_id'] !== $customerId || $quote['status'] !== 'draft') {
+                throw new RuntimeException('Không thể gửi dự toán này.');
+            }
+            if ($quote['source'] === 'plan') {
+                $this->run("UPDATE solar_quotes SET status='pending_approval' WHERE id=?", [$quoteId]);
+                $this->quoteLog($quoteId, $actor, 'quote_submitted', 'draft', 'pending_approval');
+            } else {
+                $this->createPendingProject($quote, $actor);
+            }
+            $this->db->commit();
+        } catch (Throwable $error) {
+            $this->db->rollBack();
+            throw $error;
+        }
+    }
+
+    public function reviewQuote(int $quoteId, int $adminId, bool $approve, string $note): ?int
+    {
+        $this->db->beginTransaction();
+        try {
+            $actor = $this->rows("SELECT id,role FROM users WHERE id=? AND role='admin'", [$adminId])[0] ?? null;
+            if (!$actor) {
+                throw new RuntimeException('Chỉ quản lý được duyệt phương án.');
+            }
+            $quote = $this->rows('SELECT * FROM solar_quotes WHERE id=? FOR UPDATE', [$quoteId])[0] ?? null;
+            if (!$quote || $quote['status'] !== 'pending_approval') {
+                throw new RuntimeException('Phương án không còn chờ duyệt.');
+            }
+            $note = $approve ? trim($note) : $this->note(['review_note' => $note], 'review_note');
+            $status = $approve ? 'approved' : 'rejected';
+            $this->run('UPDATE solar_quotes SET status=?,reviewed_by=?,reviewed_at=NOW(),review_note=? WHERE id=?', [$status, $adminId, $note, $quoteId]);
+            $this->quoteLog($quoteId, $actor, $approve ? 'quote_approved' : 'quote_rejected', 'pending_approval', $status, $note);
+            $projectId = $approve ? $this->createPendingProject($quote, $actor) : null;
+            $this->db->commit();
+            return $projectId;
+        } catch (Throwable $error) {
+            $this->db->rollBack();
+            throw $error;
+        }
+    }
+
+    private function quoteLog(int $id, array $actor, string $action, ?string $from, string $to, string $note = ''): void
+    {
+        $this->run('INSERT INTO solar_quote_logs (quote_id,actor_id,action,from_status,to_status,note) VALUES (?,?,?,?,?,?)', [$id, $actor['id'], $action, $from, $to, $note]);
+    }
+
+    private function createPendingProject(array $quote, array $actor): int
+    {
+        if (!$this->rows("SELECT id FROM users WHERE id=? AND role='customer'", [$quote['user_id']])) {
+            throw new RuntimeException('Yêu cầu phải gắn với tài khoản khách hàng hợp lệ.');
+        }
+        $existing = $this->rows('SELECT id FROM projects WHERE quote_id=?', [$quote['id']])[0] ?? null;
+        if ($existing) {
+            return (int) $existing['id'];
+        }
+        $code = sprintf('SOLAR-%s-%03d', date('Y'), $quote['id']);
+        $this->run("INSERT INTO projects (contract_code,quote_id,user_id,project_name,capacity_kwp,total_amount,installation_address,status,current_stage,notes) VALUES (?,?,?,?,?,?,?,'pending_approval',NULL,?)", [$code, $quote['id'], $quote['user_id'], 'Điện mặt trời - ' . $quote['customer_name'], $quote['estimated_system_kwp'], $quote['estimated_total_cost'], $quote['address'], $quote['notes']]);
+        $id = (int) $this->db->lastInsertId();
+        foreach (array_keys(self::STAGES) as $i => $stage) {
+            $this->run("INSERT INTO project_stages (project_id,stage,position,status) VALUES (?,?,?,'locked')", [$id, $stage, $i + 1]);
+        }
+        $this->log(['id' => $id, 'current_stage' => null], $actor, 'project_created', null, 'pending_approval', 'Báo giá #' . $quote['id']);
+        return $id;
+    }
+
+    /** Điểm tích hợp cho báo giá đã được quản lý chấp thuận. */
     public function createFromApprovedQuote(int $quoteId, int $actorId): int
     {
         if ($this->db->inTransaction()) {
@@ -500,18 +679,7 @@ final class UseInstallationWorkflow
             if (!$actor) {
                 throw new RuntimeException('Chỉ quản lý được khởi tạo dự án từ báo giá.');
             }
-            $existing = $this->rows('SELECT id FROM projects WHERE quote_id=?', [$quoteId])[0] ?? null;
-            if ($existing) {
-                $this->db->commit();
-                return (int) $existing['id'];
-            }
-            $code = sprintf('SOLAR-%s-%03d', date('Y'), $quoteId);
-            $this->run('INSERT INTO projects (contract_code,quote_id,user_id,project_name,capacity_kwp,total_amount,installation_address) VALUES (?,?,?,?,?,?,?)', [$code, $quoteId, $quote['user_id'], 'Điện mặt trời - ' . $quote['customer_name'], $quote['estimated_system_kwp'], $quote['estimated_total_cost'], $quote['address']]);
-            $id = (int) $this->db->lastInsertId();
-            foreach (array_keys(self::STAGES) as $i => $stage) {
-                $this->run('INSERT INTO project_stages (project_id,stage,position) VALUES (?,?,?)', [$id, $stage, $i + 1]);
-            }
-            $this->log(['id' => $id, 'current_stage' => 'survey'], $actor, 'project_created', null, 'new', 'Báo giá #' . $quoteId);
+            $id = $this->createPendingProject($quote, $actor);
             $this->db->commit();
             return $id;
         } catch (Throwable $error) {
