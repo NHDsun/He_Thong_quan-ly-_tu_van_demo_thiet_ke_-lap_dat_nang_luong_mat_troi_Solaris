@@ -1,0 +1,9 @@
+.products-page .product-price-control { display: flex; align-items: stretch; min-width: 0; border: 1px solid var(--border-glass); border-radius: var(--radius-sm, 6px); background: var(--bg-primary); }
+.products-page .product-price-control:focus-within { border-color: var(--accent-gold); outline: 2px solid var(--accent-glow); }
+.products-page .product-price-control .products-input { flex: 1; width: 0; min-width: 0; border: 0; border-radius: 0; outline: none; box-shadow: none; appearance: textfield; -moz-appearance: textfield; }
+.products-page .product-price-control input::-webkit-inner-spin-button,
+.products-page .product-price-control input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.products-page .product-price-control button { flex: 0 0 27px; width: 27px; border: 0; border-radius: var(--radius-sm, 6px); color: var(--accent-gold); background: transparent; font-size: 1rem; cursor: pointer; }
+.products-page .product-price-control button:hover { background: var(--accent-glow); }
+.products-page .product-price-control button:focus-visible { outline: 2px solid var(--accent-gold); outline-offset: -2px; }
+.products-page .product-price-step-hint { color: var(--text-muted); font-size: .68rem; line-height: 1.4; }

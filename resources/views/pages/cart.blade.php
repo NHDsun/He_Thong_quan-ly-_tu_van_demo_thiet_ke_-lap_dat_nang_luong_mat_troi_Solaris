@@ -34,6 +34,7 @@ foreach ($items as $item) {
 ?>
 <link rel="stylesheet" href="resources/css/products.css">
 <link rel="stylesheet" href="resources/css/cart.css">
+<link rel="stylesheet" href="resources/css/products-advisor.css">
 <link rel="stylesheet" href="resources/css/cart-grid.css">
 <link rel="stylesheet" href="resources/css/cart-polish.css">
 <link rel="stylesheet" href="resources/css/cart-system-map.css">
@@ -212,27 +213,7 @@ foreach ($items as $item) {
             </div>
 
             <!-- Danh sách Cảnh báo & Đề xuất ghép đôi kỹ thuật -->
-            <?php if (!empty($compat['rules'])): ?>
-                <div style="display: flex; flex-direction: column; gap: 0.65rem; border-top: 1px solid var(--border-subtle); padding-top: 1rem;">
-                    <div style="font-size: 0.8rem; font-weight: 700; color: var(--accent-gold); text-transform: uppercase;">
-                        📋 Đánh giá tương thích & Khuyến nghị kỹ thuật từ Kỹ Sư Solaris:
-                    </div>
-                    <?php foreach ($compat['rules'] as $rule): $ruleText = mb_strtolower($rule['title'] . ' ' . $rule['detail']); $ruleLink = null; $ruleLinkLabel = null; if ($rule['type'] !== 'success') { if (str_contains($ruleText, 'inverter')) { $ruleLink = 'index.php?page=products&category=inverter' . (str_contains($ruleText, 'hybrid') ? '&system_type=Hybrid' : ''); $ruleLinkLabel = str_contains($ruleText, 'hybrid') ? 'Chọn Inverter Hybrid phù hợp →' : 'Xem Inverter phù hợp →'; } elseif (str_contains($ruleText, 'tấm pin') || str_contains($ruleText, 'pin')) { $ruleLink = 'index.php?page=products&category=tam-pin'; $ruleLinkLabel = 'Chọn tấm pin phù hợp →'; } elseif (str_contains($ruleText, 'tủ điện')) { $ruleLink = 'index.php?page=products&category=tu-dien'; $ruleLinkLabel = 'Chọn tủ điện an toàn →'; } elseif (str_contains($ruleText, 'khung')) { $ruleLink = 'index.php?page=products&category=khung-gia'; $ruleLinkLabel = 'Chọn khung giá phù hợp →'; } } ?>
-                        <div style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); background: <?= $rule['type'] === 'success' ? 'rgba(16, 185, 129, 0.1)' : ($rule['type'] === 'warning' ? 'rgba(245, 158, 11, 0.1)' : ($rule['type'] === 'danger' ? 'rgba(244, 63, 94, 0.1)' : 'rgba(56, 189, 248, 0.1)')) ?>; border-left: 3px solid <?= $rule['type'] === 'success' ? '#10b981' : ($rule['type'] === 'warning' ? '#f59e0b' : ($rule['type'] === 'danger' ? '#f43f5e' : '#38bdf8')) ?>;">
-                            <span style="font-size: 1.1rem; line-height: 1;"><?= $rule['icon'] ?></span>
-                            <div>
-                                <strong style="color: #ffffff; font-size: 0.85rem; display: block; margin-bottom: 0.15rem;">
-                                    <?= htmlspecialchars($rule['title']) ?>
-                                </strong>
-                                <span style="color: var(--text-secondary); font-size: 0.8rem; line-height: 1.4;">
-                                    <?= htmlspecialchars($rule['detail']) ?>
-                                </span>
-                                <?php if ($ruleLink): ?><a class="compatibility-action-link" href="<?= htmlspecialchars($ruleLink, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($ruleLinkLabel) ?></a><?php endif; ?>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
+            <?php include dirname(__DIR__) . '/components/product-compatibility-advisor.blade.php'; ?>
         </section>
 
         <!-- ================================================================= -->
@@ -245,6 +226,7 @@ foreach ($items as $item) {
                     <input type="checkbox" id="select-all"> <span>Chọn tất cả thiết bị</span>
                 </label>
                 <span id="selected-count" style="color: var(--accent-gold); font-weight: 600;">0 thiết bị được chọn</span>
+                <button class="sol-btn sol-btn--outline cart-clear-all" type="submit" name="cart_action" value="clear" formaction="index.php?page=cart" formnovalidate onclick="return confirm('Xóa tất cả sản phẩm khỏi kế hoạch dự định, kể cả sản phẩm đã bỏ chọn?')">Xóa tất cả sản phẩm</button>
             </div>
 
             <div class="cart-items" style="display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem;">

@@ -4,6 +4,9 @@ declare(strict_types=1);
 namespace App\Modules\Member2_Products;
 
 use App\Hooks\UsePaginationState;
+use App\Hooks\UseProductFilters;
+use App\Hooks\UseProductSpecifications;
+use App\Hooks\UseProductImageUpload;
 use App\Config\Database;
 use PDO;
 use Throwable;
@@ -23,10 +26,22 @@ final class ProductController
         } catch (Throwable) { return false; }
     }
 
+    public function create(): array
+    {
+        if (!$this->isAdmin()) return ['mode' => 'create', 'allowed' => false, 'error' => 'Chỉ quản trị viên được thêm sản phẩm.'];
+        try {
+            $categories = ($this->pdo ?? $this->database())->query('SELECT id, name, slug FROM categories ORDER BY name')->fetchAll();
+            return ['mode' => 'create', 'allowed' => true, 'categories' => $categories, 'error' => $categories ? null : 'Chưa có danh mục sản phẩm.'];
+        } catch (Throwable) {
+            return ['mode' => 'create', 'allowed' => true, 'categories' => [], 'error' => 'Không thể tải danh mục sản phẩm. Vui lòng thử lại.'];
+        }
+    }
+
     public function adminProductAction(string $action): array
     {
         if (!$this->isAdmin()) return ['ok' => false, 'message' => 'Bạn không có quyền quản trị sản phẩm.'];
         $pdo = $this->pdo ?? $this->database();
+        $uploadedImage = null;
         try {
             if ($action === 'admin_delete') {
                 $id = max(0, (int) ($_POST['product_id'] ?? 0));
@@ -39,21 +54,58 @@ final class ProductController
             $code = trim((string) ($_POST['product_code'] ?? ''));
             $categoryId = (int) ($_POST['category_id'] ?? 0);
             $price = max(0, (float) ($_POST['price'] ?? 0));
-            $capacity = ($_POST['capacity_watts'] ?? '') === '' ? null : max(0, (int) $_POST['capacity_watts']);
+            $capacity = null;
             $warranty = max(0, (int) ($_POST['warranty_years'] ?? 0));
             $image = basename(trim((string) ($_POST['image_url'] ?? '')));
-            $specs = trim((string) ($_POST['technical_specs'] ?? '{}'));
-            if ($name === '' || $code === '' || $categoryId < 1 || !is_array(json_decode($specs, true))) return ['ok' => false, 'message' => 'Vui lòng nhập đủ thông tin và JSON thông số hợp lệ.'];
+            if ($name === '' || $code === '' || $categoryId < 1) return ['ok' => false, 'message' => 'Vui lòng nhập đủ tên, mã và danh mục sản phẩm.'];
+            $categoryQuery = $pdo->prepare('SELECT slug FROM categories WHERE id=?');
+            $categoryQuery->execute([$categoryId]);
+            $category = $categoryQuery->fetchColumn();
+            if (!is_string($category)) return ['ok' => false, 'message' => 'Danh mục sản phẩm không hợp lệ.'];
+            $existingSpecs = [];
+            if ($action === 'admin_update') {
+                $current = $pdo->prepare('SELECT technical_specs, capacity_watts, category_id, image_url FROM products WHERE id=?');
+                $current->execute([(int) ($_POST['product_id'] ?? 0)]);
+                $storedSpecs = $current->fetch();
+                if (!$storedSpecs) return ['ok' => false, 'message' => 'Không tìm thấy sản phẩm cần cập nhật.'];
+                $existingSpecs = UseProductSpecifications::decode($storedSpecs['technical_specs']);
+                if (!array_key_exists('image_url', $_POST)) $image = basename((string) ($storedSpecs['image_url'] ?? ''));
+            }
+            $specs = UseProductSpecifications::fromInput($_POST, $existingSpecs, $category);
+            $savedSpecs = UseProductSpecifications::decode($specs);
+            [$capacityKey, $multiplier] = match ($category) {
+                'tam-pin' => ['power_w', 1],
+                'inverter' => ['rated_kw', 1000],
+                'pin-luu-tru' => ['energy_kwh', 1000],
+                default => [null, 1],
+            };
+            if ($capacityKey !== null && !array_key_exists($capacityKey, $_POST['specs']) && isset($storedSpecs) && (int) $storedSpecs['category_id'] === $categoryId) {
+                $capacity = $storedSpecs['capacity_watts'];
+            }
+            if ($capacityKey !== null && isset($savedSpecs[$capacityKey])) {
+                $watts = (float) $savedSpecs[$capacityKey] * $multiplier;
+                if (!is_finite($watts) || $watts > 2147483647) return ['ok' => false, 'message' => 'Công suất / dung lượng vượt giới hạn lưu trữ.'];
+                $capacity = (int) round($watts);
+            }
+            if (isset($_FILES['product_image']) && ($_FILES['product_image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+                $uploadedImage = UseProductImageUpload::store($_FILES['product_image']);
+                $image = $uploadedImage;
+            }
             if ($action === 'admin_create') {
                 $query = $pdo->prepare('INSERT INTO products (category_id,product_code,name,capacity_watts,price,warranty_years,technical_specs,image_url,stock_quantity,is_active) VALUES (?,?,?,?,?,?,?, ?,0,1)');
                 $query->execute([$categoryId, $code, $name, $capacity, $price, $warranty, $specs, $image ?: null]);
-                return ['ok' => true, 'message' => 'Đã thêm sản phẩm.'];
+                return ['ok' => true, 'message' => 'Đã thêm sản phẩm.', 'product_id' => (int) $pdo->lastInsertId()];
             }
             $id = max(0, (int) ($_POST['product_id'] ?? 0));
             $query = $pdo->prepare('UPDATE products SET category_id=?,product_code=?,name=?,capacity_watts=?,price=?,warranty_years=?,technical_specs=?,image_url=? WHERE id=?');
             $query->execute([$categoryId, $code, $name, $capacity, $price, $warranty, $specs, $image ?: null, $id]);
             return ['ok' => true, 'message' => 'Đã cập nhật sản phẩm.'];
-        } catch (Throwable $error) { return ['ok' => false, 'message' => 'Không thể lưu sản phẩm: ' . $error->getMessage()]; }
+        } catch (\InvalidArgumentException $error) {
+            return ['ok' => false, 'message' => $error->getMessage()];
+        } catch (Throwable $error) {
+            if ($uploadedImage !== null) UseProductImageUpload::discard($uploadedImage);
+            return ['ok' => false, 'message' => 'Không thể lưu sản phẩm: ' . $error->getMessage()];
+        }
     }
 
     public static function cartItems(): array
@@ -79,7 +131,11 @@ final class ProductController
         $_SESSION['solar_cart'] ??= [];
         $id = max(0, (int) ($_POST['product_id'] ?? 0));
         if ($action === 'remove') { unset($_SESSION['solar_cart'][$id]); return; }
-        if ($action === 'clear') { $_SESSION['solar_cart'] = []; return; }
+        if ($action === 'clear') {
+            $_SESSION['solar_cart'] = [];
+            unset($_SESSION['solar_demo_selection']);
+            return;
+        }
         if ($action === 'demo_selected') {
             $_SESSION['solar_demo_selection'] = array_values(array_filter(array_map('intval', (array) ($_POST['selected'] ?? []))));
             return;
@@ -112,28 +168,19 @@ final class ProductController
 
     public function index(): array
     {
-        $filters = [
-            'search' => trim((string) ($_GET['q'] ?? '')),
-            'category' => trim((string) ($_GET['category'] ?? '')),
-            'brand' => trim((string) ($_GET['brand'] ?? '')),
-            'system_type' => trim((string) ($_GET['system_type'] ?? '')),
-            'min_price' => $this->positiveNumber($_GET['min_price'] ?? null),
-            'max_price' => $this->positiveNumber($_GET['max_price'] ?? null),
-            'min_capacity' => $this->positiveNumber($_GET['min_capacity'] ?? null),
-            'max_capacity' => $this->positiveNumber($_GET['max_capacity'] ?? null),
-            'min_warranty' => $this->positiveNumber($_GET['min_warranty'] ?? null),
-        ];
-        $page = max(1, (int) ($_GET['p'] ?? 1));
+        ['filters' => $filters, 'filterErrors' => $filterErrors] = UseProductFilters::read($_GET);
+        $page = max(1, (int) UseProductFilters::text($_GET['p'] ?? 1));
         try {
             $pdo = $this->pdo ?? $this->database();
             $categories = $pdo->query('SELECT id, name, slug, description FROM categories ORDER BY name')->fetchAll();
             $brands = $pdo->query("SELECT DISTINCT JSON_UNQUOTE(JSON_EXTRACT(technical_specs, '$.brand')) AS value FROM products WHERE is_active=1 AND JSON_UNQUOTE(JSON_EXTRACT(technical_specs, '$.brand')) IS NOT NULL ORDER BY value")->fetchAll(PDO::FETCH_COLUMN);
-            $systemTypes = $pdo->query("SELECT DISTINCT JSON_UNQUOTE(JSON_EXTRACT(technical_specs, '$.type')) AS value FROM products WHERE is_active=1 AND JSON_UNQUOTE(JSON_EXTRACT(technical_specs, '$.type')) IS NOT NULL ORDER BY value")->fetchAll(PDO::FETCH_COLUMN);
+            $systemTypes = $pdo->query("SELECT DISTINCT JSON_UNQUOTE(JSON_EXTRACT(p.technical_specs, '$.type')) AS value FROM products p JOIN categories c ON c.id=p.category_id WHERE p.is_active=1 AND c.slug='inverter' AND JSON_UNQUOTE(JSON_EXTRACT(p.technical_specs, '$.type')) IS NOT NULL ORDER BY value")->fetchAll(PDO::FETCH_COLUMN);
             $filterOptions = ['brands' => $brands, 'system_types' => $systemTypes];
             $where = ['p.is_active = 1']; $params = [];
-            if ($filters['search'] !== '') {
+            if ($filterErrors) $where[] = '1 = 0';
+            if ($filters['q'] !== '') {
                 $where[] = '(p.name LIKE :search_name OR p.product_code LIKE :search_code)';
-                $searchValue = '%' . $filters['search'] . '%';
+                $searchValue = '%' . $filters['q'] . '%';
                 $params['search_name'] = $searchValue;
                 $params['search_code'] = $searchValue;
             }
@@ -144,19 +191,29 @@ final class ProductController
             if ($filters['max_price'] !== null) { $where[] = 'p.price <= :max_price'; $params['max_price'] = $filters['max_price']; }
             if ($filters['min_capacity'] !== null) { $where[] = 'p.capacity_watts >= :min_capacity'; $params['min_capacity'] = $filters['min_capacity']; }
             if ($filters['max_capacity'] !== null) { $where[] = 'p.capacity_watts <= :max_capacity'; $params['max_capacity'] = $filters['max_capacity']; }
+            foreach (['min_power_kw' => '>=', 'max_power_kw' => '<='] as $key => $operator) {
+                if ($filters[$key] !== null) { $where[] = "p.capacity_watts {$operator} :{$key}"; $params[$key] = $filters[$key] * 1000; }
+            }
+            foreach (['min_energy' => '>=', 'max_energy' => '<='] as $key => $operator) {
+                if ($filters[$key] !== null) {
+                    $where[] = "CAST(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(p.technical_specs, '$.energy_kwh')), 'null') AS DECIMAL(15,4)) {$operator} :{$key}";
+                    $params[$key] = $filters[$key];
+                }
+            }
             if ($filters['min_warranty'] !== null) { $where[] = 'p.warranty_years >= :min_warranty'; $params['min_warranty'] = $filters['min_warranty']; }
             $condition = implode(' AND ', $where);
             $count = $pdo->prepare("SELECT COUNT(*) FROM products p JOIN categories c ON c.id = p.category_id WHERE {$condition}"); $count->execute($params);
             $pager = UsePaginationState::make((int) $count->fetchColumn(), $page, 12);
-            $query = $pdo->prepare("SELECT p.*, c.name AS category_name, c.slug AS category_slug FROM products p JOIN categories c ON c.id = p.category_id WHERE {$condition} ORDER BY p.created_at DESC, p.id DESC LIMIT :limit OFFSET :offset");
+            $order = UseProductFilters::ORDERS[$filters['sort']];
+            $query = $pdo->prepare("SELECT p.*, c.name AS category_name, c.slug AS category_slug FROM products p JOIN categories c ON c.id = p.category_id WHERE {$condition} ORDER BY {$order} LIMIT :limit OFFSET :offset");
             foreach ($params as $key => $value) { $query->bindValue(':' . $key, $value); }
             $query->bindValue(':limit', $pager['limit'], PDO::PARAM_INT); $query->bindValue(':offset', $pager['offset'], PDO::PARAM_INT); $query->execute();
             $products = $query->fetchAll(); $error = null; $usingFallback = false;
         } catch (Throwable) {
-            $categories = self::fallbackCategories(); $fallback = self::fallbackProducts(); $products = self::filterFallback($fallback, $filters); $pager = UsePaginationState::make(count($products), $page, 12); $products = array_slice($products, $pager['offset'], $pager['limit']); $filterOptions = ['brands' => array_values(array_unique(array_filter(array_map(static fn (array $item): ?string => json_decode((string) $item['technical_specs'], true)['brand'] ?? null, $fallback)))), 'system_types' => array_values(array_unique(array_filter(array_map(static fn (array $item): ?string => json_decode((string) $item['technical_specs'], true)['type'] ?? null, $fallback))))];
+            $categories = self::fallbackCategories(); $fallback = self::fallbackProducts(); $products = ($filterErrors ? [] : UseProductFilters::filterProducts($fallback, $filters)); $pager = UsePaginationState::make(count($products), $page, 12); $products = array_slice($products, $pager['offset'], $pager['limit']); $filterOptions = ['brands' => array_values(array_unique(array_filter(array_map(static fn (array $item): ?string => json_decode((string) $item['technical_specs'], true)['brand'] ?? null, $fallback)))), 'system_types' => array_values(array_unique(array_filter(array_map(static fn (array $item): ?string => json_decode((string) $item['technical_specs'], true)['type'] ?? null, $fallback))))];
             $error = 'Chưa kết nối được CSDL sản phẩm; đang hiển thị dữ liệu minh họa.'; $usingFallback = true;
         }
-        return compact('categories', 'products', 'filters', 'pager', 'filterOptions', 'error', 'usingFallback');
+        return compact('categories', 'products', 'filters', 'pager', 'filterOptions', 'error', 'usingFallback', 'filterErrors');
     }
 
     public function detail(int $id): array
@@ -167,8 +224,6 @@ final class ProductController
     }
 
     private function database(): PDO { require_once dirname(__DIR__, 2) . '/Config/Database.php'; return Database::connection(); }
-    private function positiveNumber(mixed $value): ?float { return is_numeric($value) && (float) $value >= 0 ? (float) $value : null; }
-    private static function filterFallback(array $products, array $filters): array { return array_values(array_filter($products, static function (array $product) use ($filters): bool { $needle = mb_strtolower($filters['search']); $specs = json_decode((string) ($product['technical_specs'] ?? '{}'), true) ?: []; return ($needle === '' || str_contains(mb_strtolower($product['name']), $needle) || str_contains(mb_strtolower($product['product_code']), $needle)) && ($filters['category'] === '' || $product['category_slug'] === $filters['category']) && ($filters['brand'] === '' || ($specs['brand'] ?? '') === $filters['brand']) && ($filters['system_type'] === '' || ($specs['type'] ?? '') === $filters['system_type']) && ($filters['min_price'] === null || $product['price'] >= $filters['min_price']) && ($filters['max_price'] === null || $product['price'] <= $filters['max_price']) && ($filters['min_capacity'] === null || (float) ($product['capacity_watts'] ?? 0) >= $filters['min_capacity']) && ($filters['max_capacity'] === null || (float) ($product['capacity_watts'] ?? 0) <= $filters['max_capacity']) && ($filters['min_warranty'] === null || $product['warranty_years'] >= $filters['min_warranty']); })); }
     private static function fallbackCategories(): array { return [['id'=>1,'name'=>'Tấm pin năng lượng mặt trời','slug'=>'tam-pin','description'=>'Chuyển hóa bức xạ mặt trời thành điện DC.'],['id'=>2,'name'=>'Bộ biến tần Inverter','slug'=>'inverter','description'=>'Chuyển đổi điện DC thành AC ổn định.'],['id'=>3,'name'=>'Tủ điện và thiết bị bảo vệ','slug'=>'tu-dien','description'=>'Bảo vệ hệ thống khỏi quá tải và sét lan truyền.'],['id'=>4,'name'=>'Hệ thống khung giá','slug'=>'khung-gia','description'=>'Khung nhôm, kẹp pin và phụ kiện lắp đặt.'],['id'=>5,'name'=>'Dây cáp điện và phụ kiện','slug'=>'day-cap','description'=>'Cáp DC, đầu nối MC4 và phụ kiện đấu nối.'],['id'=>6,'name'=>'Đồng hồ đo điện năng','slug'=>'dong-ho','description'=>'Đo điện hai chiều cho hệ thống hòa lưới.'],['id'=>7,'name'=>'Pin lưu trữ / Ắc quy Solar','slug'=>'pin-luu-tru','description'=>'Lưu điện cho hệ độc lập và hệ Hybrid.']]; }
-    private static function fallbackProducts(): array { $items = [['name'=>'Solar Panel Mono 550W Tier-1','category_name'=>'Tấm pin năng lượng mặt trời','category_slug'=>'tam-pin','capacity_watts'=>550,'price'=>2850000,'warranty_years'=>12,'product_code'=>'SP-550-MONO','technical_specs'=>'{"efficiency":"21.3%"}'],['name'=>'Hybrid Inverter 5kW IP65','category_name'=>'Bộ biến tần Inverter','category_slug'=>'inverter','capacity_watts'=>5000,'price'=>24500000,'warranty_years'=>5,'product_code'=>'INV-HYB-5K','technical_specs'=>'{"phase":"1 pha"}'],['name'=>'Tủ điện bảo vệ AC/DC Solar','category_name'=>'Tủ điện và thiết bị bảo vệ','category_slug'=>'tu-dien','capacity_watts'=>null,'price'=>3200000,'warranty_years'=>2,'product_code'=>'BOX-ACDC-01','technical_specs'=>'{"protection":"MCB + SPD"}'],['name'=>'Bộ khung nhôm mái tôn 5kWp','category_name'=>'Hệ thống khung giá','category_slug'=>'khung-gia','capacity_watts'=>null,'price'=>7800000,'warranty_years'=>10,'product_code'=>'MNT-ROOF-5K','technical_specs'=>'{"material":"Aluminium"}'],['name'=>'Cáp DC Solar 6mm² + MC4','category_name'=>'Dây cáp điện và phụ kiện','category_slug'=>'day-cap','capacity_watts'=>null,'price'=>1850000,'warranty_years'=>2,'product_code'=>'CAB-DC-6MM','technical_specs'=>'{"length":"100m"}'],['name'=>'Công tơ điện hai chiều 3 pha','category_name'=>'Đồng hồ đo điện năng','category_slug'=>'dong-ho','capacity_watts'=>null,'price'=>4600000,'warranty_years'=>3,'product_code'=>'METER-3P-2W','technical_specs'=>'{"communication":"RS485"}'],['name'=>'Pin lưu trữ LiFePO4 10kWh','category_name'=>'Pin lưu trữ / Ắc quy Solar','category_slug'=>'pin-luu-tru','capacity_watts'=>10000,'price'=>52000000,'warranty_years'=>10,'product_code'=>'BAT-LFP-10K','technical_specs'=>'{"cycles":6000}']]; foreach ($items as $index => &$item) { $item['id']=$index+1; $item['image_url']=null; $item['stock_quantity']=10; $item['is_active']=1; } return $items; }
+    private static function fallbackProducts(): array { $items = [['name'=>'Solar Panel Mono 550W Tier-1','category_name'=>'Tấm pin năng lượng mặt trời','category_slug'=>'tam-pin','capacity_watts'=>550,'price'=>2850000,'warranty_years'=>12,'product_code'=>'SP-550-MONO','technical_specs'=>'{"efficiency":"21.3%"}'],['name'=>'Hybrid Inverter 5kW IP65','category_name'=>'Bộ biến tần Inverter','category_slug'=>'inverter','capacity_watts'=>5000,'price'=>24500000,'warranty_years'=>5,'product_code'=>'INV-HYB-5K','technical_specs'=>'{"phase":"1 pha"}'],['name'=>'Tủ điện bảo vệ AC/DC Solar','category_name'=>'Tủ điện và thiết bị bảo vệ','category_slug'=>'tu-dien','capacity_watts'=>null,'price'=>3200000,'warranty_years'=>2,'product_code'=>'BOX-ACDC-01','technical_specs'=>'{"protection":"MCB + SPD"}'],['name'=>'Bộ khung nhôm mái tôn 5kWp','category_name'=>'Hệ thống khung giá','category_slug'=>'khung-gia','capacity_watts'=>null,'price'=>7800000,'warranty_years'=>10,'product_code'=>'MNT-ROOF-5K','technical_specs'=>'{"material":"Aluminium"}'],['name'=>'Cáp DC Solar 6mm² + MC4','category_name'=>'Dây cáp điện và phụ kiện','category_slug'=>'day-cap','capacity_watts'=>null,'price'=>1850000,'warranty_years'=>2,'product_code'=>'CAB-DC-6MM','technical_specs'=>'{"length":"100m"}'],['name'=>'Công tơ điện hai chiều 3 pha','category_name'=>'Đồng hồ đo điện năng','category_slug'=>'dong-ho','capacity_watts'=>null,'price'=>4600000,'warranty_years'=>3,'product_code'=>'METER-3P-2W','technical_specs'=>'{"communication":"RS485"}'],['name'=>'Pin lưu trữ LiFePO4 10kWh','category_name'=>'Pin lưu trữ / Ắc quy Solar','category_slug'=>'pin-luu-tru','capacity_watts'=>10000,'price'=>52000000,'warranty_years'=>10,'product_code'=>'BAT-LFP-10K','technical_specs'=>'{"cycles":6000,"energy_kwh":10}']]; foreach ($items as $index => &$item) { $item['id']=$index+1; $item['image_url']=null; $item['stock_quantity']=10; $item['is_active']=1; } return $items; }
 }
