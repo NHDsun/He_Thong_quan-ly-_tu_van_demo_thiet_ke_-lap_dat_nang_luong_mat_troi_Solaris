@@ -7,19 +7,26 @@ $customer = $actor && $actor['role'] === 'customer';
 
 if ($admin) {
     $filters = [
+        'all' => 'Tất cả',
+        'approved' => 'Đã duyệt',
         'new' => 'Dự án mới',
         'in_progress' => 'Đang thực hiện',
         'pending' => 'Chờ phê duyệt',
         'completed' => 'Hoàn tất',
-        'all' => 'Tất cả',
     ];
 } elseif ($customer) {
-    $filters = ['all' => 'Tất cả dự án của tôi', 'new' => 'Chờ triển khai',
-        'in_progress' => 'Đang thực hiện', 'completed' => 'Đã hoàn tất'];
+    $filters = [
+        'all' => 'Tất cả dự án của tôi',
+        'approved' => 'Đã duyệt',
+        'new' => 'Chờ triển khai',
+        'in_progress' => 'Đang thực hiện',
+        'completed' => 'Đã hoàn tất'
+    ];
 } else {
     $filters = [
-        'in_progress' => 'Đang thực hiện',
         'all' => 'Dự án của tôi',
+        'approved' => 'Đã duyệt',
+        'in_progress' => 'Đang thực hiện',
     ];
 }
 ?>
@@ -103,7 +110,7 @@ if ($admin) {
                             </div>
                         </div>
                         <div class="tv4-project-progress">
-                            <?php UI::component('badge', UI::label($project['status']), ['variant' => $project['status'] === 'completed' ? 'emerald' : 'amber']); ?>
+                            <?php UI::component('badge', UI::label($project['status']), ['variant' => in_array($project['status'], ['completed', 'approved'], true) ? 'emerald' : 'amber']); ?>
                             <div class="tv4-meter">
                                 <span style="width:<?= $progress ?>%"></span>
                             </div>

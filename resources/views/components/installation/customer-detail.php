@@ -25,7 +25,7 @@ $stageLabels = ['locked' => 'Chưa triển khai', 'in_progress' => 'Đang thực
         <h2><?= UI::escape($project['project_name']) ?></h2>
         <p><?= UI::escape($project['installation_address']) ?></p>
     </div>
-    <?php UI::component('badge', UI::label($project['status']), ['variant' => $project['status'] === 'completed' ? 'emerald' : 'amber']); ?>
+    <?php UI::component('badge', UI::label($project['status']), ['variant' => in_array($project['status'], ['completed', 'approved'], true) ? 'emerald' : 'amber']); ?>
     <div class="tv4-summary-grid">
         <div><span>Công suất hệ thống</span><strong><?= UI::escape($project['capacity_kwp']) ?> kWp</strong></div>
         <div><span>Giá trị dự án</span><strong><?= number_format((float) $project['total_amount'], 0, ',', '.') ?> đ</strong></div>
@@ -41,7 +41,7 @@ $stageLabels = ['locked' => 'Chưa triển khai', 'in_progress' => 'Đang thực
 </article>
 <ol class="tv4-steps" aria-label="Quy trình dự án của bạn">
     <?php foreach ($detail['stages'] as $stage): ?>
-        <li class="<?= $stage['status'] === 'approved' ? 'done' : ($stage['stage'] === $project['current_stage'] && $project['status'] === 'in_progress' ? 'current' : '') ?>">
+        <li class="<?= $stage['status'] === 'approved' ? 'done' : ($stage['stage'] === $project['current_stage'] && in_array($project['status'], ['in_progress', 'approved'], true) ? 'current' : '') ?>">
             <a href="#customer-stage-<?= (int) $stage['position'] ?>">
                 <span><?= $stage['status'] === 'approved' ? '✓' : (int) $stage['position'] ?></span>
                 <strong><?= UI::escape(Workflow::STAGES[$stage['stage']]) ?></strong>

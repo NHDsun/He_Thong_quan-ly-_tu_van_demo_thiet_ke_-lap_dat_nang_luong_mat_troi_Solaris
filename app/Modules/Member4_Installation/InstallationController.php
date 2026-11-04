@@ -28,10 +28,8 @@ final class InstallationController
             // TV1 có thể dùng session user_id; vai trò luôn được đọc lại từ CSDL.
             $userId = (int) ($_SESSION['user_id'] ?? $_SESSION['installation_user_id'] ?? 0);
             $actor = $workflow->rows('SELECT id,full_name,role FROM users WHERE id=?', [$userId])[0] ?? null;
-            if ($actor && in_array($actor['role'], ['admin', 'technician'], true)) {
+            if ($actor && in_array($actor['role'], ['admin', 'technician', 'customer'], true)) {
                 $view['actor'] = $actor;
-            } elseif ($actor) {
-                throw new RuntimeException('Trang quản lý lắp đặt dành cho quản lý và kỹ thuật viên.');
             } else {
                 return $view;
             }
@@ -53,7 +51,7 @@ final class InstallationController
                 }
                 $this->redirect($id);
             }
-            $view['filter'] = (string) ($_GET['filter'] ?? ($actor['role'] === 'admin' ? 'new' : 'in_progress'));
+            $view['filter'] = (string) ($_GET['filter'] ?? ($actor['role'] === 'admin' ? 'new' : ($actor['role'] === 'customer' ? 'all' : 'in_progress')));
             $view['listing'] = $workflow->listing($actor, $view['filter'], (int) ($_GET['p'] ?? 1));
             if ($id) {
                 $view['detail'] = $workflow->detail($id, $actor, (int) ($_GET['log_page'] ?? 1), (int) ($_GET['request_page'] ?? 1));

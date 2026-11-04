@@ -102,7 +102,7 @@ CREATE TABLE `projects` (
     `capacity_kwp` DECIMAL(6,2) NOT NULL,
     `total_amount` DECIMAL(15,2) NOT NULL,
     `installation_address` VARCHAR(255) NOT NULL,
-    `status` ENUM('new', 'in_progress', 'completed', 'cancelled') NOT NULL DEFAULT 'new',
+    `status` ENUM('new', 'approved', 'in_progress', 'completed', 'cancelled') NOT NULL DEFAULT 'new',
     `current_stage` ENUM('survey', 'design', 'procurement', 'installation', 'grid_connection', 'handover', 'cancelled') NOT NULL DEFAULT 'survey',
     `notes` TEXT NULL,
     `start_date` DATE NULL,

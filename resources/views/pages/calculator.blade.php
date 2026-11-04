@@ -108,7 +108,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
             </a>
             <a href="#step-4-confirm" style="text-decoration: none; display: flex; align-items: center; gap: 0.65rem; padding: 0.6rem 0.85rem; background: rgba(236, 72, 153, 0.1); border: 1px solid rgba(236, 72, 153, 0.3); border-radius: var(--radius-sm); color: #ffffff;">
                 <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #ec4899; color: #ffffff; font-weight: 800; font-size: 0.75rem;">4</span>
-                <span style="font-size: 0.8rem; font-weight: 600;">4. Xác Nhận Lắp Đặt ➔</span>
+                <span style="font-size: 0.8rem; font-weight: 600;">4. Xác Nhận Cấu Hình</span>
             </a>
         </div>
     </div>
@@ -724,13 +724,13 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
     <section id="step-4-confirm" class="sol-glass-card" style="padding: 2.25rem 2.5rem; margin-bottom: 3.5rem; border-left: 4px solid #ec4899; border-color: rgba(236, 72, 153, 0.35);">
         <div style="max-width: 820px; margin: 0 auto; text-align: center; margin-bottom: 2rem;">
             <span class="sol-badge" style="background: rgba(236, 72, 153, 0.15); color: #f472b6; border: 1px solid #ec4899; margin-bottom: 0.45rem;">
-                BƯỚC 4 / 4 • XÁC NHẬN & CHUYỂN TIẾP THI CÔNG
+                BƯỚC 4 / 4 • XÁC NHẬN CẤU HÌNH
             </span>
             <h2 style="color: #ffffff; font-size: 1.85rem; font-family: var(--font-heading); margin-bottom: 0.65rem;">
-                Xác Nhận Cấu Hình Phương Án & Chuyển Sang Quản Lý Lắp Đặt
+                Xác Nhận Cấu Hình Phương Án
             </h2>
             <p style="color: var(--text-secondary); font-size: 0.925rem; line-height: 1.5;">
-                Sau khi kiểm tra mô phỏng mặt bằng 2D và hiệu quả tài chính, hãy điền thông tin công trình và nhấn <strong>Xác nhận</strong>. Hệ thống sẽ lưu dự toán vào CSDL và tự động chuyển tiếp sang <strong>Phân Hệ Quản Lý Lắp Đặt</strong> để kỹ sư tiến hành Giai đoạn 1: Khảo sát hiện trường mái.
+                Sau khi kiểm tra mô phỏng mặt bằng 2D và hiệu quả tài chính, hãy điền thông tin công trình và nhấn <strong>Xác nhận cấu hình</strong> để lưu dự toán vào CSDL và tự động chuyển sang phân hệ Quản lý lắp đặt.
             </p>
         </div>
 
@@ -840,7 +840,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                     class="sol-btn sol-btn--solar sol-btn--lg" 
                     style="width: 100%; max-width: 520px; font-size: 1.05rem; font-weight: 800; padding: 1rem 1.85rem; box-shadow: 0 6px 25px rgba(245, 158, 11, 0.45); display: flex; align-items: center; justify-content: center; gap: 0.65rem;"
                 >
-                    <span>🚀</span> Xác Nhận Cấu Hình & Chuyển Sang Quản Lý Lắp Đặt ➔
+                    <span>🚀</span> Xác Nhận Cấu Hình
                 </button>
 
                 <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; justify-content: center;">

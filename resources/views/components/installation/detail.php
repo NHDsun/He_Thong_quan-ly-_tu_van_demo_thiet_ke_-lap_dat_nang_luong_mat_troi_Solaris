@@ -21,7 +21,7 @@ foreach ($detail['stages'] as $stage) {
         $approvedStages++;
     }
 }
-$editable = $project['status'] === 'in_progress';
+$editable = in_array($project['status'], ['in_progress', 'approved'], true);
 
 $hasPostpone = false;
 foreach ($detail['requests'] as $request) {
@@ -49,7 +49,7 @@ foreach ($detail['crew'] as $member) {
         <h2><?= UI::escape($project['project_name']) ?></h2>
         <p><?= UI::escape($project['installation_address']) ?></p>
     </div>
-    <?php UI::component('badge', UI::label($project['status']), ['variant' => $project['status'] === 'completed' ? 'emerald' : 'amber']); ?>
+    <?php UI::component('badge', UI::label($project['status']), ['variant' => in_array($project['status'], ['completed', 'approved'], true) ? 'emerald' : 'amber']); ?>
     <div class="tv4-summary-grid">
         <div>
             <span>Công suất</span>

@@ -208,7 +208,7 @@ class SolarDemoController
                         $projStmt = $pdo->prepare("
                             INSERT INTO `projects` 
                             (`contract_code`, `quote_id`, `user_id`, `technician_id`, `project_name`, `capacity_kwp`, `total_amount`, `installation_address`, `status`, `current_stage`, `notes`, `created_at`)
-                            VALUES (?, ?, ?, 3, ?, ?, ?, ?, 'in_progress', 'survey', ?, NOW())
+                            VALUES (?, ?, ?, 3, ?, ?, ?, ?, 'approved', 'survey', ?, NOW())
                         ");
                         $projStmt->execute([
                             $code,
@@ -240,7 +240,7 @@ class SolarDemoController
                     }
                 }
 
-                $_SESSION['installation_flash'] = "Xác nhận cấu hình thành công! Hồ sơ dự án {$code} (Mã báo giá #SQ-" . str_pad((string)$newId, 4, '0', STR_PAD_LEFT) . ") đã được chuyển sang phân hệ Quản Lý Lắp Đặt. Đội ngũ kỹ sư hiện trường sẽ tiến hành Giai đoạn 1: Khảo sát hiện trường mái.";
+                $_SESSION['installation_flash'] = "Xác nhận cấu hình thành công! Hồ sơ dự án {$code} (Mã báo giá #SQ-" . str_pad((string)$newId, 4, '0', STR_PAD_LEFT) . ") đã được phê duyệt (Trạng thái: Đã duyệt) và chuyển sang phân hệ Quản Lý Lắp Đặt.";
                 $redirectUrl = $targetProjectId ? "index.php?page=installations&project={$targetProjectId}" : "index.php?page=installations&from_quote={$newId}";
                 header('Location: ' . $redirectUrl);
                 exit;
