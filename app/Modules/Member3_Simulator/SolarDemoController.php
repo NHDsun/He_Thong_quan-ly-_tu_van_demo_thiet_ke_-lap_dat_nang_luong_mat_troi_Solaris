@@ -245,7 +245,7 @@ class SolarDemoController
                             ['handover', 6, 'locked', 'Bàn giao hệ thống và kích hoạt bảo hành']
                         ];
                         foreach ($stages as $stg) {
-                            $stgStmt = $pdo->prepare("INSERT INTO `project_stages` (`project_id`, `stage`, `position`, `status`, `review_note`, `created_at`) VALUES (?, ?, ?, ?, ?, NOW())");
+                            $stgStmt = $pdo->prepare("INSERT INTO `project_stages` (`project_id`, `stage`, `position`, `status`, `review_note`) VALUES (?, ?, ?, ?, ?)");
                             $stgStmt->execute([$targetProjectId, $stg[0], $stg[1], $stg[2], $stg[3]]);
                         }
                     } catch (\Exception $e) {

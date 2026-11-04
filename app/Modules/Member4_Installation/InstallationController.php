@@ -55,9 +55,6 @@ final class InstallationController
             $view['listing'] = $workflow->listing($actor, $view['filter'], (int) ($_GET['p'] ?? 1));
             if ($id) {
                 $view['detail'] = $workflow->detail($id, $actor, (int) ($_GET['log_page'] ?? 1), (int) ($_GET['request_page'] ?? 1));
-                if ($actor['role'] === 'customer') {
-                    return $view;
-                }
                 $project = $view['detail']['project'];
                 $start = (string) ($_GET['from'] ?? $project['start_date'] ?? date('Y-m-d'));
                 $end = (string) ($_GET['to'] ?? $project['planned_end_date'] ?? date('Y-m-d', strtotime('+20 days')));

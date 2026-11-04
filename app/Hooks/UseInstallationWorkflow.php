@@ -103,6 +103,7 @@ final class UseInstallationWorkflow
                 'project' => $summary,
                 'stages' => $this->rows('SELECT stage,position,status,planned_start,planned_end,started_at,completed_at FROM project_stages WHERE project_id=? ORDER BY position', [$id]),
                 'crew' => $this->rows('SELECT u.full_name FROM project_assignments a JOIN users u ON u.id=a.technician_id WHERE a.project_id=? AND a.ended_at IS NULL ORDER BY a.id', [$id]),
+                'documents' => [],
             ];
         }
         $stages = $this->rows('SELECT * FROM project_stages WHERE project_id=? ORDER BY position', [$id]);
