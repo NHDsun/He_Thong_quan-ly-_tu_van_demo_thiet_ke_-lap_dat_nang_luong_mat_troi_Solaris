@@ -286,6 +286,8 @@ class UseSolarCalculator
         // Xác định công suất giàn pin (kWp)
         $actualKwp = $compat['total_panel_kwp'];
         $panelCount = $compat['total_panels'];
+        $hasCustomPanels = ($panelCount > 0 && $actualKwp > 0);
+        $hasCustomInverter = ($compat['total_inverters'] > 0 && $compat['total_inverter_kw'] > 0);
 
         // Nếu người dùng chưa chọn tấm pin nhưng có chọn Inverter, lấy công suất Inverter để mô phỏng
         if ($actualKwp <= 0 && $compat['total_inverter_kw'] > 0) {
@@ -322,8 +324,20 @@ class UseSolarCalculator
             $deviceCost += ((float)($item['price'] ?? 0)) * max(1, (int)($item['quantity'] ?? 1));
         }
 
-        // Chi phí nhân công lắp đặt, nghiệm thu trọn gói (ước tính 10% chi phí thiết bị hoặc định mức tối thiểu 4 triệu VNĐ)
-        $installCost = $deviceCost > 0 ? max(4000000, round($deviceCost * 0.10)) : 0;
+        // Bổ sung chi phí thiết bị phát điện còn thiếu (nếu người dùng chỉ mới chọn phụ kiện/đồng hồ)
+        // để thời gian hoàn vốn ROI phản ánh đúng thực tế của một hệ thống hoạt động trọn vẹn
+        $isEstimatedHardware = false;
+        if (!$hasCustomPanels) {
+            $isEstimatedHardware = true;
+            $deviceCost += $panelCount * 2600000; // Tấm pin Mono 550W Tier-1 chuẩn ~2.6 triệu/tấm
+        }
+        if (!$hasCustomInverter) {
+            $isEstimatedHardware = true;
+            $deviceCost += round($actualKwp * 2500000); // Inverter hòa lưới chuẩn ~2.5 triệu/kWp
+        }
+
+        // Chi phí nhân công lắp đặt, nghiệm thu trọn gói (định mức ~10-12% chi phí thiết bị, tối thiểu 4 triệu VNĐ)
+        $installCost = max(4000000, round($deviceCost * 0.10));
         $totalInvestment = $deviceCost + $installCost;
 
         // Nếu dữ liệu giá = 0 (dữ liệu mock), tính theo suất đầu tư tiêu chuẩn
@@ -413,6 +427,8 @@ class UseSolarCalculator
             'max_panels_by_roof'     => $maxPanelsByRoof,
             'co2_saved_kg_yearly'    => $co2SavedKgYearly,
             'trees_equivalent_yearly'=> $treesEquivalentYearly,
+            'has_custom_panels'      => $hasCustomPanels,
+            'is_estimated_hardware'  => $isEstimatedHardware,
             'layout_matrix'          => $layoutMatrix,
             'bom'                    => $bom
         ];
@@ -531,6 +547,8 @@ class UseSolarCalculator
             'yearly_kwh_produced'    => $yearlyKwhProduced,
             'co2_saved_kg_yearly'    => $co2SavedKgYearly,
             'trees_equivalent_yearly'=> $treesEquivalentYearly,
+            'has_custom_panels'      => $hasCustomPanels,
+            'is_estimated_hardware'  => $isEstimatedHardware,
             'layout_matrix'          => $layoutMatrix,
             'bom'                    => $bom
         ];

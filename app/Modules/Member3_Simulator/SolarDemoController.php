@@ -73,11 +73,14 @@ class SolarDemoController
         $alert = null;
         $savedQuoteId = null;
 
-        // Xử lý khi người dùng gửi form Đăng ký tư vấn / Lưu báo giá
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'save_quote') {
-            $saveResult = $this->handleSaveQuote($pdo, $cartProducts);
-            $alert = $saveResult['alert'];
-            $savedQuoteId = $saveResult['quote_id'] ?? null;
+        // Xử lý khi người dùng gửi form Đăng ký tư vấn / Lưu báo giá hoặc Xác nhận chuyển sang Quản lý lắp đặt
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+            $act = trim($_POST['action']);
+            if ($act === 'save_quote' || $act === 'confirm_to_install') {
+                $saveResult = $this->handleSaveQuote($pdo, $cartProducts, $act === 'confirm_to_install');
+                $alert = $saveResult['alert'] ?? null;
+                $savedQuoteId = $saveResult['quote_id'] ?? null;
+            }
         }
 
         // Nhận tham số tính toán từ GET hoặc POST
@@ -128,9 +131,9 @@ class SolarDemoController
     }
 
     /**
-     * Xử lý lưu thông tin báo giá vào CSDL
+     * Xử lý lưu thông tin báo giá vào CSDL và chuyển tiếp sang Quản lý lắp đặt nếu xác nhận
      */
-    private function handleSaveQuote(?PDO $pdo, array $cartProducts = []): array
+    private function handleSaveQuote(?PDO $pdo, array $cartProducts = [], bool $confirmToInstall = false): array
     {
         $name    = trim($_POST['customer_name'] ?? '');
         $phone   = trim($_POST['customer_phone'] ?? '');
@@ -171,9 +174,10 @@ class SolarDemoController
         $userId = !empty($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
 
         try {
+            $quoteStatus = $confirmToInstall ? 'approved' : 'pending';
             $stmt = $pdo->prepare("INSERT INTO `solar_quotes` 
                 (`user_id`, `customer_name`, `customer_phone`, `customer_email`, `address`, `monthly_electric_bill`, `roof_area_sqm`, `estimated_system_kwp`, `panel_count`, `estimated_total_cost`, `payback_years`, `notes`, `status`)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')");
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
             $stmt->execute([
                 $userId,
@@ -187,10 +191,60 @@ class SolarDemoController
                 $calc['panel_count'],
                 $calc['estimated_total_cost'],
                 $calc['payback_years'],
-                $notes
+                $notes,
+                $quoteStatus
             ]);
 
             $newId = (int) $pdo->lastInsertId();
+
+            // Nếu người dùng chọn "Xác nhận & Chuyển sang Quản lý lắp đặt"
+            if ($confirmToInstall) {
+                $code = sprintf('SOLAR-%s-%03d', date('Y'), $newId);
+                $targetProjectId = null;
+
+                // Nếu khách hàng đã đăng nhập, tự động khởi tạo dự án thi công ngay để theo dõi tiến độ
+                if ($userId && $pdo) {
+                    try {
+                        $projStmt = $pdo->prepare("
+                            INSERT INTO `projects` 
+                            (`contract_code`, `quote_id`, `user_id`, `technician_id`, `project_name`, `capacity_kwp`, `total_amount`, `installation_address`, `status`, `current_stage`, `notes`, `created_at`)
+                            VALUES (?, ?, ?, 3, ?, ?, ?, ?, 'in_progress', 'survey', ?, NOW())
+                        ");
+                        $projStmt->execute([
+                            $code,
+                            $newId,
+                            $userId,
+                            'Dự án Điện Mặt Trời - ' . $name,
+                            $calc['estimated_kwp'],
+                            $calc['estimated_total_cost'],
+                            $address,
+                            $notes ?: 'Khởi tạo trực tiếp từ Tư vấn & Demo Thiết kế'
+                        ]);
+                        $targetProjectId = (int)$pdo->lastInsertId();
+
+                        // Khởi tạo 6 giai đoạn thi công chuẩn
+                        $stages = [
+                            ['survey', 1, 'in_progress', 'Khảo sát hiện trạng mặt bằng mái'],
+                            ['design', 2, 'locked', 'Thiết kế kỹ thuật CAD và sơ đồ đấu nối'],
+                            ['procurement', 3, 'locked', 'Chuẩn bị xuất kho vật tư và tấm pin'],
+                            ['installation', 4, 'locked', 'Thi công lắp đặt khung ray và tấm pin'],
+                            ['grid_connection', 5, 'locked', 'Nghiệm thu đóng điện hòa lưới EVN'],
+                            ['handover', 6, 'locked', 'Bàn giao hệ thống và kích hoạt bảo hành']
+                        ];
+                        foreach ($stages as $stg) {
+                            $stgStmt = $pdo->prepare("INSERT INTO `project_stages` (`project_id`, `stage`, `position`, `status`, `review_note`, `created_at`) VALUES (?, ?, ?, ?, ?, NOW())");
+                            $stgStmt->execute([$targetProjectId, $stg[0], $stg[1], $stg[2], $stg[3]]);
+                        }
+                    } catch (\Exception $e) {
+                        // Bỏ qua lỗi phụ nếu đã tồn tại mã
+                    }
+                }
+
+                $_SESSION['installation_flash'] = "Xác nhận cấu hình thành công! Hồ sơ dự án {$code} (Mã báo giá #SQ-" . str_pad((string)$newId, 4, '0', STR_PAD_LEFT) . ") đã được chuyển sang phân hệ Quản Lý Lắp Đặt. Đội ngũ kỹ sư hiện trường sẽ tiến hành Giai đoạn 1: Khảo sát hiện trường mái.";
+                $redirectUrl = $targetProjectId ? "index.php?page=installations&project={$targetProjectId}" : "index.php?page=installations&from_quote={$newId}";
+                header('Location: ' . $redirectUrl);
+                exit;
+            }
 
             return [
                 'quote_id' => $newId,
