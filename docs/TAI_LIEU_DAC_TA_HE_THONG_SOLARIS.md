@@ -15,7 +15,7 @@
 |:---:|:---|:---:|:---|:---|:---:|
 | **1** | **Nguyễn Huy Đạt** | **65130410** | **Trưởng Nhóm & Quản Lý Dự Án (PM)**<br>Fullstack Core & UI/UX | • Lập kế hoạch, theo dõi tiến độ tổng thể (PM), review & hợp nhất mã nguồn Git.<br>• Thiết kế kiến trúc điều phối trung tâm `index.php`, Session Auth bảo mật, cấu trúc Module.<br>• Xây dựng Cổng Đăng Nhập & Đăng Ký Tài Khoản bằng Gmail với xác thực mã OTP 6 số.<br>• Thiết kế giao diện Solar Theme chuẩn Be Vietnam Pro, hiệu ứng quang năng Solar Shockwave Ripple.<br>• Xây dựng phân hệ Hồ sơ Profile người dùng và thanh điều hướng Dual Navigation (Ngang & Dọc 1s).<br>• Tích hợp cổng Socket.io Real-time Port 3001 đồng bộ dữ liệu thời gian thực giữa các tab.<br>• Hoàn thiện phân hệ 6 bài tập Form cốt lõi (Bài 1 - 6). | **35%** |
 | **2** | **Lê Chí Hải** | **65130100** | **Frontend Lead & Catalog Thiết Bị** | • Xây dựng CSDL danh mục và 26 thiết bị quang điện thực tế Tier-1 (Longi, Canadian, Sungrow, Huawei...).<br>• Xây dựng bộ lọc tìm kiếm sản phẩm phân trang bằng Hook `UsePaginationState`.<br>• Xây dựng Module Kế hoạch dự định thiết bị (Cart), loại bỏ hiển thị giá tiền VNĐ theo yêu cầu.<br>• Đồng bộ danh sách vật tư đã chọn sang mô phỏng thiết kế.<br>• Hoàn thiện 6 bài tập thực hành (Bài 7, 8 Form + Bài 1 - 4 Mảng). | **20%** |
-| **3** | **Mai Đức Toàn** | **65133959** | **Solar Simulator & Data**<br>**Phụ Trách Báo Cáo Dự Án** | • Xây dựng bộ mô phỏng tính toán công suất quang điện và hoàn vốn Hook `UseSolarCalculator.php`.<br>• Dựng giao diện mô phỏng 2D/3D sơ đồ mảng pin và xuất bảng vật tư kỹ thuật BOM.<br>• Phụ trách biên tập và chuẩn hóa Hồ sơ kỹ thuật, Báo cáo đồ án & Tài liệu đặc tả hệ thống.<br>• Chuẩn hóa dữ liệu tính toán bức xạ 3 miền (Bắc, Trung, Nam).<br>• Hoàn thiện 6 bài tập thực hành (Bài 5 - 7 Mảng + Bài 1 - 3 MySQL). | **25%** |
+| **3** | **Mai Đức Toàn** | **65133959** | **Solar Simulator & Data**<br>**Solar Sizing Engine & Data** | • Xây dựng bộ mô phỏng tính toán công suất quang điện và hoàn vốn Hook `UseSolarCalculator.php`.<br>• Dựng giao diện mô phỏng 2D/3D sơ đồ mảng pin và xuất bảng vật tư kỹ thuật BOM.<br>• Chuẩn hóa dữ liệu tính toán bức xạ 3 miền (Bắc, Trung, Nam).<br>• Hoàn thiện 6 bài tập thực hành (Bài 5 - 7 Mảng + Bài 1 - 3 MySQL). | **25%** |
 | **4** | **Phan Trần Thịnh** | **65133649** | **Installation Workflow & QA** | • Xây dựng quy trình Quản lý thi công lắp đặt 4 giai đoạn, tra cứu tiến độ công trình `SOLAR-YYYY-XXX`.<br>• Xây dựng Hook tải file an toàn `UseFileUpload.php` chống Web Shell, băm SHA-256.<br>• Phân bổ kỹ thuật viên hiện trường và biên bản nghiệm thu kỹ thuật EVN.<br>• Hoàn thiện 6 bài tập thực hành MySQL nâng cao (Bài 4 - 9 MySQL). | **20%** |
 
 ---
@@ -72,7 +72,7 @@ TIẾN ĐỘ VÀ CƠ CẤU TỶ TRỌNG ĐÓNG GÓP XÂY DỰNG DỰ ÁN SOLARIS
 ----------------------------------------------------------------------------------------
 • TV1 (PM Nguyễn Huy Đạt):  Core Arch, Auth Gmail OTP, Dual Nav, Profile, 6 Bài Form (35%)
 • TV2 (Lê Chí Hải):         Catalog 26 SP, Kế hoạch dự định (Cart), Ghép đôi tương thích (20%)
-• TV3 (Mai Đức Toàn):       Solar Simulator KW/ROI, Phụ trách Báo Cáo Dự Án, Bài Mảng/MySQL (25%)
+• TV3 (Mai Đức Toàn):       Solar Simulator KW/ROI, Bài Mảng/MySQL (25%)
 • TV4 (Phan Trần Thịnh):    Quy trình Lắp đặt 4 Giai đoạn, Upload ảnh SHA-256, Bài MySQL (20%)
 ========================================================================================
 ```

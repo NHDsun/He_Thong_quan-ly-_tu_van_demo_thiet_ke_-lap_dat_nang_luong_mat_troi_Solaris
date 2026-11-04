@@ -12,7 +12,7 @@
  *    - Khách hàng: Kế hoạch thiết bị dự định, KW điện, tiền tạo ra/tháng, thời gian gỡ vốn, lịch sử báo giá.
  *    - Kỹ thuật viên: Thông tin chuyên môn, danh sách công trình phụ trách, hồ sơ khảo sát.
  *    - Quản trị viên: Bảng tóm tắt hoạt động toàn hệ thống, danh sách báo giá cần duyệt, quản trị công trình.
- * 5. Hồ sơ năng lực 4 thành viên (Nguyễn Huy Đạt 65130410 PM, Lê Chí Hải, Mai Đức Toàn - Báo Cáo, Phan Trần Thịnh) & Biểu đồ WBS.
+ * 5. Hồ sơ năng lực 4 thành viên (Nguyễn Huy Đạt 65130410 PM, Lê Chí Hải, Mai Đức Toàn - Simulator & Data, Phan Trần Thịnh) & Biểu đồ WBS.
  */
 
 $tab = $_GET['tab'] ?? ($activeTab ?? 'account');
@@ -873,7 +873,7 @@ $roleName = match ($userRole) {
 
                 <div style="padding: 0.85rem; background: rgba(8, 12, 20, 0.5); border-radius: var(--radius-sm); border-left: 3px solid #38bdf8;">
                     <div style="font-size: 0.8rem; font-weight: 700; color: #ffffff;">Mai Đức Toàn (TV3)</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Simulator KW/ROI, SVG Mái, BOM, Phụ Trách Báo Cáo Dự Án (25%)</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Simulator KW/ROI, SVG Mái, BOM, Thuật Toán Quang Điện & SVG (25%)</div>
                 </div>
 
                 <div style="padding: 0.85rem; background: rgba(8, 12, 20, 0.5); border-radius: var(--radius-sm); border-left: 3px solid #fb923c;">

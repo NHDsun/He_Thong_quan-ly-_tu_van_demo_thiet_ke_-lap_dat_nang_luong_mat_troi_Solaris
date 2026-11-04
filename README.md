@@ -19,7 +19,7 @@
 |:---:|:---|:---:|:---|:---|:---:|
 | **1** | **Nguyễn Huy Đạt** | **65130410** | **Trưởng Nhóm / PM**<br>Fullstack Core | • Kiến trúc trung tâm `index.php`, Session Auth, Dual Nav (Ngang $\leftrightarrow$ Dọc 1s).<br>• Cổng Đăng nhập & Đăng ký Gmail xác thực mã OTP 6 số.<br>• Tích hợp máy chủ Socket.io Real-time Port 3001, hiệu ứng Solar Shockwave.<br>• Quản lý Profile người dùng thực tế & 6 Bài tập Form (Bài 1 - 6). | **35%** |
 | **2** | **Lê Chí Hải** | **65130100** | **Frontend Lead** | • CSDL danh mục và 26 thiết bị quang điện Tier-1 (Canadian, LONGi, Sungrow...).<br>• Bộ lọc phân trang Hook `UsePaginationState`.<br>• Kế hoạch dự định thiết bị (Cart) & 6 Bài tập Form/Mảng (Bài 7 - 12). | **20%** |
-| **3** | **Mai Đức Toàn** | **65133959** | **Simulator & Data**<br>**Phụ Trách Báo Cáo** | • Bộ mô phỏng tính toán công suất quang điện và hoàn vốn `UseSolarCalculator.php`.<br>• Sơ đồ mảng pin 2D/3D & bảng bóc tách vật tư kỹ thuật BOM.<br>• Biên soạn Hồ sơ kỹ thuật, Báo cáo & 6 Bài tập Mảng/MySQL (Bài 13 - 18). | **25%** |
+| **3** | **Mai Đức Toàn** | **65133959** | **Simulator & Data**<br>**Sizing Engine & Data** | • Bộ mô phỏng tính toán công suất quang điện và hoàn vốn `UseSolarCalculator.php`.<br>• Sơ đồ mảng pin 2D/3D & bảng bóc tách vật tư kỹ thuật BOM.<br>• Chuẩn hóa dữ liệu bức xạ 3 miền & 6 Bài tập Mảng/MySQL (Bài 13 - 18). | **25%** |
 | **4** | **Phan Trần Thịnh** | **65133649** | **Workflow & QA** | • Quy trình thi công lắp đặt 4 giai đoạn, tra cứu mã công trình `SOLAR-YYYY-XXX`.<br>• Tải ảnh an toàn `UseFileUpload.php` băm SHA-256.<br>• Nghiệm thu kỹ thuật EVN & 6 Bài tập MySQL nâng cao (Bài 19 - 24). | **20%** |
 
 ```
