@@ -259,14 +259,15 @@ if ($page === 'profile') {
                 </li>
             </ul>
 
-            <div class="sol-nav-right" style="display: flex; align-items: center; gap: 0.5rem;">
-                <a href="index.php?page=profile" class="sol-nav-profile-pill" title="Profile">
+            <div class="sol-nav-right" style="display: flex; align-items: center; gap: 0.65rem; flex-shrink: 0;">
+                <a href="index.php?page=profile" class="sol-nav-profile-pill" title="Hồ sơ tài khoản">
                     <span class="sol-nav-profile-pill__icon">👤</span>
                     <span class="sol-nav-profile-pill__text">Profile</span>
                     <span class="sol-nav-profile-pill__badge"><?= htmlspecialchars(strtoupper($currentUser['username'] ?? 'GUEST')) ?></span>
                 </a>
-                <a href="index.php?page=auth&action=logout" class="sol-nav-logout-btn" title="Đăng xuất khỏi hệ thống" style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #fca5a5; text-decoration: none; font-size: 0.9rem; transition: all 0.2s ease;">
-                    🚪
+                <a href="index.php?page=auth&action=logout" class="sol-nav-logout-btn" title="Đăng xuất khỏi hệ thống">
+                    <span>🚪</span>
+                    <span>Đăng Xuất</span>
                 </a>
             </div>
         </div>
@@ -954,16 +955,21 @@ if ($page === 'profile') {
             </div>
 
             <div class="sol-sidebar__footer">
-                <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.5rem;">
-                    <a href="index.php?page=profile" style="flex: 1;" class="sol-nav-profile-pill sol-nav-profile-pill--sidebar <?= $page === 'profile' ? 'active' : '' ?>" title="Profile">
+                <!-- Thẻ Profile cá nhân (Full-Width) -->
+                <a href="index.php?page=profile" class="sol-nav-profile-pill sol-nav-profile-pill--sidebar <?= $page === 'profile' ? 'active' : '' ?>" title="Hồ sơ tài khoản">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; min-width: 0;">
                         <span class="sol-nav-profile-pill__icon">👤</span>
                         <span class="sol-nav-profile-pill__text">Profile</span>
-                        <span class="sol-nav-profile-pill__badge"><?= htmlspecialchars(strtoupper($currentUser['username'] ?? 'GUEST')) ?></span>
-                    </a>
-                    <a href="index.php?page=auth&action=logout" title="Đăng xuất khỏi hệ thống" style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #fca5a5; text-decoration: none; font-size: 0.9rem;">
-                        🚪
-                    </a>
-                </div>
+                    </div>
+                    <span class="sol-nav-profile-pill__badge"><?= htmlspecialchars(strtoupper($currentUser['username'] ?? 'GUEST')) ?></span>
+                </a>
+
+                <!-- Nút Đăng Xuất độc lập 100%, không bao giờ bị chèn ép -->
+                <a href="index.php?page=auth&action=logout" class="sol-sidebar-logout-btn" title="Đăng xuất khỏi hệ thống">
+                    <span style="font-size: 1rem; line-height: 1;">🚪</span>
+                    <span>Đăng Xuất</span>
+                </a>
+
                 <div class="sol-sidebar__hotline">
                     <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 6px #10b981;"></span>
                     <span>Hotline: <strong>0909.888.SOLAR</strong></span>
@@ -987,6 +993,10 @@ if ($page === 'profile') {
                 <div class="sol-app-topbar__right" style="display: flex; align-items: center; gap: 0.75rem;">
                     <a href="index.php?page=calculator" class="sol-btn sol-btn--solar sol-btn--sm">
                         ⚡ Khảo Sát Báo Giá
+                    </a>
+                    <a href="index.php?page=auth&action=logout" class="sol-nav-logout-btn" title="Đăng xuất khỏi hệ thống">
+                        <span>🚪</span>
+                        <span>Đăng Xuất</span>
                     </a>
                 </div>
             </header>
