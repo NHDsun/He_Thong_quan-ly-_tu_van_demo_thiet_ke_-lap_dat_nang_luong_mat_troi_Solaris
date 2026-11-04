@@ -840,7 +840,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                     class="sol-btn sol-btn--solar sol-btn--lg" 
                     style="width: 100%; max-width: 520px; font-size: 1.05rem; font-weight: 800; padding: 1rem 1.85rem; box-shadow: 0 6px 25px rgba(245, 158, 11, 0.45); display: flex; align-items: center; justify-content: center; gap: 0.65rem;"
                 >
-                    <span>🚀</span> Xác Nhận Cấu Hình
+                    <span>🚀</span> Xác Nhận Phê Duyệt (Approved) & Chuyển Sang Lắp Đặt ➔
                 </button>
 
                 <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; justify-content: center;">
@@ -851,7 +851,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                         class="sol-btn sol-btn--outline sol-btn--sm" 
                         style="color: var(--text-secondary); font-size: 0.825rem;"
                     >
-                        💾 Chỉ Lưu Dự Toán & Xem Lại Sau
+                        💾 Lưu Dự Toán (Trạng Thái Approved)
                     </button>
                     <a 
                         href="index.php?page=installations" 
@@ -932,23 +932,8 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                                     <?= number_format((float)$q['estimated_total_cost'], 0, ',', '.') ?> đ
                                 </td>
                                 <td style="padding: 0.8rem 0.85rem; text-align: center;">
-                                    <?php 
-                                    $statusClass = match ($q['status'] ?? 'pending') {
-                                        'approved' => 'sol-badge--emerald',
-                                        'contacted', 'survey_scheduled' => 'sol-badge--cyan',
-                                        'rejected' => 'sol-badge--rose',
-                                        default => 'sol-badge--amber'
-                                    };
-                                    $statusText = match ($q['status'] ?? 'pending') {
-                                        'approved' => 'Đã phê duyệt',
-                                        'contacted' => 'Đã liên hệ',
-                                        'survey_scheduled' => 'Lên lịch khảo sát',
-                                        'rejected' => 'Từ chối',
-                                        default => 'Chờ xử lý'
-                                    };
-                                    ?>
-                                    <span class="sol-badge <?= $statusClass ?>" style="font-size: 0.7rem;">
-                                        <?= $statusText ?>
+                                    <span class="sol-badge sol-badge--emerald" style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase;">
+                                        ✓ Approved
                                     </span>
                                 </td>
                                 <td style="padding: 0.8rem 0.85rem; text-align: center; color: var(--text-muted); font-size: 0.75rem;">

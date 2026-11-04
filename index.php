@@ -75,6 +75,14 @@ if ($page === 'installations') {
 if ($page === 'products') {
     $productController = new \App\Modules\Member2_Products\ProductController();
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $cartAction = (string) ($_POST['cart_action'] ?? '');
+        if (str_starts_with($cartAction, 'admin_')) {
+            $adminResult = $productController->adminProductAction($cartAction);
+            $_SESSION['product_flash'] = $adminResult['message'];
+            $redirect = 'index.php?page=products';
+            if (!empty($_POST['product_id'])) $redirect .= '&product=' . (int) $_POST['product_id'];
+            header('Location: ' . $redirect); exit;
+        }
         $productController->handleCart((string) ($_POST['cart_action'] ?? ''));
         if (($_POST['cart_action'] ?? '') === 'add') {
             $returnParams = ['page' => 'products'];
@@ -89,6 +97,9 @@ if ($page === 'products') {
         exit;
     }
     $productView = isset($_GET['product']) ? $productController->detail((int) $_GET['product']) : $productController->index();
+    $productView['isAdmin'] = $productController->isAdmin();
+    $productView['flash'] = $_SESSION['product_flash'] ?? null;
+    unset($_SESSION['product_flash']);
 }
 
 if ($page === 'cart') {
