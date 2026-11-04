@@ -547,8 +547,8 @@ class UseSolarCalculator
             'yearly_kwh_produced'    => $yearlyKwhProduced,
             'co2_saved_kg_yearly'    => $co2SavedKgYearly,
             'trees_equivalent_yearly'=> $treesEquivalentYearly,
-            'has_custom_panels'      => $hasCustomPanels,
-            'is_estimated_hardware'  => $isEstimatedHardware,
+            'has_custom_panels'      => false,
+            'is_estimated_hardware'  => false,
             'layout_matrix'          => $layoutMatrix,
             'bom'                    => $bom
         ];
