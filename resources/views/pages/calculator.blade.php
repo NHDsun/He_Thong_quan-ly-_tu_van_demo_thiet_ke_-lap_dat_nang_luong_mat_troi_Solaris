@@ -948,6 +948,10 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                                         <p>Diện tích: <?= htmlspecialchars((string) $q['roof_area_sqm']) ?> m² · Tiền điện: <?= number_format((float) $q['monthly_electric_bill'], 0, ',', '.') ?> đ/tháng</p>
                                         <p><?= htmlspecialchars($q['customer_email'] ?? '') ?></p>
                                         <p><?= nl2br(htmlspecialchars($q['notes'] ?? '')) ?></p>
+                                        <?php foreach ($q['items'] as $item): ?>
+                                            <p><?= htmlspecialchars($item['product_name']) ?> · <?= (int) $item['quantity'] ?> × <?= number_format((float) $item['unit_price'], 0, ',', '.') ?> đ</p>
+                                        <?php endforeach; ?>
+                                        <?php if ($q['source'] === 'plan' && !$q['items']): ?><p>Phương án cũ chưa lưu chi tiết sản phẩm. Cần gửi lại từ kế hoạch.</p><?php endif; ?>
                                     </details>
                                 </td>
                                 <td style="padding: 0.8rem 0.85rem; text-align: center; color: var(--text-muted); font-size: 0.75rem;">

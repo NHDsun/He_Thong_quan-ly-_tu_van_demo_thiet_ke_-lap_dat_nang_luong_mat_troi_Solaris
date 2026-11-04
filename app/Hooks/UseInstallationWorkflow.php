@@ -400,6 +400,24 @@ final class UseInstallationWorkflow
         if (mb_strlen($note) > 5000) {
             throw new RuntimeException('Nhận xét không được vượt quá 5000 ký tự.');
         }
+        if ($approved && $project['quote_id']) {
+            $quote = $this->rows('SELECT source,status FROM solar_quotes WHERE id=?', [$project['quote_id']])[0] ?? null;
+            if ($quote && $quote['source'] === 'plan') {
+                if ($quote['status'] !== 'approved') {
+                    throw new RuntimeException('Phương án từ kế hoạch phải được duyệt trước khi duyệt triển khai.');
+                }
+                $items = $this->rows('SELECT product_id,product_name,quantity,unit_price FROM solar_quote_items WHERE quote_id=? ORDER BY id', [$project['quote_id']]);
+                $existing = $this->rows('SELECT id FROM installation_items WHERE project_id=? LIMIT 1', [$project['id']]);
+                if (!$items && !$existing) {
+                    throw new RuntimeException('Phương án cũ chưa lưu chi tiết sản phẩm. Khách hàng cần gửi lại phương án từ kế hoạch trước khi duyệt triển khai.');
+                }
+                if (!$existing) {
+                    foreach ($items as $item) {
+                        $this->run('INSERT INTO installation_items (project_id,product_id,product_name,quantity,unit_price) VALUES (?,?,?,?,?)', [$project['id'], $item['product_id'], $item['product_name'], $item['quantity'], $item['unit_price']]);
+                    }
+                }
+            }
+        }
         $this->run('UPDATE projects SET status=?,reviewed_by=?,reviewed_at=NOW(),review_note=? WHERE id=?', [$status, $actor['id'], $note, $project['id']]);
         $this->log($project, $actor, $action, 'pending_approval', $status, $note);
     }
@@ -626,7 +644,7 @@ final class UseInstallationWorkflow
     }
 
     /** Lưu dự toán hoặc gửi yêu cầu; khóa request_key để gửi lại không tạo trùng. */
-    public function registerQuote(int $customerId, array $data, array $calc, string $source, bool $submit, string $requestKey): array
+    public function registerQuote(int $customerId, array $data, array $calc, string $source, bool $submit, string $requestKey, array $planItems = []): array
     {
         if (!preg_match('/^[a-f0-9]{64}$/D', $requestKey) || !in_array($source, ['bill', 'plan'], true)) {
             throw new RuntimeException('Phiên đăng ký không hợp lệ. Hãy tải lại trang.');
@@ -662,6 +680,25 @@ final class UseInstallationWorkflow
                     $submit && $source === 'plan' ? 'pending_approval' : 'draft', $source, $requestKey,
                 ]);
                 $id = (int) $this->db->lastInsertId();
+                if ($source === 'plan') {
+                    if (!$planItems) {
+                        throw new RuntimeException('Kế hoạch chưa có sản phẩm. Hãy chọn thiết bị và gửi lại.');
+                    }
+                    $seen = [];
+                    // Danh sách lấy từ session của bộ tính toán, không nhận tên/giá từ POST.
+                    foreach ($planItems as $item) {
+                        $productId = (int) ($item['id'] ?? 0);
+                        $quantity = filter_var($item['quantity'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 10000]]);
+                        $price = filter_var($item['price'] ?? null, FILTER_VALIDATE_FLOAT);
+                        $name = trim((string) ($item['name'] ?? ''));
+                        if (!$quantity || $price === false || !is_finite($price) || $price < 0 || $price > 9999999999999.99 || $name === '' || mb_strlen($name) > 255 || isset($seen[$productId])
+                            || !$this->rows('SELECT id FROM products WHERE id=?', [$productId])) {
+                            throw new RuntimeException('Sản phẩm trong kế hoạch không hợp lệ. Hãy cập nhật kế hoạch rồi gửi lại.');
+                        }
+                        $seen[$productId] = true;
+                        $this->run('INSERT INTO solar_quote_items (quote_id,product_id,product_name,quantity,unit_price) VALUES (?,?,?,?,?)', [$id, $productId, $name, $quantity, number_format($price, 2, '.', '')]);
+                    }
+                }
                 $this->quoteLog($id, $actor, 'quote_created', null, $submit && $source === 'plan' ? 'pending_approval' : 'draft');
                 if ($submit && $source === 'bill') {
                     $quote = $this->rows('SELECT * FROM solar_quotes WHERE id=?', [$id])[0];

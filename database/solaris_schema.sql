@@ -89,6 +89,21 @@ CREATE TABLE `solar_quotes` (
     INDEX `idx_quotes_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Chi tiết sản phẩm được chốt khi gửi kế hoạch.
+DROP TABLE IF EXISTS solar_quote_items;
+CREATE TABLE IF NOT EXISTS solar_quote_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    quote_id INT NOT NULL,
+    product_id INT NOT NULL,
+    product_name VARCHAR(255) NOT NULL,
+    quantity INT NOT NULL,
+    unit_price DECIMAL(15,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_quote_product (quote_id,product_id),
+    FOREIGN KEY (quote_id) REFERENCES solar_quotes(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Nhật ký xét duyệt phương án, kể cả khi chưa có dự án.
 DROP TABLE IF EXISTS `solar_quote_logs`;
 CREATE TABLE `solar_quote_logs` (
@@ -179,6 +194,7 @@ CREATE TABLE `installation_items` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `project_id` INT NOT NULL,
     `product_id` INT NOT NULL,
+    `product_name` VARCHAR(255) NULL,
     `quantity` INT NOT NULL DEFAULT 1,
     `unit_price` DECIMAL(15,2) NOT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

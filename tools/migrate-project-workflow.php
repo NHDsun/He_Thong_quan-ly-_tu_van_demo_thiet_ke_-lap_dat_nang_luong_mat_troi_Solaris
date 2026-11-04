@@ -9,7 +9,7 @@ require_once dirname(__DIR__) . '/app/Config/Database.php';
 $db = App\Config\Database::getConnection();
 $db->exec("CREATE TABLE IF NOT EXISTS schema_migrations (version VARCHAR(100) PRIMARY KEY,applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
 $pending = [];
-foreach (['20261104_project_workflow', '20261104_project_billing', '20261104_stage_schedule'] as $version) {
+foreach (['20261104_project_workflow', '20261104_project_billing', '20261104_stage_schedule', '20261105_plan_quote_items'] as $version) {
     $q = $db->prepare('SELECT version FROM schema_migrations WHERE version=?');
     $q->execute([$version]);
     if (!$q->fetchColumn()) {
@@ -21,7 +21,7 @@ if (!$pending) {
     exit;
 }
 $backup = ['database' => $db->query('SELECT DATABASE()')->fetchColumn(), 'tables' => []];
-foreach (['solar_quotes','solar_quote_logs','projects','project_stages','project_assignments','project_stage_logs','project_documents','project_requests','project_extra_materials','project_payments'] as $table) {
+foreach (['solar_quotes','solar_quote_items','solar_quote_logs','projects','installation_items','project_stages','project_assignments','project_stage_logs','project_documents','project_requests','project_extra_materials','project_payments'] as $table) {
     $q = $db->prepare('SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?');
     $q->execute([$table]);
     if ($q->fetchColumn()) {

@@ -153,7 +153,7 @@ class SolarDemoController
             : UseSolarCalculator::calculate($bill, $area, (string) ($_POST['package'] ?? 'residential'), $roofType);
         return (new UseInstallationWorkflow($pdo))->registerQuote(
             (int) ($_SESSION['user_id'] ?? 0), $_POST, $calc, $source, $confirmToInstall,
-            (string) ($_POST['request_key'] ?? '')
+            (string) ($_POST['request_key'] ?? ''), $source === 'plan' ? $cartProducts : []
         );
     }
 
@@ -182,6 +182,16 @@ class SolarDemoController
         $offset = $pagination->getOffset();
         $stmt = $pdo->prepare("SELECT q.*,p.id project_id,p.status project_status FROM solar_quotes q LEFT JOIN projects p ON p.quote_id=q.id WHERE {$where} ORDER BY q.status='pending_approval' DESC,q.id DESC LIMIT {$limit} OFFSET {$offset}");
         $stmt->execute($params);
-        return ['list' => $stmt->fetchAll(), 'pagination' => $pagination];
+        $list = $stmt->fetchAll();
+        $itemsQuery = $pdo->prepare('SELECT product_name,quantity,unit_price FROM solar_quote_items WHERE quote_id=? ORDER BY id');
+        foreach ($list as &$quote) {
+            $quote['items'] = [];
+            if ($quote['source'] === 'plan') {
+                $itemsQuery->execute([$quote['id']]);
+                $quote['items'] = $itemsQuery->fetchAll();
+            }
+        }
+        unset($quote);
+        return ['list' => $list, 'pagination' => $pagination];
     }
 }

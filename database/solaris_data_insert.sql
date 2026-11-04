@@ -97,6 +97,7 @@ INSERT INTO `products` (`id`, `category_id`, `product_code`, `name`, `capacity_w
 -- -----------------------------------------------------------------------------
 -- 4. BẢNG SOLAR_QUOTES (Báo giá và hồ sơ tính toán hoàn vốn)
 -- -----------------------------------------------------------------------------
+DELETE FROM `solar_quote_items`;
 DELETE FROM `solar_quote_logs`;
 DELETE FROM `solar_quotes`;
 INSERT INTO `solar_quotes` (`id`, `user_id`, `customer_name`, `customer_phone`, `customer_email`, `address`, `monthly_electric_bill`, `roof_area_sqm`, `estimated_system_kwp`, `panel_count`, `estimated_total_cost`, `payback_years`, `notes`, `status`, `created_at`) VALUES

@@ -8,6 +8,10 @@ if (!isset($invoice['project'], $invoice['summary'])) {
 $project = $invoice['project'];
 $summary = $invoice['summary'];
 $format = static fn (int $cents): string => number_format($cents / 100, $cents % 100 ? 2 : 0, ',', '.') . ' đ';
+$baseItemsTotal = 0;
+foreach ($invoice['baseItems'] as $item) {
+    $baseItemsTotal += (int) round((float) $item['unit_price'] * 100) * (int) $item['quantity'];
+}
 ?>
 <!doctype html>
 <html lang="vi">
@@ -31,11 +35,20 @@ $format = static fn (int $cents): string => number_format($cents / 100, $cents %
         <p>Địa chỉ lắp đặt: <?= UI::escape($project['installation_address']) ?></p>
         <p>Thời điểm in: <?= date('d/m/Y H:i') ?></p>
         <p>Phê duyệt mua sắm: <?= UI::escape(UI::label($invoice['stageStatus'])) ?></p>
-        <p>Chứng từ mô phỏng cho bài tập, không phải hóa đơn thuế. Thanh toán trên hệ thống không thu tiền thật.</p>
         <table>
             <thead><tr><th>Nội dung</th><th>Số lượng</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead>
             <tbody>
-                <tr><td>Giá trị dự án ban đầu</td><td>1</td><td><?= $format($summary['base']) ?></td><td><?= $format($summary['base']) ?></td></tr>
+                <?php foreach ($invoice['baseItems'] as $item): ?>
+                    <tr>
+                        <td><?= UI::escape($item['name']) ?> <small>(ban đầu)</small></td>
+                        <td><?= (int) $item['quantity'] ?></td>
+                        <td><?= $format((int) round((float) $item['unit_price'] * 100)) ?></td>
+                        <td><?= $format((int) round((float) $item['unit_price'] * 100) * (int) $item['quantity']) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                <?php if (!$invoice['baseItems']): ?>
+                    <tr><td colspan="4">Hồ sơ dự án chưa có danh sách sản phẩm ban đầu.</td></tr>
+                <?php endif; ?>
                 <?php foreach ($invoice['materials'] as $item): ?>
                     <tr>
                         <td><?= UI::escape($item['product_name']) ?> (phát sinh)<br><small><?= UI::escape($item['reason']) ?></small></td>
@@ -46,24 +59,16 @@ $format = static fn (int $cents): string => number_format($cents / 100, $cents %
                 <?php endforeach; ?>
             </tbody>
         </table>
-        <?php if ($invoice['baseItems']): ?>
-            <h2>Vật tư trong dự toán ban đầu</h2>
-            <p>Các vật tư sau đã tính trong giá trị ban đầu, không cộng lại vào tổng phải trả.</p>
-            <table>
-                <thead><tr><th>Vật tư</th><th>Số lượng</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead>
-                <tbody>
-                    <?php foreach ($invoice['baseItems'] as $item): ?>
-                        <tr>
-                            <td><?= UI::escape($item['name']) ?></td>
-                            <td><?= (int) $item['quantity'] ?></td>
-                            <td><?= $format((int) round((float) $item['unit_price'] * 100)) ?></td>
-                            <td><?= $format((int) round((float) $item['unit_price'] * 100) * (int) $item['quantity']) ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php endif; ?>
         <dl>
+            <?php if ($invoice['baseItems']): ?>
+                <dt>Tổng sản phẩm ban đầu</dt><dd><?= $format($baseItemsTotal) ?></dd>
+                <?php if ($baseItemsTotal !== $summary['base']): ?>
+                    <dt>Điều chỉnh theo dự toán ban đầu đã duyệt</dt><dd><?= $format($summary['base'] - $baseItemsTotal) ?></dd>
+                <?php endif; ?>
+            <?php else: ?>
+                <dt>Dự toán ban đầu (chưa có chi tiết sản phẩm)</dt><dd><?= $format($summary['base']) ?></dd>
+            <?php endif; ?>
+            <dt>Vật tư phát sinh</dt><dd><?= $format($summary['extra']) ?></dd>
             <dt>Tổng phải thanh toán</dt><dd><?= $format($summary['total']) ?></dd>
             <dt>Đã thanh toán mô phỏng</dt><dd><?= $format($summary['paid']) ?></dd>
             <dt>Còn phải trả</dt><dd><?= $format($summary['remaining']) ?></dd>

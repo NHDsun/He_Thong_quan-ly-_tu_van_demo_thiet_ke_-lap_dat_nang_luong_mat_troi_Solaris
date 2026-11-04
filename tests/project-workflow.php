@@ -48,13 +48,16 @@ try {
     foreach ([1 => 'admin', 2 => 'customer', 3 => 'technician', 4 => 'customer', 5 => 'technician'] as $id => $role) {
         $q->execute([$id, 'test' . $id, $password, 'Workflow Test ' . $id, "test$id@example.com", '0900000000', $role]);
     }
+    $db->exec("INSERT INTO categories (id,name,slug) VALUES (1,'Thiết bị','thiet-bi')");
+    $db->exec("INSERT INTO products (id,category_id,product_code,name,price) VALUES (1,1,'PLAN-TEST','Tên thiết bị gốc',12345.67)");
+    $planItems = [['id'=>1,'name'=>'Tên thiết bị gốc','price'=>12345.67,'quantity'=>2]];
     $w = new Workflow($db);
     $admin = ['id' => 1, 'role' => 'admin'];
     $customer = ['id' => 2, 'role' => 'customer'];
     $tech = ['id' => 3, 'role' => 'technician'];
     $data = ['customer_name' => 'Khách kiểm thử', 'customer_phone' => '0901234567', 'customer_email' => 'test@example.com', 'address' => 'Địa chỉ kiểm thử', 'notes' => 'Yêu cầu khảo sát'];
     $calc = UseSolarCalculator::calculate(3000000, 100, 'residential', 'metal_roof');
-    $make = static fn (string $source = 'bill', bool $submit = true): array => $w->registerQuote(2, $data, $calc, $source, $submit, bin2hex(random_bytes(32)));
+    $make = static fn (string $source = 'bill', bool $submit = true): array => $w->registerQuote(2, $data, $calc, $source, $submit, bin2hex(random_bytes(32)), $source === 'plan' ? $planItems : []);
     $scalar = static function (string $sql, array $params = []) use ($db): mixed {
         $q = $db->prepare($sql);
         $q->execute($params);
@@ -161,7 +164,13 @@ try {
     $check($status($planProject) === 'pending_approval', 'Quote approval creates request awaiting deployment approval');
     $check($w->createFromApprovedQuote($plan['quote_id'], 1) === $planProject, 'Integration cannot create duplicate project');
     $denied(fn () => $w->reviewQuote($plan['quote_id'], 1, true, ''), 'Repeated quote approval rejected');
+    $check((int)$scalar('SELECT COUNT(*) FROM installation_items WHERE project_id=?',[$planProject])===0,'Quote approval does not prematurely copy deployment items');
+    $w->run("UPDATE products SET name='Đổi tên sau gửi',price=1 WHERE id=1");
     $w->act($admin, $planProject, 'approve_project', []);
+    $original=$w->rows('SELECT product_name,quantity,unit_price FROM installation_items WHERE project_id=?',[$planProject]);
+    $check(count($original)===1 && $original[0]['product_name']==='Tên thiết bị gốc' && (int)$original[0]['quantity']===2 && $original[0]['unit_price']==='12345.67','Deployment approval copies original names, quantities and prices');
+    $denied(fn () => $w->act($admin,$planProject,'approve_project',[]),'Repeated deployment approval cannot duplicate items');
+    $check((int)$scalar('SELECT COUNT(*) FROM installation_items WHERE project_id=?',[$planProject])===1,'Exactly one initial line after repeated approval');
     $w->act($admin, $planProject, 'assign', $assignment);
     $check($status($planProject) === 'scheduled', 'Plan path waits for technician start');
     $surveyId = (int) $scalar("SELECT id FROM project_stages WHERE project_id=? AND stage='survey'", [$planProject]);
@@ -246,6 +255,20 @@ try {
     $scheduleMigration($db);
     $check($scalar('SELECT started_at FROM projects WHERE id=?',[$id])===$clockBefore,'Schedule migration preserves project actual clock');
     $check($w->rows('SELECT id,planned_start,planned_end,started_at FROM project_stages ORDER BY id')===$stageDatesBefore,'Schedule migration preserves historical stage dates');
+    $beforeQuotes=(int)$scalar('SELECT COUNT(*) FROM solar_quotes');
+    $denied(fn () => $w->registerQuote(2,$data,$calc,'plan',true,bin2hex(random_bytes(32)),[]),'Empty plan cannot be saved without items');
+    $denied(fn () => $w->registerQuote(2,$data,$calc,'plan',true,bin2hex(random_bytes(32)),array_merge($planItems,[['id'=>999999,'name'=>'Missing','quantity'=>1,'price'=>1]])),'Invalid item rolls back entire registration');
+    $check((int)$scalar('SELECT COUNT(*) FROM solar_quotes')===$beforeQuotes,'Failed capture leaves no partial quotes');
+    $draft=$make('plan',false);
+    $w->submitQuote($draft['quote_id'],2);
+    $draftProject=$w->reviewQuote($draft['quote_id'],1,true,'Duyệt');
+    $w->act($admin,$draftProject,'approve_project',[]);
+    $check($scalar('SELECT unit_price FROM installation_items WHERE project_id=?',[$draftProject])==='12345.67','Draft submission preserves original product snapshot');
+    $legacy=$make('plan');
+    $w->run('DELETE FROM solar_quote_items WHERE quote_id=?',[$legacy['quote_id']]);
+    $legacyProject=$w->reviewQuote($legacy['quote_id'],1,true,'Duyệt');
+    $denied(fn () => $w->act($admin,$legacyProject,'approve_project',[]),'Legacy plan missing products cannot be approved with an empty invoice');
+    $check($status($legacyProject)==='pending_approval','Failed deployment leaves request pending');
     echo "PASS: $checks assertions; isolated database $name\n";
 } finally {
     if (preg_match('/^solaris_workflow_test_[a-f0-9]{10}$/D', $name)) {

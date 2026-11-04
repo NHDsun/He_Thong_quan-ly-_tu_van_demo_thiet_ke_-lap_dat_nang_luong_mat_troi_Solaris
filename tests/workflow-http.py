@@ -207,6 +207,9 @@ try:
     snapshot = state()
     assert len(snapshot['projects']) == 1 and snapshot['quotes'][-1]['status'] == 'pending_approval'; checks += 1
     quote = snapshot['quotes'][-1]
+    assert len(snapshot['quoteItems']) == 2 and not snapshot['initialItems']; checks += 1
+    request(customer, 'page=cart', {'cart_action': 'clear'})
+    fixture('change_catalog')
     text, _ = request(admin, 'page=calculator')
     assert 'Duyệt phương án &amp; tạo yêu cầu dự án' in text or 'Duyệt phương án & tạo yêu cầu dự án' in text; checks += 1
     request(customer, 'page=calculator', {'csrf': data['csrf'], 'action': 'approve_quote', 'quote_id': quote['id']})
@@ -219,6 +222,25 @@ try:
     text, _ = request(technician, 'page=installations')
     assert dashboard_counts(text)['Dự án được phân công'] == 1 and 'Tổng dự án' not in dashboard_counts(text); checks += 1
     page2 = 'page=installations&project=' + str(second['id'])
+    text, _ = request(admin, page2)
+    request(admin, page2, {'csrf': field(text, 'csrf'), 'action': 'approve_project'})
+    items = state()['initialItems']
+    assert len(items) == 2 and items[0]['product_name'] == 'Tấm pin kiểm thử' and items[0]['unit_price'] == '2000000.00' and items[1]['unit_price'] == '10000000.00'; checks += 1
+    request(admin, page2, {'csrf': field(text, 'csrf'), 'action': 'approve_project'})
+    assert len(state()['initialItems']) == 2; checks += 1
+    text, _ = request(admin, page2)
+    request(admin, page2, {'csrf': field(text, 'csrf'), 'action': 'assign', 'start_date': today, 'end_date': (date.fromisoformat(today) + timedelta(days=14)).isoformat(), 'technicians[]': ['3'], 'hours_per_day': '4'})
+    for stage in ['survey', 'design']:
+        start_current(technician, page2)
+        text, _ = request(technician, page2)
+        text = upload_evidence(technician, page2, text)
+        request(technician, page2, {'csrf': field(text, 'csrf'), 'action': 'submit_stage'})
+        text, _ = request(admin, page2)
+        request(admin, page2, {'csrf': field(text, 'csrf'), 'action': 'approve_stage'})
+    text, _ = request(customer, page2 + '&invoice=1')
+    assert 'Tấm pin kiểm thử' in text and 'Inverter kiểm thử' in text and '2.000.000' in text and '10.000.000' in text and 'Catalog changed' not in text and 'Hồ sơ dự án chưa có danh sách' not in text; checks += 1
+    register(customer, 'bill')
+    page2 = 'page=installations&project=' + str(state()['projects'][-1]['id'])
     text, _ = request(admin, page2)
     request(admin, page2, {'csrf': field(text, 'csrf'), 'action': 'reject_project', 'review_note': 'Outside service area'})
     text, _ = request(customer, page2)

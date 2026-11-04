@@ -62,6 +62,14 @@ Các chức năng từ `quanLyLapDat04` được tích hợp cùng quy trình du
 
 ## Database và cập nhật
 
+### Sản phẩm ban đầu từ Kế hoạch dự định
+
+- Khi khách lưu hoặc gửi phương án từ kế hoạch, `solar_quote_items` giữ mã sản phẩm, tên, số lượng và đơn giá từ danh sách thiết bị đang mô phỏng. Khách sửa giỏ hàng hoặc danh mục đổi giá sau đó không thay đổi phương án đã lưu.
+- Duyệt phương án tạo yêu cầu dự án chờ duyệt. Khi admin duyệt triển khai thành **Dự án mới**, hệ thống sao chép sản phẩm sang `installation_items` trong cùng transaction; gửi lại thao tác không tạo trùng.
+- Hóa đơn đọc tên, số lượng và giá đã lưu của sản phẩm ban đầu. Tổng tiền dự án và cách tính phát sinh được giữ nguyên; phần dự toán ngoài các sản phẩm đã chọn vẫn thể hiện bằng chênh lệch dự toán.
+- Phạm vi này chỉ áp dụng cho kế hoạch dự định. Phương án cũ thiếu danh sách sản phẩm cần được khách gửi lại trước khi duyệt triển khai; hệ thống không tự suy đoán thiết bị. Dự án cũ đã có chi tiết sản phẩm được giữ nguyên.
+- Migration `20261105_plan_quote_items` tạo bảng chi tiết phương án và thêm tên sản phẩm lưu riêng vào `installation_items`. Với chi tiết dự án đã có, tên được lấy từ danh mục hiện tại khi nâng cấp.
+
 Cài mới dùng `database/solaris_schema.sql` rồi `database/solaris_seed.sql`, hoặc `database/solaris_full.sql`. Không import lại schema/seed để cập nhật database đang sử dụng vì các file này có lệnh xóa dữ liệu.
 
 Với database đang có dữ liệu:

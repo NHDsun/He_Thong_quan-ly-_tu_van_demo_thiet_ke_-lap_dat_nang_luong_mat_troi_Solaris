@@ -96,6 +96,21 @@ CREATE TABLE `solar_quotes` (
     INDEX `idx_quotes_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Chi tiết sản phẩm được chốt khi gửi kế hoạch.
+DROP TABLE IF EXISTS solar_quote_items;
+CREATE TABLE IF NOT EXISTS solar_quote_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    quote_id INT NOT NULL,
+    product_id INT NOT NULL,
+    product_name VARCHAR(255) NOT NULL,
+    quantity INT NOT NULL,
+    unit_price DECIMAL(15,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_quote_product (quote_id,product_id),
+    FOREIGN KEY (quote_id) REFERENCES solar_quotes(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Nhật ký xét duyệt phương án, kể cả khi chưa có dự án.
 DROP TABLE IF EXISTS `solar_quote_logs`;
 CREATE TABLE `solar_quote_logs` (
@@ -186,6 +201,7 @@ CREATE TABLE `installation_items` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `project_id` INT NOT NULL,
     `product_id` INT NOT NULL,
+    `product_name` VARCHAR(255) NULL,
     `quantity` INT NOT NULL DEFAULT 1,
     `unit_price` DECIMAL(15,2) NOT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -487,6 +503,7 @@ INSERT INTO `products` (`id`, `category_id`, `product_code`, `name`, `capacity_w
 -- -----------------------------------------------------------------------------
 -- 4. BẢNG SOLAR_QUOTES (Báo giá và hồ sơ tính toán hoàn vốn)
 -- -----------------------------------------------------------------------------
+DELETE FROM `solar_quote_items`;
 DELETE FROM `solar_quote_logs`;
 DELETE FROM `solar_quotes`;
 INSERT INTO `solar_quotes` (`id`, `user_id`, `customer_name`, `customer_phone`, `customer_email`, `address`, `monthly_electric_bill`, `roof_area_sqm`, `estimated_system_kwp`, `panel_count`, `estimated_total_cost`, `payback_years`, `notes`, `status`, `created_at`) VALUES

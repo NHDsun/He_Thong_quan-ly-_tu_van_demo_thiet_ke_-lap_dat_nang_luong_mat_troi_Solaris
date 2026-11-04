@@ -98,6 +98,14 @@ try {
     $check(count($invoice['baseItems']) === 1 && !$db->inTransaction(), 'Hóa đơn kèm vật tư gốc, đóng transaction đọc');
     ob_start(); require dirname(__DIR__) . '/resources/views/components/installation/invoice.php'; $html = ob_get_clean();
     $check(str_contains($html, 'Cáp &lt;script&gt;') && !str_contains($html, 'Cáp <script>') && str_contains($html, 'window.print()'), 'Bản in escape dữ liệu và có nút in');
+    $check(!str_contains($html, 'Giá trị dự án ban đầu') && !str_contains($html, 'Vật tư trong dự toán ban đầu')
+        && substr_count($html, '<table>') === 1 && str_contains($html, '(ban đầu)'), 'Sản phẩm ban đầu nằm trong bảng chính, không lặp bảng vật tư');
+    $check(str_contains($html, '30.000 đ') && str_contains($html, '70.000 đ') && str_contains($html, '164.691,34 đ'), 'Hiển thị tổng sản phẩm và chênh lệch dự toán, giữ đúng tổng hóa đơn');
+    $emptyInvoice = $invoice;
+    $invoice['baseItems'] = [];
+    ob_start(); require dirname(__DIR__) . '/resources/views/components/installation/invoice.php'; $emptyHtml = ob_get_clean();
+    $check(str_contains($emptyHtml, 'chưa có danh sách sản phẩm ban đầu') && str_contains($emptyHtml, '164.691,34 đ'), 'Hồ sơ thiếu sản phẩm hiển thị rõ và vẫn giữ tổng dự toán');
+    $invoice = $emptyInvoice;
     $reject(fn () => $b->invoice(1, $other), 'Chặn IDOR hóa đơn của khách khác');
     $reject(fn () => $b->invoice(1, $outsider), 'Chặn hóa đơn của kỹ thuật viên ngoài dự án');
     $w->run("UPDATE project_stages SET status='pending_approval' WHERE stage='procurement'");

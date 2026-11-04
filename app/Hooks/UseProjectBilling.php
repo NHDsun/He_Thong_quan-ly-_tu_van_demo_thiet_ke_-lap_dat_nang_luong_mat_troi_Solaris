@@ -99,7 +99,7 @@ final class UseProjectBilling
             }
             $invoice = ['project' => $project, 'summary' => $this->summary($project), 'stageStatus' => $stage['status'],
                 'customer' => $this->workflow->rows('SELECT full_name,email,phone FROM users WHERE id=?', [$project['user_id']])[0],
-                'baseItems' => $this->workflow->rows('SELECT i.quantity,i.unit_price,p.name FROM installation_items i JOIN products p ON p.id=i.product_id WHERE i.project_id=? ORDER BY i.id', [$id]),
+                'baseItems' => $this->workflow->rows('SELECT i.quantity,i.unit_price,COALESCE(i.product_name,p.name) name FROM installation_items i JOIN products p ON p.id=i.product_id WHERE i.project_id=? ORDER BY i.id', [$id]),
                 'materials' => $this->workflow->rows('SELECT * FROM project_extra_materials WHERE project_id=? ORDER BY id', [$id])];
             if ($ownTransaction) {
                 $db->commit();
