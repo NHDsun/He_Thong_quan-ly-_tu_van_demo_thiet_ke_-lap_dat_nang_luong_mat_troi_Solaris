@@ -17,7 +17,7 @@
 ### **SINH VIÊN THỰC HIỆN:**
 1. **Nguyễn Huy Đạt** - MSSV: `65130410` *(Trưởng nhóm)*
 2. **Lê Chí Hải** - MSSV: `65130100`
-3. **Mai Đức Toàn** - MSSV: `65133959` *(Phụ trách báo cáo)*
+3. **Mai Đức Toàn** - MSSV: `65133959` *(Solar Simulator & Data)*
 4. **Phan Trần Thịnh** - MSSV: `65133649`
 
 * **Lớp:** `65.CNTT-2`
@@ -34,7 +34,7 @@
 |:---:|:---|:---:|:---|:---|:---:|:---:|
 | **1** | **Nguyễn Huy Đạt** | **65130410** | **Trưởng nhóm (PM)**<br>Fullstack Core Architect | • Thiết kế kiến trúc điều hướng trung tâm `index.php`, Session Auth, Dual Navigation (Bar ngang $\leftrightarrow$ Sidebar dọc 1s).<br>• Cổng Đăng nhập/Đăng ký Gmail xác thực OTP 6 số + Mail Sandbox.<br>• Máy chủ WebSocket/Socket.io Real-time Port 3001.<br>• Trang Profile cá nhân, hiệu ứng Solar Shockwave. | **Bài 1 - 6**<br>(Cơ bản PHP, Form, Xử lý chuỗi & mảng) | **35%** |
 | **2** | **Lê Chí Hải** | **65130100** | **Frontend Lead**<br>Component Architect | • Thiết kế Design System, Obsidian Void Theme & CSS Variables.<br>• Phân hệ Danh mục 26 thiết bị quang điện Tier-1.<br>• Lọc phân trang với Hook `UsePaginationState.php`.<br>• Đồng bộ Giỏ kế hoạch thiết bị dự định (Cart). | **Bài 7 - 12**<br>(Form nâng cao, Ma trận & Mảng 2 chiều) | **20%** |
-| **3** | **Mai Đức Toàn** | **65133959** | **Simulator & Data**<br>**Phụ trách Báo cáo** | • Bộ công cụ tính toán quang điện & hoàn vốn `UseSolarCalculator.php`.<br>• Mô phỏng sơ đồ mảng pin 2D/3D & bóc tách vật tư kỹ thuật BOM.<br>• Quản trị CSDL 17 bảng, biên soạn hồ sơ kỹ thuật & báo cáo BTL. | **Bài 13 - 18**<br>(OOP, Thao tác kết nối MySQL & Bảng) | **25%** |
+| **3** | **Mai Đức Toàn** | **65133959** | **Simulator & Data**<br>**Simulator & Sizing Engine** | • Bộ công cụ tính toán quang điện & hoàn vốn `UseSolarCalculator.php`.<br>• Mô phỏng sơ đồ mảng pin 2D/3D & bóc tách vật tư kỹ thuật BOM.<br>• Quản trị CSDL 17 bảng. | **Bài 13 - 18**<br>(OOP, Thao tác kết nối MySQL & Bảng) | **25%** |
 | **4** | **Phan Trần Thịnh** | **65133649** | **Workflow & QA Lead** | • Quy trình thi công lắp đặt 4 giai đoạn chuẩn EVN.<br>• Tra cứu hồ sơ công trình mã định danh `SOLAR-YYYY-XXX`.<br>• Bộ tải tệp tin an toàn `UseFileUpload.php` băm SHA-256.<br>• Nghiệm thu kỹ thuật & kiểm thử chất lượng hệ thống (QA/QC). | **Bài 19 - 24**<br>(CSDL Quản lý bán sữa có phân trang, giỏ hàng, tìm kiếm) | **20%** |
 
 ---
