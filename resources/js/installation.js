@@ -1,3 +1,74 @@
+function initInstallationMaterialDialog() {
+    const dialog = document.querySelector('#tv4-material-dialog');
+    if (!dialog || dialog.dataset.initialized === '1') {
+        return;
+    }
+    const opener = document.querySelector('[data-material-open="tv4-material-dialog"]');
+    if (!opener) {
+        return;
+    }
+    dialog.dataset.initialized = '1';
+    const search = dialog.querySelector('[data-material-search]');
+    const category = dialog.querySelector('[data-material-category]');
+    const products = dialog.querySelector('[data-material-products]');
+    const count = dialog.querySelector('[data-material-count]');
+    if (search && category && products && count) {
+        const options = Array.from(products.options).filter(function (option) { return option.value !== ''; });
+        const normalize = function (value) {
+            return value.toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').trim();
+        };
+        const filterMaterials = function () {
+            const keyword = normalize(search.value);
+            const selected = products.value;
+            const matches = options.filter(function (option) {
+                return (!category.value || option.dataset.category === category.value)
+                    && normalize(option.dataset.name).includes(keyword);
+            });
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = matches.length ? 'Chọn vật tư' : 'Không tìm thấy vật tư phù hợp';
+            products.replaceChildren(placeholder, ...matches);
+            products.value = matches.some(function (option) { return option.value === selected; }) ? selected : '';
+            count.textContent = matches.length + ' vật tư';
+        };
+        search.addEventListener('input', filterMaterials);
+        category.addEventListener('change', filterMaterials);
+    }
+    opener.addEventListener('click', function () { dialog.showModal(); });
+    dialog.querySelector('[data-material-close]').addEventListener('click', function () { dialog.close(); });
+    dialog.addEventListener('click', function (event) {
+        const bounds = dialog.getBoundingClientRect();
+        if (event.target === dialog && (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom)) {
+            dialog.close();
+        }
+    });
+    dialog.addEventListener('close', function () { opener.focus(); });
+    if (dialog.dataset.autoOpen === '1') {
+        const stageAccordion = dialog.closest?.('details.tv4-stage');
+        if (stageAccordion) { stageAccordion.open = true; }
+        dialog.showModal();
+    }
+}
+
+function openInstallationStageFromHash() {
+    const target = document.getElementById(window.location.hash.slice(1));
+    if (target && target.matches('details.tv4-stage')) {
+        target.open = true;
+    }
+}
+window.addEventListener('hashchange', openInstallationStageFromHash);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', openInstallationStageFromHash);
+} else {
+    openInstallationStageFromHash();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initInstallationMaterialDialog);
+} else {
+    initInstallationMaterialDialog();
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     const carousel = document.querySelector('[data-coverflow]');
     if (!carousel) {

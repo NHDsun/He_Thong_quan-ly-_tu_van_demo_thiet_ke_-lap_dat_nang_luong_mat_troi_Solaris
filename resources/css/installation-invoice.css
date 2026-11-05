@@ -1,0 +1,18 @@
+.tv4-invoice { max-width: 960px; margin: 2rem auto; padding: 2rem; background: var(--bg-card); color: var(--text-primary); font-family: Arial, sans-serif; line-height: 1.6; }
+.tv4-invoice h1, .tv4-invoice a { color: var(--accent-gold); }
+.tv4-invoice-actions { display: flex; gap: 1.5rem; align-items: center; }
+.tv4-invoice table { width: 100%; border-collapse: collapse; }
+.tv4-invoice th, .tv4-invoice td { border: 1px solid var(--border-subtle); padding: .7rem; text-align: left; overflow-wrap: anywhere; }
+.tv4-invoice dl { display: grid; grid-template-columns: 1fr auto; gap: .5rem; }
+.tv4-invoice dd { text-align: right; margin: 0; font-weight: bold; }
+.tv4-invoice-signatures { display: flex; justify-content: space-around; min-height: 140px; text-align: center; }
+@media (max-width: 600px) { .tv4-invoice { padding: 1rem; margin: 0; } .tv4-invoice h1 { font-size: 1.4rem; } .tv4-invoice td, .tv4-invoice th { padding: .3rem; } }
+@media print {
+    @page { size: A4; margin: 16mm; }
+    body, .tv4-invoice { background: white !important; color: black !important; margin: 0; padding: 0; max-width: none; }
+    .tv4-invoice h1 { color: black; }
+    .tv4-invoice-actions { display: none; }
+    .tv4-invoice th, .tv4-invoice td { border-color: #777; }
+    .tv4-invoice tr, .tv4-invoice-signatures { break-inside: avoid; }
+    .tv4-invoice thead { display: table-header-group; }
+}

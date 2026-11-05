@@ -182,11 +182,18 @@ final class ProductController
         if (!$product) return ['ok' => false, 'message' => 'Sản phẩm không còn khả dụng.'];
         if ((int) ($_SESSION['solar_cart'][$id]['quantity'] ?? 0) >= 99) return ['ok' => false, 'message' => 'Mỗi loại thiết bị được chọn tối đa 99 món.'];
         $_SESSION['solar_cart'][$id] = [
-            'id' => (int) $product['id'], 'product_code' => $product['product_code'],
-            'name' => $product['name'], 'category_name' => $product['category_name'],
-            'capacity_watts' => $product['capacity_watts'], 'price' => (float) $product['price'],
-            'image_url' => $product['image_url'], 'quantity' => (int) ($_SESSION['solar_cart'][$id]['quantity'] ?? 0) + 1,
-            'category_slug' => $product['category_slug'], 'technical_specs' => $product['technical_specs'],
+            'id' => (int) $product['id'],
+            'product_code' => $product['product_code'],
+            'name' => $product['name'],
+            'category_id' => (int) ($product['category_id'] ?? 0),
+            'category_name' => $product['category_name'],
+            'category_slug' => $product['category_slug'] ?? '',
+            'capacity_watts' => $product['capacity_watts'],
+            'price' => (float) $product['price'],
+            'warranty_years' => (int) ($product['warranty_years'] ?? 5),
+            'technical_specs' => $product['technical_specs'] ?? '{}',
+            'image_url' => $product['image_url'],
+            'quantity' => (int) ($_SESSION['solar_cart'][$id]['quantity'] ?? 0) + 1,
         ];
         return ['ok' => true, 'message' => 'Đã thêm thiết bị vào kế hoạch.', 'count' => self::cartCount()];
     }
@@ -219,7 +226,28 @@ final class ProductController
                 $params['search_name'] = $searchValue;
                 $params['search_code'] = $searchValue;
             }
-            if ($filters['category'] !== '') { $where[] = 'c.slug = :category'; $params['category'] = $filters['category']; }
+            if ($filters['category'] !== '') {
+                $catSlug = $filters['category'];
+                // Ánh xạ mềm giữa 7 nhóm thiết bị ở Kế hoạch (cart) và 4 danh mục chính trong CSDL
+                if ($catSlug === 'tam-pin' || $catSlug === 'tam-pin-mat-troi') {
+                    $where[] = "(c.slug = 'tam-pin-mat-troi' OR c.slug = 'tam-pin')";
+                } elseif ($catSlug === 'inverter' || $catSlug === 'bien-tan-inverter') {
+                    $where[] = "(c.slug = 'bien-tan-inverter' OR c.slug = 'inverter')";
+                } elseif ($catSlug === 'pin-luu-tru' || $catSlug === 'pin-luu-tru-lithium') {
+                    $where[] = "(c.slug = 'pin-luu-tru-lithium' OR c.slug = 'pin-luu-tru')";
+                } elseif ($catSlug === 'tu-dien') {
+                    $where[] = "(c.slug = 'tu-dien' OR (c.slug = 'phu-kien-lap-dat' AND (p.name LIKE '%tủ điện%' OR p.name LIKE '%đóng cắt%' OR p.product_code LIKE '%PRO%')))";
+                } elseif ($catSlug === 'khung-gia') {
+                    $where[] = "(c.slug = 'khung-gia' OR (c.slug = 'phu-kien-lap-dat' AND (p.name LIKE '%rail%' OR p.name LIKE '%kẹp%' OR p.name LIKE '%khung%' OR p.product_code LIKE '%MTG%')))";
+                } elseif ($catSlug === 'day-cap') {
+                    $where[] = "(c.slug = 'day-cap' OR (c.slug = 'phu-kien-lap-dat' AND (p.name LIKE '%cáp%' OR p.name LIKE '%mc4%' OR p.name LIKE '%dây%' OR p.product_code LIKE '%CAB%')))";
+                } elseif ($catSlug === 'dong-ho') {
+                    $where[] = "(c.slug = 'dong-ho' OR (c.slug = 'phu-kien-lap-dat' AND (p.name LIKE '%đồng hồ%' OR p.name LIKE '%meter%' OR p.name LIKE '%công tơ%' OR p.product_code LIKE '%MET%')))";
+                } else {
+                    $where[] = 'c.slug = :category';
+                    $params['category'] = $catSlug;
+                }
+            }
             if ($filters['brand'] !== '') { $where[] = "JSON_UNQUOTE(JSON_EXTRACT(p.technical_specs, '$.brand')) = :brand"; $params['brand'] = $filters['brand']; }
             if ($filters['system_type'] !== '') { $where[] = "JSON_UNQUOTE(JSON_EXTRACT(p.technical_specs, '$.type')) = :system_type"; $params['system_type'] = $filters['system_type']; }
             if ($filters['min_price'] !== null) { $where[] = 'p.price >= :min_price'; $params['min_price'] = $filters['min_price']; }

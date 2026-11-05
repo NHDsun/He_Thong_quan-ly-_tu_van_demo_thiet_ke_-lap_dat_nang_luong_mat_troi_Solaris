@@ -15,6 +15,7 @@ namespace App\Modules\Member3_Simulator;
 use App\Config\Database;
 use App\Hooks\UseSolarCalculator;
 use App\Hooks\UsePaginationState;
+use App\Hooks\UseInstallationWorkflow;
 use PDO;
 
 class SolarDemoController
@@ -30,58 +31,75 @@ class SolarDemoController
     }
 
     /**
-     * Khởi tạo bảng solar_quotes nếu chưa tồn tại
-     */
-    public static function ensureTableExists(?PDO $pdo): void
-    {
-        if ($pdo === null) return;
-
-        $sql = "CREATE TABLE IF NOT EXISTS `solar_quotes` (
-            `id` INT AUTO_INCREMENT PRIMARY KEY,
-            `user_id` INT NULL,
-            `customer_name` VARCHAR(100) NOT NULL,
-            `customer_phone` VARCHAR(20) NOT NULL,
-            `customer_email` VARCHAR(100) NULL,
-            `address` VARCHAR(255) NOT NULL,
-            `monthly_electric_bill` DECIMAL(15,2) NOT NULL,
-            `roof_area_sqm` DECIMAL(8,2) NOT NULL,
-            `estimated_system_kwp` DECIMAL(6,2) NOT NULL,
-            `panel_count` INT NOT NULL,
-            `estimated_total_cost` DECIMAL(15,2) NOT NULL,
-            `payback_years` DECIMAL(4,1) NOT NULL,
-            `notes` TEXT NULL,
-            `status` VARCHAR(20) NOT NULL DEFAULT 'approved',
-            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
-
-        try {
-            $pdo->exec($sql);
-            // Tự động đồng bộ toàn bộ các báo giá về trạng thái approved để các thành viên khác kiểm thử
-            $pdo->exec("UPDATE `solar_quotes` SET `status` = 'approved' WHERE `status` != 'approved' OR `status` IS NULL");
-        } catch (\Exception $e) {
-            // Ghi nhận im lặng nếu không có quyền CREATE TABLE
-        }
-    }
-
-    /**
      * Xử lý luồng dữ liệu chính của trang Tư vấn & Demo Thiết kế Solar
      */
     public function handleRequest(array $cartProducts = []): array
     {
         $pdo = Database::getPdo();
-        self::ensureTableExists($pdo);
+        $_SESSION['solar_csrf'] ??= bin2hex(random_bytes(32));
 
-        $alert = null;
+        $alert = $_SESSION['solar_flash'] ?? null;
+        unset($_SESSION['solar_flash']);
         $savedQuoteId = null;
+        $isPost = (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST');
+        $postAction = trim((string) ($_POST['action'] ?? ''));
+        $isUpdateRequested = false;
 
-        // Xử lý khi người dùng gửi form Đăng ký tư vấn / Lưu báo giá hoặc Xác nhận chuyển sang Quản lý lắp đặt
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-            $act = trim($_POST['action']);
-            if ($act === 'save_quote' || $act === 'confirm_to_install') {
-                $saveResult = $this->handleSaveQuote($pdo, $cartProducts, $act === 'confirm_to_install');
-                $alert = $saveResult['alert'] ?? null;
-                $savedQuoteId = $saveResult['quote_id'] ?? null;
+        // Xử lý nút bấm "Bổ sung nhanh trọn bộ thiết bị chuẩn" vào Kế hoạch dự định
+        if ($isPost && $postAction === 'fill_full_system') {
+            $cartProducts = $this->handleFillFullSystem($pdo);
+            $alert = [
+                'type' => 'success',
+                'message' => 'Đã tự động bổ sung đầy đủ trọn bộ 6 nhóm thiết bị kỹ thuật chuẩn vào Kế hoạch dự định! Vui lòng nhấn "Cập Nhật" để bắt đầu mô phỏng.'
+            ];
+        }
+
+        // Xử lý khi người dùng cập nhật mô phỏng
+        if ($isPost && ($postAction === 'update_simulation' || isset($_POST['calc_source']))) {
+            $isUpdateRequested = true;
+        }
+
+        // Xử lý workflow duyệt phương án / nộp dự toán / xác nhận dự án
+        if ($isPost && in_array($postAction, ['approve_quote', 'reject_quote', 'submit_quote', 'save_quote', 'confirm_to_install'], true)) {
+            $isUpdateRequested = true;
+            try {
+                if (!hash_equals($_SESSION['solar_csrf'], (string) ($_POST['csrf'] ?? ''))) {
+                    throw new \RuntimeException('Phiên biểu mẫu hết hạn. Hãy tải lại trang.');
+                }
+                if (!$pdo) {
+                    throw new \RuntimeException('Chưa kết nối được cơ sở dữ liệu.');
+                }
+                $userId = (int) ($_SESSION['user_id'] ?? 0);
+                $workflow = new UseInstallationWorkflow($pdo);
+                $projectId = null;
+                if (in_array($postAction, ['approve_quote', 'reject_quote'], true)) {
+                    $projectId = $workflow->reviewQuote((int) ($_POST['quote_id'] ?? 0), $userId, $postAction === 'approve_quote', (string) ($_POST['review_note'] ?? ''));
+                } elseif ($postAction === 'submit_quote') {
+                    $workflow->submitQuote((int) ($_POST['quote_id'] ?? 0), $userId);
+                } elseif (in_array($postAction, ['save_quote', 'confirm_to_install'], true)) {
+                    $result = $this->handleSaveQuote($pdo, $cartProducts, $postAction === 'confirm_to_install');
+                    $savedQuoteId = $result['quote_id'];
+                    $projectId = $result['project_id'];
+                }
+                if ($projectId) {
+                    $_SESSION['installation_flash'] = 'Yêu cầu đã được tiếp nhận và đang chờ quản lý duyệt triển khai.';
+                    header('Location: index.php?page=installations&project=' . $projectId, true, 303);
+                    exit;
+                }
+                $_SESSION['solar_flash'] = ['type' => 'success', 'message' => match ($postAction) {
+                    'save_quote' => 'Đã lưu dự toán nháp. Bạn có thể gửi yêu cầu từ danh sách bên dưới.',
+                    'approve_quote' => 'Đã duyệt phương án.',
+                    'reject_quote' => 'Đã từ chối phương án và lưu phản hồi.',
+                    default => 'Đã gửi yêu cầu. Bạn có thể theo dõi trạng thái bên dưới.',
+                }];
+                header('Location: index.php?page=calculator', true, 303);
+                exit;
+            } catch (\Throwable $error) {
+                $businessError = $error instanceof \RuntimeException && !$error instanceof \PDOException;
+                $alert = ['type' => 'error', 'message' => $businessError ? $error->getMessage() : 'Không thể lưu yêu cầu. Vui lòng thử lại.'];
+                if (!$businessError) {
+                    error_log('Solar quote: ' . $error->getMessage());
+                }
             }
         }
 
@@ -103,6 +121,51 @@ class SolarDemoController
         // Phân tích ghép đôi thiết bị từ Kế hoạch dự định
         $compatibility = UseSolarCalculator::analyzeCompatibility($cartProducts);
 
+        // Kiểm tra 6 nhóm thiết bị bắt buộc để cấu thành một hệ thống điện mặt trời hoàn chỉnh
+        $missingRequired = [];
+        if (($compatibility['total_panels'] ?? 0) <= 0) {
+            $missingRequired[] = 'Tấm Pin Năng Lượng Mặt Trời';
+        }
+        if (($compatibility['total_inverters'] ?? 0) <= 0) {
+            $missingRequired[] = 'Biến Tần Inverter';
+        }
+        if (empty($compatibility['has_protection_box'])) {
+            $missingRequired[] = 'Tủ Điện AC/DC & Chống Sét';
+        }
+        if (empty($compatibility['has_mounting_rail'])) {
+            $missingRequired[] = 'Khung Giá / Ray Nhôm & Kẹp Pin';
+        }
+        if (empty($compatibility['has_cables'])) {
+            $missingRequired[] = 'Cáp Điện DC Solar 4.0mm² & MC4';
+        }
+        if (empty($compatibility['has_smart_meter'])) {
+            $missingRequired[] = 'Đồng Hồ Smart Meter 2 Chiều';
+        }
+        $isHardwareComplete = empty($missingRequired);
+
+        // Quy tắc theo yêu cầu:
+        // 1. Chỉ khi nhấn CẬP NHẬT thì mới hiển thị từ Bước 2 trở đi.
+        // 2. Nếu từ Kế hoạch dự định, yêu cầu phải ĐẦY ĐỦ các thiết bị bắt buộc.
+        $showStepsFrom2 = false;
+        if ($isUpdateRequested) {
+            if ($source === 'plan') {
+                if ($isHardwareComplete) {
+                    $showStepsFrom2 = true;
+                } else {
+                    $showStepsFrom2 = false;
+                    if ($alert === null) {
+                        $alert = [
+                            'type' => 'warning',
+                            'message' => 'Yêu cầu phải có đầy đủ các thiết bị bắt buộc trong Kế hoạch dự định trước khi hiển thị mô phỏng! Hiện đang thiếu: ' . implode(', ', $missingRequired) . '. Hãy bổ sung thiết bị hoặc nhấn nút "Bổ Sung Đầy Đủ Trọn Bộ Chuẩn".'
+                        ];
+                    }
+                }
+            } else {
+                // Chế độ hóa đơn điện: Đã được hệ thống tự động sinh trọn bộ thiết bị
+                $showStepsFrom2 = true;
+            }
+        }
+
         // Tính toán theo cả 2 chế độ để người dùng dễ dàng chuyển đổi
         $planCalc = $hasCartItems ? UseSolarCalculator::calculateFromPlan($cartProducts, $roofArea, $roofType) : null;
         $billCalc = UseSolarCalculator::calculate($bill, $roofArea, $package, $roofType);
@@ -114,22 +177,107 @@ class SolarDemoController
         $quotesData = $this->getQuotesList($pdo);
 
         return [
-            'status'         => 'success',
-            'member'         => 'Thành viên 3',
-            'page'           => 'Tư vấn & Demo Thiết Kế (Solar Calculator)',
-            'source'         => $source,
-            'has_cart_items' => $hasCartItems,
-            'calc'           => $calcResult,
-            'plan_calc'      => $planCalc,
-            'bill_calc'      => $billCalc,
-            'compatibility'  => $compatibility,
-            'alert'          => $alert,
-            'saved_quote_id' => $savedQuoteId,
-            'quotes_list'    => $quotesData['list'],
-            'pagination'     => $quotesData['pagination'],
-            'db_connected'   => $pdo !== null,
-            'db_error'       => Database::getLastError()
+            'status'               => 'success',
+            'member'               => 'Thành viên 3',
+            'page'                 => 'Tư vấn & Demo Thiết Kế (Solar Calculator)',
+            'source'               => $source,
+            'has_cart_items'       => $hasCartItems,
+            'calc'                 => $calcResult,
+            'plan_calc'            => $planCalc,
+            'bill_calc'            => $billCalc,
+            'compatibility'        => $compatibility,
+            'cart_products'        => $cartProducts,
+            'alert'                => $alert,
+            'saved_quote_id'       => $savedQuoteId,
+            'quotes_list'          => $quotesData['list'],
+            'pagination'           => $quotesData['pagination'],
+            'db_connected'         => $pdo !== null,
+            'db_error'             => Database::getLastError(),
+            'show_steps_from_2'    => $showStepsFrom2,
+            'is_hardware_complete' => $isHardwareComplete,
+            'missing_required'     => $missingRequired,
+            'is_update_requested'  => $isUpdateRequested
         ];
+    }
+
+    /**
+     * Tự động bổ sung đầy đủ trọn bộ các nhóm thiết bị bắt buộc còn thiếu vào Kế hoạch dự định
+     */
+    public function handleFillFullSystem(?PDO $pdo): array
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        $_SESSION['solar_cart'] ??= [];
+
+        if ($pdo === null) {
+            return $_SESSION['solar_cart'];
+        }
+
+        // Kiểm tra các nhóm thiết bị hiện có trong giỏ hàng để bảo toàn sản phẩm người dùng đã chọn
+        $hasPanels = false;
+        $hasInverter = false;
+        $hasBox = false;
+        $hasRail = false;
+        $hasCable = false;
+        $hasMeter = false;
+
+        foreach ($_SESSION['solar_cart'] as $item) {
+            $code = strtoupper((string)($item['product_code'] ?? ''));
+            $name = mb_strtolower((string)($item['name'] ?? ''));
+            $slug = mb_strtolower((string)($item['category_slug'] ?? ''));
+            if (str_contains($code, 'PAN') || str_contains($slug, 'tam-pin') || str_contains($name, 'tấm pin') || str_contains($name, 'solar panel')) $hasPanels = true;
+            if (str_contains($code, 'INV') || str_contains($slug, 'inverter') || str_contains($name, 'biến tần') || str_contains($name, 'inverter')) $hasInverter = true;
+            if (str_contains($code, 'ACC-006') || str_contains($code, 'ACC-007') || str_contains($slug, 'tu-dien') || str_contains($name, 'tủ điện')) $hasBox = true;
+            if (str_contains($code, 'ACC-001') || str_contains($code, 'ACC-002') || str_contains($code, 'ACC-003') || str_contains($slug, 'khung-gia') || str_contains($name, 'rail') || str_contains($name, 'khung')) $hasRail = true;
+            if (str_contains($code, 'ACC-004') || str_contains($code, 'ACC-005') || str_contains($slug, 'day-cap') || str_contains($name, 'cáp')) $hasCable = true;
+            if (str_contains($code, 'ACC-008') || str_contains($slug, 'dong-ho') || str_contains($name, 'đồng hồ') || str_contains($name, 'meter')) $hasMeter = true;
+        }
+
+        // Bổ sung các nhóm còn thiếu tương ứng
+        $toAddCodes = [];
+        if (!$hasPanels)   $toAddCodes['SOL-PAN-001'] = 10; // 10 x Tấm Pin Canadian Solar 550W
+        if (!$hasInverter) $toAddCodes['SOL-INV-001'] = 1;  // 1 x Biến Tần Hòa Lưới Sungrow 5kW
+        if (!$hasBox)      $toAddCodes['SOL-ACC-006'] = 1;  // 1 x Tủ Điện AC/DC & Chống Sét 5kW
+        if (!$hasRail)     $toAddCodes['SOL-ACC-001'] = 4;  // 4 x Thanh Rail Nhôm AL6005 4.2m
+        if (!$hasCable)    $toAddCodes['SOL-ACC-004'] = 1;  // 1 x Cuộn Cáp DC 4.0mm2 100m
+        if (!$hasMeter)    $toAddCodes['SOL-ACC-008'] = 1;  // 1 x Đồng Hồ Smart Meter Chint 1 Pha
+
+        if (!empty($toAddCodes)) {
+            try {
+                $inClause = "'" . implode("','", array_keys($toAddCodes)) . "'";
+                $sql = "SELECT p.*, c.name AS category_name, c.slug AS category_slug 
+                        FROM products p 
+                        JOIN categories c ON c.id = p.category_id 
+                        WHERE p.product_code IN ($inClause) AND p.is_active = 1";
+                $stmt = $pdo->query($sql);
+                $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                foreach ($products as $prod) {
+                    $pid = (int) $prod['id'];
+                    $code = $prod['product_code'];
+                    $defaultQty = $toAddCodes[$code] ?? 1;
+
+                    $_SESSION['solar_cart'][$pid] = [
+                        'id'              => $pid,
+                        'product_code'    => $code,
+                        'name'            => $prod['name'],
+                        'category_id'     => (int) ($prod['category_id'] ?? 0),
+                        'category_name'   => $prod['category_name'],
+                        'category_slug'   => $prod['category_slug'] ?? '',
+                        'capacity_watts'  => $prod['capacity_watts'],
+                        'price'           => (float) $prod['price'],
+                        'warranty_years'  => (int) ($prod['warranty_years'] ?? 5),
+                        'technical_specs' => $prod['technical_specs'] ?? '{}',
+                        'image_url'       => $prod['image_url'],
+                        'quantity'        => $defaultQty,
+                    ];
+                }
+                $_SESSION['solar_demo_selection'] = array_keys($_SESSION['solar_cart']);
+            } catch (\Throwable $e) {}
+        }
+
+        return array_values($_SESSION['solar_cart']);
     }
 
     /**
@@ -137,143 +285,23 @@ class SolarDemoController
      */
     private function handleSaveQuote(?PDO $pdo, array $cartProducts = [], bool $confirmToInstall = false): array
     {
-        $name    = trim($_POST['customer_name'] ?? '');
-        $phone   = trim($_POST['customer_phone'] ?? '');
-        $email   = trim($_POST['customer_email'] ?? '');
-        $address = trim($_POST['address'] ?? '');
-        $bill    = (float) preg_replace('/[^0-9]/', '', (string)($_POST['monthly_bill'] ?? 3000000));
-        $area    = (float) ($_POST['roof_area'] ?? 35);
-        $package = trim($_POST['package'] ?? 'residential');
-        $roofType= trim($_POST['roof_type'] ?? 'metal_roof');
-        $notes   = trim($_POST['notes'] ?? '');
-        $source  = trim($_POST['calc_source'] ?? 'bill');
-
-        if (empty($name) || empty($phone) || empty($address)) {
-            return [
-                'alert' => [
-                    'type' => 'error',
-                    'message' => 'Vui lòng điền đầy đủ Họ tên, Số điện thoại và Địa chỉ lắp đặt!'
-                ]
-            ];
+        $source = (string) ($_POST['calc_source'] ?? 'bill');
+        if ($source === 'plan' && empty($cartProducts)) {
+            throw new \RuntimeException('Kế hoạch chưa có thiết bị. Hãy chọn thiết bị hoặc dùng chế độ hóa đơn.');
         }
-
-        // Tính toán lại chính xác từ Hook để đảm bảo tính toàn vẹn dữ liệu
-        if ($source === 'plan' && !empty($cartProducts)) {
-            $calc = UseSolarCalculator::calculateFromPlan($cartProducts, $area, $roofType);
-        } else {
-            $calc = UseSolarCalculator::calculate($bill, $area, $package, $roofType);
+        $bill = (float) preg_replace('/[^0-9]/', '', (string) ($_POST['monthly_bill'] ?? 3000000));
+        $area = (float) ($_POST['roof_area'] ?? 35);
+        if ($bill <= 0 || $area <= 0) {
+            throw new \RuntimeException('Tiền điện và diện tích mái phải lớn hơn 0.');
         }
-
-        if ($pdo === null) {
-            return [
-                'alert' => [
-                    'type' => 'warning',
-                    'message' => 'CSDL MySQL hiện chưa được khởi chạy. Yêu cầu báo giá của bạn đã được tính toán thành công nhưng chưa thể ghi vào bảng solar_quotes. Vui lòng bật MySQL trong XAMPP Control Panel!'
-                ]
-            ];
-        }
-
-        // Đảm bảo user_id luôn hợp lệ để các thành viên khác (TV4 Quản lý lắp đặt, TV1 Profile) không bị chặn khi test
-        $userId = (int)($_SESSION['user_id'] ?? $_SESSION['installation_user_id'] ?? ($_SESSION['user']['id'] ?? 0));
-        if ($userId <= 0 && $pdo !== null) {
-            try {
-                $uStmt = $pdo->query("SELECT id FROM users WHERE role = 'customer' ORDER BY id ASC LIMIT 1");
-                $foundId = $uStmt->fetchColumn();
-                $userId = $foundId ? (int)$foundId : 6;
-            } catch (\Throwable $e) {
-                $userId = 6;
-            }
-        }
-
-        try {
-            // Khi nhấn xác nhận là thành trạng thái approve luôn, bỏ hết các trạng thái khác để các thành viên khác test được
-            $quoteStatus = 'approved';
-            $stmt = $pdo->prepare("INSERT INTO `solar_quotes` 
-                (`user_id`, `customer_name`, `customer_phone`, `customer_email`, `address`, `monthly_electric_bill`, `roof_area_sqm`, `estimated_system_kwp`, `panel_count`, `estimated_total_cost`, `payback_years`, `notes`, `status`)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-
-            $stmt->execute([
-                $userId,
-                $name,
-                $phone,
-                $email,
-                $address,
-                $calc['monthly_bill'] ?? $calc['monthly_money'] ?? 3000000,
-                $calc['required_roof_area'],
-                $calc['estimated_kwp'],
-                $calc['panel_count'],
-                $calc['estimated_total_cost'],
-                $calc['payback_years'],
-                $notes,
-                $quoteStatus
-            ]);
-
-            $newId = (int) $pdo->lastInsertId();
-
-            // Nếu người dùng chọn "Xác nhận & Chuyển sang Quản lý lắp đặt"
-            if ($confirmToInstall) {
-                $code = sprintf('SOLAR-%s-%03d', date('Y'), $newId);
-                $targetProjectId = null;
-
-                // Nếu khách hàng đã đăng nhập, tự động khởi tạo dự án thi công ngay để theo dõi tiến độ
-                if ($userId && $pdo) {
-                    try {
-                        $projStmt = $pdo->prepare("
-                            INSERT INTO `projects` 
-                            (`contract_code`, `quote_id`, `user_id`, `technician_id`, `project_name`, `capacity_kwp`, `total_amount`, `installation_address`, `status`, `current_stage`, `notes`, `created_at`)
-                            VALUES (?, ?, ?, 3, ?, ?, ?, ?, 'pending_approval', 'survey', ?, NOW())
-                        ");
-                        $projStmt->execute([
-                            $code,
-                            $newId,
-                            $userId,
-                            'Dự án Điện Mặt Trời - ' . $name,
-                            $calc['estimated_kwp'],
-                            $calc['estimated_total_cost'],
-                            $address,
-                            $notes ?: 'Khởi tạo trực tiếp từ Tư vấn & Demo Thiết kế'
-                        ]);
-                        $targetProjectId = (int)$pdo->lastInsertId();
-
-                        // Khởi tạo 6 giai đoạn thi công chuẩn
-                        $stages = [
-                            ['survey', 1, 'in_progress', 'Khảo sát hiện trạng mặt bằng mái'],
-                            ['design', 2, 'locked', 'Thiết kế kỹ thuật CAD và sơ đồ đấu nối'],
-                            ['procurement', 3, 'locked', 'Chuẩn bị xuất kho vật tư và tấm pin'],
-                            ['installation', 4, 'locked', 'Thi công lắp đặt khung ray và tấm pin'],
-                            ['grid_connection', 5, 'locked', 'Nghiệm thu đóng điện hòa lưới EVN'],
-                            ['handover', 6, 'locked', 'Bàn giao hệ thống và kích hoạt bảo hành']
-                        ];
-                        foreach ($stages as $stg) {
-                            $stgStmt = $pdo->prepare("INSERT INTO `project_stages` (`project_id`, `stage`, `position`, `status`, `review_note`, `created_at`) VALUES (?, ?, ?, ?, ?, NOW())");
-                            $stgStmt->execute([$targetProjectId, $stg[0], $stg[1], $stg[2], $stg[3]]);
-                        }
-                    } catch (\Exception $e) {
-                        // Bỏ qua lỗi phụ nếu đã tồn tại mã
-                    }
-                }
-
-                $_SESSION['installation_flash'] = "Xác nhận thành công! Báo giá #SQ-" . str_pad((string)$newId, 4, '0', STR_PAD_LEFT) . " đã ở trạng thái Approved và hồ sơ dự án {$code} đã sẵn sàng cho phân hệ Quản Lý Lắp Đặt kiểm thử.";
-                $redirectUrl = $targetProjectId ? "index.php?page=installations&project={$targetProjectId}" : "index.php?page=installations&from_quote={$newId}";
-                header('Location: ' . $redirectUrl);
-                exit;
-            }
-
-            return [
-                'quote_id' => $newId,
-                'alert' => [
-                    'type' => 'success',
-                    'message' => "Xác nhận thành công! Báo giá #SQ-" . str_pad((string)$newId, 4, '0', STR_PAD_LEFT) . " đã được lưu và tự động duyệt (Trạng thái: Approved), sẵn sàng để các thành viên khác kiểm thử."
-                ]
-            ];
-        } catch (\Exception $e) {
-            return [
-                'alert' => [
-                    'type' => 'error',
-                    'message' => 'Lỗi khi lưu báo giá vào CSDL: ' . $e->getMessage()
-                ]
-            ];
-        }
+        $roofType = (string) ($_POST['roof_type'] ?? 'metal_roof');
+        $calc = $source === 'plan'
+            ? UseSolarCalculator::calculateFromPlan($cartProducts, $area, $roofType)
+            : UseSolarCalculator::calculate($bill, $area, (string) ($_POST['package'] ?? 'residential'), $roofType);
+        return (new UseInstallationWorkflow($pdo))->registerQuote(
+            (int) ($_SESSION['user_id'] ?? 0), $_POST, $calc, $source, $confirmToInstall,
+            (string) ($_POST['request_key'] ?? ''), $source === 'plan' ? $cartProducts : []
+        );
     }
 
     /**
@@ -281,37 +309,51 @@ class SolarDemoController
      */
     private function getQuotesList(?PDO $pdo): array
     {
-        if ($pdo === null) {
-            return [
-                'list' => [],
-                'pagination' => new UsePaginationState(0, 20)
-            ];
+        $empty = ['list' => [], 'pagination' => new UsePaginationState(0, 20)];
+        $userId = (int) ($_SESSION['user_id'] ?? 0);
+        if (!$pdo || !$userId) {
+            return $empty;
         }
-
-        try {
-            // Đếm tổng số bản ghi
-            $countStmt = $pdo->query("SELECT COUNT(*) FROM `solar_quotes`");
-            $total = (int) $countStmt->fetchColumn();
-
-            // Khởi tạo Hook phân trang (20 bản ghi/trang theo quy chuẩn)
-            $pagination = new UsePaginationState($total, 20, null, 'p');
-
-            // Lấy danh sách bản ghi theo trang hiện tại
-            $stmt = $pdo->prepare("SELECT * FROM `solar_quotes` ORDER BY `id` DESC LIMIT ? OFFSET ?");
-            $stmt->bindValue(1, $pagination->getLimit(), PDO::PARAM_INT);
-            $stmt->bindValue(2, $pagination->getOffset(), PDO::PARAM_INT);
-            $stmt->execute();
-            $list = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            return [
-                'list' => $list,
-                'pagination' => $pagination
-            ];
-        } catch (\Exception $e) {
-            return [
-                'list' => [],
-                'pagination' => new UsePaginationState(0, 20)
-            ];
+        $stmt = $pdo->prepare('SELECT role FROM users WHERE id=?');
+        $stmt->execute([$userId]);
+        $role = $stmt->fetchColumn();
+        if (!in_array($role, ['admin', 'customer'], true)) {
+            return $empty;
         }
+        $where = $role === 'admin' ? "q.status<>'draft'" : 'q.user_id=?';
+        $params = $role === 'admin' ? [] : [$userId];
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM solar_quotes q WHERE {$where}");
+        $stmt->execute($params);
+        $pagination = new UsePaginationState((int) $stmt->fetchColumn(), 20, null, 'p');
+        $limit = $pagination->getLimit();
+        $offset = $pagination->getOffset();
+        $schema = [];
+        $columns = $pdo->query("SELECT TABLE_NAME, COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('solar_quotes','projects','solar_quote_items')");
+        foreach ($columns as $column) {
+            $schema[$column['TABLE_NAME']][$column['COLUMN_NAME']] = true;
+        }
+        $quoteColumns = $schema['solar_quotes'] ?? [];
+        $projectColumns = $schema['projects'] ?? [];
+        $hasProjects = isset($projectColumns['id'], $projectColumns['quote_id']);
+        $joinProjects = $hasProjects ? ' LEFT JOIN projects p ON p.quote_id=q.id' : '';
+        $projectId = $hasProjects ? 'p.id AS project_id' : 'NULL AS project_id';
+        $projectStatus = isset($projectColumns['status']) ? 'p.status AS project_status' : "'Chưa cập nhật' AS project_status";
+        $source = isset($quoteColumns['source']) ? '' : ", 'bill' AS source";
+        $reviewNote = isset($quoteColumns['review_note']) ? '' : ', NULL AS review_note';
+        $stmt = $pdo->prepare("SELECT q.*{$source}{$reviewNote}, {$projectId}, {$projectStatus} FROM solar_quotes q{$joinProjects} WHERE {$where} ORDER BY q.status='pending_approval' DESC,q.id DESC LIMIT {$limit} OFFSET {$offset}");
+        $stmt->execute($params);
+        $list = $stmt->fetchAll();
+        $itemsQuery = isset($schema['solar_quote_items']['quote_id'])
+            ? $pdo->prepare('SELECT product_name,quantity,unit_price FROM solar_quote_items WHERE quote_id=? ORDER BY id')
+            : null;
+        foreach ($list as &$quote) {
+            $quote['items'] = [];
+            if ($quote['source'] === 'plan' && $itemsQuery !== null) {
+                $itemsQuery->execute([$quote['id']]);
+                $quote['items'] = $itemsQuery->fetchAll();
+            }
+        }
+        unset($quote);
+        return ['list' => $list, 'pagination' => $pagination];
     }
 }

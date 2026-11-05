@@ -62,7 +62,22 @@ foreach ($items as $item) {
 
     <section class="solar-system-map sol-glass-card" aria-labelledby="system-map-title">
         <div class="system-map-heading"><div><span class="sol-badge sol-badge--amber">Sơ đồ cấu hình</span><h2 id="system-map-title">7 nhóm thiết bị cho một hệ thống hoàn chỉnh</h2><p>Chọn các nhóm còn thiếu để hệ thống chuyển sang member3 kiểm tra tương thích và tính toán.</p></div><span class="system-map-progress"><?= count(array_filter($diagramState)) ?>/7 nhóm đã chọn</span></div>
-        <div class="system-map-flow"><?php foreach ($diagramCategories as $index => $category): $selected = $diagramState[$index]; ?><div class="system-map-node <?= $selected ? 'is-selected' : 'is-missing' ?>"><div class="system-map-icon"><?= $category['icon'] ?></div><div class="system-map-node-text"><strong><?= $category['label'] ?></strong><?php if ($selected): ?><small><?= htmlspecialchars($selected['product_code']) ?></small><span class="system-map-status">Đã chọn</span><?php else: ?><small>Chưa chọn</small><a href="index.php?page=products&category=<?= $category['slug'] ?>">Chọn thiết bị →</a><?php endif; ?></div></div><?php if ($index < count($diagramCategories) - 1): ?><span class="system-map-connector" aria-hidden="true">→</span><?php endif; ?><?php endforeach; ?></div>
+        <div class="system-map-flow">
+            <?php foreach ($diagramCategories as $index => $category):
+                $selected = $diagramState[$index];
+                $selectedImage = $selected ? $resolveCartImage($selected) : null;
+            ?>
+                <div class="system-map-node <?= $selected ? 'is-selected' : 'is-missing' ?>">
+                    <div class="system-map-icon<?= $selectedImage ? ' has-product-image' : '' ?>">
+                        <?php if ($selectedImage): ?>
+                            <img src="<?= htmlspecialchars($selectedImage, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars((string) $selected['name'], ENT_QUOTES, 'UTF-8') ?>" loading="lazy">
+                        <?php else: ?><?= $category['icon'] ?><?php endif; ?>
+                    </div>
+                    <div class="system-map-node-text"><strong><?= $category['label'] ?></strong><?php if ($selected): ?><small><?= htmlspecialchars($selected['product_code']) ?></small><span class="system-map-status">Đã chọn</span><?php else: ?><small>Chưa chọn</small><a href="index.php?page=products&category=<?= $category['slug'] ?>">Chọn thiết bị →</a><?php endif; ?></div>
+                </div>
+                <?php if ($index < count($diagramCategories) - 1): ?><span class="system-map-connector" aria-hidden="true">→</span><?php endif; ?>
+            <?php endforeach; ?>
+        </div>
     </section>
 
     <?php if (!$items): ?>

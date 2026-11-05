@@ -22,24 +22,61 @@
         finally { window.setTimeout(() => { button.textContent = original; button.disabled = false; form.dataset.submitting = '0'; }, 700); }
     }));
 
+    const planButton = document.querySelector('.products-page--catalog .catalog-plan-button');
+    if (planButton && 'IntersectionObserver' in window) {
+        const floatingPlan = planButton.cloneNode(true);
+        floatingPlan.classList.add('catalog-plan-floating');
+        floatingPlan.hidden = true;
+        document.body.append(floatingPlan);
+        const observer = new IntersectionObserver(([entry]) => {
+            floatingPlan.hidden = entry.isIntersecting;
+        }, { rootMargin: '-72px 0px 0px 0px' });
+        observer.observe(planButton);
+    }
+
     const tray = document.querySelector('[data-compare-tray]');
     if (!tray) return;
     const key = 'solaris-tv2-compare:' + location.pathname;
     let selected = [];
     try { const saved = JSON.parse(localStorage.getItem(key) || '[]'); if (Array.isArray(saved)) selected = saved.filter(item => Number.isInteger(item.id) && typeof item.name === 'string' && typeof item.category === 'string').slice(0, 3); } catch {}
+    tray.setAttribute('role', 'region');
+    tray.setAttribute('aria-label', 'Danh sách sản phẩm đang so sánh');
+    const updateFooterOffset = () => {
+        const footer = document.querySelector('.sol-footer--app');
+        const overlap = footer ? Math.max(0, window.innerHeight - footer.getBoundingClientRect().top) : 0;
+        tray.style.setProperty('--compare-footer-offset', `${overlap}px`);
+    };
+    window.addEventListener('scroll', updateFooterOffset, { passive: true });
+    window.addEventListener('resize', updateFooterOffset);
     const render = () => {
         try { localStorage.setItem(key, JSON.stringify(selected)); } catch {}
         tray.replaceChildren(); tray.hidden = !selected.length;
-        const caption = document.createElement('strong'); caption.textContent = `So sánh thiết bị (${selected.length}/3)`; tray.append(caption);
+        if (!selected.length) {
+            document.querySelectorAll('[data-compare-product]').forEach(button => { button.setAttribute('aria-pressed', 'false'); button.textContent = '＋ So sánh sản phẩm'; });
+            updateFooterOffset();
+            return;
+        }
+        const heading = document.createElement('div'); heading.className = 'products-compare-heading';
+        const caption = document.createElement('strong'); caption.textContent = `So sánh thiết bị (${selected.length}/3)`;
+        const hint = document.createElement('span'); hint.textContent = selected.length < 2 ? 'Chọn thêm 1 sản phẩm để so sánh' : 'Nhấn × để bỏ từng sản phẩm';
+        heading.append(caption, hint); tray.append(heading);
+        const items = document.createElement('div'); items.className = 'products-compare-items';
         selected.forEach(item => {
-            const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'products-filter-chip'; remove.textContent = item.name + ' ×'; remove.setAttribute('aria-label', 'Bỏ so sánh ' + item.name);
-            remove.addEventListener('click', () => { selected = selected.filter(value => value.id !== item.id); render(); }); tray.append(remove);
+            const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'products-compare-item'; remove.title = item.name; remove.setAttribute('aria-label', 'Bỏ so sánh ' + item.name);
+            const name = document.createElement('span'); name.textContent = item.name;
+            const icon = document.createElement('span'); icon.className = 'products-compare-remove'; icon.textContent = '×'; icon.setAttribute('aria-hidden', 'true');
+            remove.append(name, icon);
+            remove.addEventListener('click', () => { selected = selected.filter(value => value.id !== item.id); render(); }); items.append(remove);
         });
+        tray.append(items);
+        const actions = document.createElement('div'); actions.className = 'products-compare-actions';
         const params = new URLSearchParams({ page: 'products', action: 'compare' }); selected.forEach(item => params.append('ids[]', String(item.id)));
         const open = document.createElement('a'); open.className = 'sol-btn sol-btn--solar'; open.textContent = 'Xem bảng so sánh →'; open.href = 'index.php?' + params;
-        open.setAttribute('aria-disabled', String(selected.length < 2)); open.addEventListener('click', event => { if (selected.length < 2) { event.preventDefault(); feedback('Chọn thêm một sản phẩm cùng danh mục để so sánh.'); } }); tray.append(open);
-        const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'sol-btn sol-btn--outline'; clear.textContent = 'Bỏ tất cả'; clear.addEventListener('click', () => { selected = []; render(); }); tray.append(clear);
+        open.setAttribute('aria-disabled', String(selected.length < 2)); open.addEventListener('click', event => { if (selected.length < 2) { event.preventDefault(); feedback('Chọn thêm một sản phẩm cùng danh mục để so sánh.'); } }); actions.append(open);
+        const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'sol-btn sol-btn--outline'; clear.textContent = 'Bỏ tất cả'; clear.addEventListener('click', () => { selected = []; render(); }); actions.append(clear);
+        tray.append(actions);
         document.querySelectorAll('[data-compare-product]').forEach(button => { const item = JSON.parse(button.dataset.compareProduct); const active = selected.some(value => value.id === item.id); button.setAttribute('aria-pressed', String(active)); button.textContent = active ? '✓ Đang so sánh' : '＋ So sánh sản phẩm'; });
+        updateFooterOffset();
     };
     document.querySelectorAll('[data-compare-product]').forEach(button => button.addEventListener('click', () => {
         const item = JSON.parse(button.dataset.compareProduct);

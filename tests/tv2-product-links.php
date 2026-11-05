@@ -16,13 +16,14 @@ $check = static function (bool $condition, string $message): void {
 $cartItems = [
     ['id' => 1, 'name' => 'Tấm pin 585W', 'product_code' => 'TEST-PANEL', 'category_name' => 'Tấm pin năng lượng mặt trời', 'capacity_watts' => 585, 'quantity' => 20, 'price' => 2000000, 'image_url' => null],
     ['id' => 2, 'name' => 'Inverter On-grid 6kW', 'product_code' => 'TEST-INVERTER', 'category_name' => 'Bộ biến tần Inverter', 'capacity_watts' => 6000, 'quantity' => 1, 'price' => 14000000, 'image_url' => null],
-    ['id' => 3, 'name' => 'Pin Lithium 30.72kWh', 'product_code' => 'TEST-BATTERY', 'category_name' => 'Pin lưu trữ điện', 'capacity_watts' => 30720, 'quantity' => 1, 'price' => 100000000, 'image_url' => null],
+    ['id' => 3, 'name' => 'Pin Lithium 30.72kWh', 'product_code' => 'TEST-BATTERY', 'category_name' => 'Pin lưu trữ điện', 'capacity_watts' => 30720, 'quantity' => 1, 'price' => 100000000, 'image_url' => 'bat-20.jpg'],
 ];
 $compatibility = UseSolarCalculator::analyzeCompatibility($cartItems);
 $originalRules = $compatibility['rules'];
 ob_start();
 include dirname(__DIR__) . '/resources/views/pages/cart.blade.php';
 $cart = ob_get_clean();
+$check(str_contains($cart, 'system-map-icon has-product-image') && str_contains($cart, 'assets/products/bat-20.jpg'), 'Sơ đồ kế hoạch chưa hiển thị ảnh của sản phẩm đã chọn.');
 $dom = new DOMDocument();
 @$dom->loadHTML('<?xml encoding="UTF-8">' . $cart);
 $xpath = new DOMXPath($dom);

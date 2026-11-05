@@ -50,9 +50,9 @@ class UseSolarCalculator
         ]
     ];
 
-        /**
+            /**
      * Phân tích tương thích và quy tắc ghép đôi thiết bị (System Pairing & Compatibility Advisor)
-     * Trả về bảng trạng thái thiết bị, tỷ lệ DC/AC, cảnh báo kỹ thuật và gợi ý thiết bị cần phối ghép.
+     * Trả về bảng trạng thái 7 nhóm thiết bị, tỷ lệ DC/AC, cảnh báo kỹ thuật và gợi ý thiết bị cần phối ghép.
      *
      * @param array $cartItems Danh sách thiết bị trong kế hoạch dự định ($_SESSION['solar_cart'])
      * @return array Kết quả phân tích ghép đôi chuyên sâu
@@ -62,34 +62,52 @@ class UseSolarCalculator
         $panels = [];
         $inverters = [];
         $batteries = [];
+        $protectionBoxes = [];
+        $mountingRails = [];
+        $cables = [];
+        $smartMeters = [];
         $accessories = [];
 
         foreach ($cartItems as $item) {
             $catName = mb_strtolower((string)($item['category_name'] ?? ''));
             $name = mb_strtolower((string)($item['name'] ?? ''));
+            $code = strtoupper((string)($item['product_code'] ?? ''));
+            $slug = mb_strtolower((string)($item['category_slug'] ?? ''));
             $qty = max(1, (int)($item['quantity'] ?? 1));
             $watts = (float)($item['capacity_watts'] ?? 0);
             $price = (float)($item['price'] ?? 0);
+            $warranty = (int)($item['warranty_years'] ?? 0);
 
             $itemData = [
                 'id' => (int)($item['id'] ?? 0),
-                'product_code' => (string)($item['product_code'] ?? ''),
+                'product_code' => $code,
                 'name' => (string)($item['name'] ?? ''),
                 'category_name' => (string)($item['category_name'] ?? ''),
+                'category_slug' => $slug,
                 'quantity' => $qty,
                 'capacity_watts' => $watts,
                 'price' => $price,
+                'warranty_years' => $warranty,
+                'technical_specs' => $item['technical_specs'] ?? '{}',
                 'total_watts' => $watts * $qty,
                 'total_price' => $price * $qty,
                 'image_url' => $item['image_url'] ?? null
             ];
 
-            if (str_contains($catName, 'tấm pin') || str_contains($catName, 'tam-pin') || str_contains($name, 'tấm pin') || str_contains($name, 'solar panel')) {
+            if (str_contains($catName, 'tấm pin') || str_contains($catName, 'tam-pin') || str_contains($slug, 'tam-pin') || str_contains($code, 'PAN') || str_contains($name, 'tấm pin') || str_contains($name, 'solar panel')) {
                 $panels[] = $itemData;
-            } elseif (str_contains($catName, 'biến tần') || str_contains($catName, 'inverter') || str_contains($name, 'biến tần') || str_contains($name, 'inverter')) {
+            } elseif (str_contains($catName, 'biến tần') || str_contains($catName, 'inverter') || str_contains($slug, 'inverter') || str_contains($code, 'INV') || str_contains($name, 'biến tần') || str_contains($name, 'inverter')) {
                 $inverters[] = $itemData;
-            } elseif (str_contains($catName, 'pin lưu trữ') || str_contains($catName, 'lithium') || str_contains($catName, 'bess') || str_contains($name, 'pin lưu trữ') || str_contains($name, 'lithium')) {
+            } elseif (str_contains($catName, 'pin lưu trữ') || str_contains($catName, 'lithium') || str_contains($slug, 'pin-luu-tru') || str_contains($code, 'BAT') || str_contains($name, 'pin lưu trữ') || str_contains($name, 'lithium') || str_contains($name, 'bess')) {
                 $batteries[] = $itemData;
+            } elseif (str_contains($name, 'tủ điện') || str_contains($name, 'đóng cắt') || str_contains($name, 'box') || str_contains($slug, 'tu-dien') || str_contains($code, 'PRO')) {
+                $protectionBoxes[] = $itemData;
+            } elseif (str_contains($name, 'rail') || str_contains($name, 'kẹp') || str_contains($name, 'khung') || str_contains($slug, 'khung-gia') || str_contains($code, 'MTG')) {
+                $mountingRails[] = $itemData;
+            } elseif (str_contains($name, 'cáp') || str_contains($name, 'mc4') || str_contains($name, 'dây') || str_contains($slug, 'day-cap') || str_contains($code, 'CAB')) {
+                $cables[] = $itemData;
+            } elseif (str_contains($name, 'đồng hồ') || str_contains($name, 'meter') || str_contains($name, 'công tơ') || str_contains($slug, 'dong-ho') || str_contains($code, 'MET')) {
+                $smartMeters[] = $itemData;
             } else {
                 $accessories[] = $itemData;
             }
@@ -116,28 +134,67 @@ class UseSolarCalculator
         $totalBatteries = array_sum(array_column($batteries, 'quantity'));
         $totalBatteryKwh = round(array_sum(array_column($batteries, 'total_watts')) / 1000, 2);
 
-        // Thống kê phụ kiện & tủ điện
-        $hasProtectionBox = false;
-        $hasMountingRail = false;
-        $hasSmartMeter = false;
-        foreach ($accessories as $acc) {
-            $accName = mb_strtolower($acc['name']);
-            if (str_contains($accName, 'tủ điện') || str_contains($accName, 'đóng cắt') || str_contains($accName, 'box')) {
-                $hasProtectionBox = true;
-            }
-            if (str_contains($accName, 'rail') || str_contains($accName, 'nhôm') || str_contains($accName, 'kẹp')) {
-                $hasMountingRail = true;
-            }
-            if (str_contains($accName, 'meter') || str_contains($accName, 'đồng hồ')) {
-                $hasSmartMeter = true;
-            }
-        }
+        // Thống kê phụ kiện, bảo vệ và đo đếm
+        $hasProtectionBox = count($protectionBoxes) > 0;
+        $hasMountingRail = count($mountingRails) > 0;
+        $hasCables = count($cables) > 0;
+        $hasSmartMeter = count($smartMeters) > 0;
 
         // Đánh giá tỷ lệ DC/AC giữa Tấm pin và Biến tần
         $dcAcRatio = null;
         if ($totalInverterKw > 0 && $totalPanelKwp > 0) {
             $dcAcRatio = round($totalPanelKwp / $totalInverterKw, 2);
         }
+
+        // Bản đồ 7 nhóm thiết bị theo chuẩn Sơ đồ cấu hình hệ thống
+        $groups = [
+            'tam-pin' => [
+                'slug' => 'tam-pin', 'label' => 'Tấm pin', 'icon' => '☀️',
+                'is_selected' => count($panels) > 0,
+                'count' => $totalPanels,
+                'kwp' => $totalPanelKwp,
+                'items' => $panels
+            ],
+            'inverter' => [
+                'slug' => 'inverter', 'label' => 'Inverter', 'icon' => '⚡',
+                'is_selected' => count($inverters) > 0,
+                'count' => $totalInverters,
+                'kw' => $totalInverterKw,
+                'has_hybrid' => $hasHybridInverter,
+                'items' => $inverters
+            ],
+            'tu-dien' => [
+                'slug' => 'tu-dien', 'label' => 'Tủ điện', 'icon' => '🛡️',
+                'is_selected' => $hasProtectionBox,
+                'count' => array_sum(array_column($protectionBoxes, 'quantity')),
+                'items' => $protectionBoxes
+            ],
+            'khung-gia' => [
+                'slug' => 'khung-gia', 'label' => 'Khung giá', 'icon' => '🔩',
+                'is_selected' => $hasMountingRail,
+                'count' => array_sum(array_column($mountingRails, 'quantity')),
+                'items' => $mountingRails
+            ],
+            'day-cap' => [
+                'slug' => 'day-cap', 'label' => 'Cáp & MC4', 'icon' => '🔌',
+                'is_selected' => $hasCables,
+                'count' => array_sum(array_column($cables, 'quantity')),
+                'items' => $cables
+            ],
+            'dong-ho' => [
+                'slug' => 'dong-ho', 'label' => 'Công tơ', 'icon' => '📟',
+                'is_selected' => $hasSmartMeter,
+                'count' => array_sum(array_column($smartMeters, 'quantity')),
+                'items' => $smartMeters
+            ],
+            'pin-luu-tru' => [
+                'slug' => 'pin-luu-tru', 'label' => 'Pin lưu trữ', 'icon' => '🔋',
+                'is_selected' => count($batteries) > 0,
+                'count' => $totalBatteries,
+                'kwh' => $totalBatteryKwh,
+                'items' => $batteries
+            ]
+        ];
 
         // Phân tích trạng thái ghép đôi & quy tắc khuyến nghị
         $rules = [];
@@ -237,20 +294,37 @@ class UseSolarCalculator
             ];
         }
 
+        if (!$hasCables && $totalPanels > 0) {
+            $rules[] = [
+                'type' => 'info',
+                'icon' => '🔌',
+                'title' => "Khuyến nghị bổ sung Cáp điện DC Solar & MC4",
+                'detail' => "Để kết nối chuỗi tấm pin xuống Inverter an toàn, hệ thống cần Cáp DC chuyên dụng 4.0mm² chống tia UV và Cặp đầu nối chống nước MC4 1500VDC."
+            ];
+        }
+
         // Tính điểm hoàn thiện cấu hình (Completion Score 0 - 100%)
         $score = 0;
-        if ($totalPanels > 0) $score += 35;
-        if ($totalInverters > 0) $score += 35;
-        if ($totalPanels > 0 && $totalInverters > 0 && $dcAcRatio !== null && $dcAcRatio >= 0.8 && $dcAcRatio <= 1.4) $score += 15;
+        if ($totalPanels > 0) $score += 25;
+        if ($totalInverters > 0) $score += 25;
+        if ($totalPanels > 0 && $totalInverters > 0 && $dcAcRatio !== null && $dcAcRatio >= 0.85 && $dcAcRatio <= 1.35) $score += 15;
         if ($hasProtectionBox) $score += 10;
-        if ($hasMountingRail) $score += 5;
+        if ($hasMountingRail) $score += 10;
+        if ($hasCables) $score += 5;
+        if ($hasSmartMeter) $score += 5;
+        if ($totalBatteries > 0 && $hasHybridInverter) $score += 5;
         if ($score > 100) $score = 100;
 
         return [
             'panels' => $panels,
             'inverters' => $inverters,
             'batteries' => $batteries,
+            'protection_boxes' => $protectionBoxes,
+            'mounting_rails' => $mountingRails,
+            'cables' => $cables,
+            'smart_meters' => $smartMeters,
             'accessories' => $accessories,
+            'groups' => $groups,
             'total_panels' => $totalPanels,
             'total_panel_kwp' => $totalPanelKwp,
             'total_inverters' => $totalInverters,
@@ -260,6 +334,7 @@ class UseSolarCalculator
             'total_battery_kwh' => $totalBatteryKwh,
             'has_protection_box' => $hasProtectionBox,
             'has_mounting_rail' => $hasMountingRail,
+            'has_cables' => $hasCables,
             'has_smart_meter' => $hasSmartMeter,
             'dc_ac_ratio' => $dcAcRatio,
             'completion_score' => $score,
@@ -387,12 +462,18 @@ class UseSolarCalculator
         }
 
         $layoutMatrix = self::suggestPanelLayout($panelCount);
-        $bom = self::generateBOM($actualKwp, $panelCount, $compat['has_hybrid_inverter'] ? 'hybrid' : 'residential', $roofType);
+        $bom = self::generateBOMFromPlan($cartItems, $actualKwp, $panelCount, $compat, $roofType);
 
         return [
             'is_from_plan'           => true,
             'source'                 => 'plan',
             'compatibility'          => $compat,
+            'groups'                 => $compat['groups'] ?? [],
+            'primary_panel'          => $compat['panels'][0] ?? null,
+            'primary_inverter'       => $compat['inverters'][0] ?? null,
+            'primary_battery'        => $compat['batteries'][0] ?? null,
+            'primary_box'            => $compat['protection_boxes'][0] ?? null,
+            'primary_meter'          => $compat['smart_meters'][0] ?? null,
             'package_key'            => $compat['has_hybrid_inverter'] ? 'hybrid' : 'residential',
             'package_name'           => $compat['has_hybrid_inverter'] ? 'Hệ Thống Lưu Trữ Hybrid (Từ Kế Hoạch)' : 'Hệ Thống Điện Mặt Trời (Từ Kế Hoạch)',
             'roof_type'              => $roofType,
@@ -581,6 +662,177 @@ class UseSolarCalculator
         ];
     }
 
+        /**
+     * Sinh danh sách bảng bóc tách vật tư & cấu hình thiết bị (Bill of Materials) trực tiếp từ Kế hoạch dự định
+     */
+    public static function generateBOMFromPlan(
+        array $cartItems,
+        float $actualKwp,
+        int $panelCount,
+        array $compat,
+        string $roofType
+    ): array {
+        if (empty($cartItems)) {
+            return self::generateBOM($actualKwp, $panelCount, $compat['has_hybrid_inverter'] ? 'hybrid' : 'residential', $roofType);
+        }
+
+        $bom = [];
+        $hasPanels = false;
+        $hasInverter = false;
+        $hasMounting = false;
+        $hasBox = false;
+        $hasCables = false;
+        $hasMeter = false;
+        $hasBattery = false;
+
+        foreach ($cartItems as $item) {
+            $name = (string)($item['name'] ?? '');
+            $code = (string)($item['product_code'] ?? '');
+            $qty = max(1, (int)($item['quantity'] ?? 1));
+            $warranty = (int)($item['warranty_years'] ?? 0);
+            $catName = mb_strtolower((string)($item['category_name'] ?? ''));
+            $lower = mb_strtolower($name . ' ' . $catName . ' ' . $code);
+
+            // Xác định ĐVT và thời hạn bảo hành
+            $unit = 'Bộ';
+            $warrantyText = $warranty > 0 ? "{$warranty} năm chính hãng" : "5 năm theo tiêu chuẩn";
+            if (str_contains($lower, 'tấm pin') || str_contains($code, 'PAN')) {
+                $unit = 'Tấm';
+                $hasPanels = true;
+                $warrantyText = $warranty > 0 ? "{$warranty} năm vật lý, 25 năm hiệu suất" : "12 năm vật lý, 25 năm hiệu suất";
+            } elseif (str_contains($lower, 'inverter') || str_contains($lower, 'biến tần') || str_contains($code, 'INV')) {
+                $unit = 'Bộ';
+                $hasInverter = true;
+                $warrantyText = $warranty > 0 ? "{$warranty} năm đổi mới" : "5 năm đổi mới chính hãng";
+            } elseif (str_contains($lower, 'pin lưu trữ') || str_contains($lower, 'lithium') || str_contains($code, 'BAT')) {
+                $unit = 'Bộ ESS';
+                $hasBattery = true;
+                $warrantyText = $warranty > 0 ? "{$warranty} năm bảo hành dung lượng" : "10 năm bảo hành dung lượng";
+            } elseif (str_contains($lower, 'tủ điện') || str_contains($lower, 'box') || str_contains($code, 'PRO')) {
+                $unit = 'Tủ';
+                $hasBox = true;
+                $warrantyText = $warranty > 0 ? "{$warranty} năm tiêu chuẩn" : "3 năm tiêu chuẩn IEC";
+            } elseif (str_contains($lower, 'rail') || str_contains($lower, 'thanh') || str_contains($lower, 'kẹp') || str_contains($lower, 'khung') || str_contains($code, 'MTG')) {
+                $unit = str_contains($lower, 'kẹp') ? 'Bộ' : 'Thanh';
+                $hasMounting = true;
+                $warrantyText = $warranty > 0 ? "{$warranty} năm chịu bão" : "10 năm chịu bão";
+            } elseif (str_contains($lower, 'cáp') || str_contains($lower, 'mc4') || str_contains($code, 'CAB')) {
+                $unit = str_contains($lower, 'mc4') ? 'Cặp' : 'Cuộn (100m)';
+                $hasCables = true;
+                $warrantyText = $warranty > 0 ? "{$warranty} năm an toàn điện" : "25 năm an toàn điện";
+            } elseif (str_contains($lower, 'meter') || str_contains($lower, 'đồng hồ') || str_contains($code, 'MET')) {
+                $unit = 'Bộ';
+                $hasMeter = true;
+                $warrantyText = $warranty > 0 ? "{$warranty} năm kiểm định" : "2 năm kiểm định";
+            }
+
+            // Đọc specs từ JSON
+            $specsStr = '';
+            if (!empty($item['technical_specs'])) {
+                $specsArr = is_array($item['technical_specs']) ? $item['technical_specs'] : json_decode((string)$item['technical_specs'], true);
+                if (is_array($specsArr)) {
+                    $parts = [];
+                    foreach ($specsArr as $k => $v) {
+                        if (is_scalar($v) && $v !== '') {
+                            $parts[] = ucfirst(str_replace('_', ' ', (string)$k)) . ': ' . $v;
+                        }
+                    }
+                    $specsStr = implode(', ', array_slice($parts, 0, 3));
+                }
+            }
+            if ($specsStr === '') {
+                $specsStr = !empty($item['capacity_watts']) 
+                    ? ("Công suất định mức: " . (int)$item['capacity_watts'] . " W")
+                    : "Thiết bị chính hãng đồng bộ theo chuẩn Solaris";
+            }
+
+            $bom[] = [
+                'item' => $name . ($code !== '' ? " ({$code})" : ""),
+                'specs' => $specsStr,
+                'quantity' => $qty,
+                'unit' => $unit,
+                'warranty' => $warrantyText,
+                'is_from_cart' => true,
+                'price' => (float)($item['price'] ?? 0),
+                'total_price' => ((float)($item['price'] ?? 0)) * $qty
+            ];
+        }
+
+        // Bổ sung các hạng mục kỹ thuật thiết yếu nếu người dùng chưa chọn trong giỏ hàng:
+        if (!$hasPanels && $panelCount > 0) {
+            array_unshift($bom, [
+                'item' => 'Tấm pin mặt trời Tier-1 Mono 550W (Ước tính theo công suất)',
+                'specs' => 'Công nghệ Mono PERC Half-cell 550Wp, Hiệu suất > 21.3%, Hãng Tier-1',
+                'quantity' => $panelCount,
+                'unit' => 'Tấm',
+                'warranty' => '12 năm vật lý, 25 năm hiệu suất',
+                'is_supplemental' => true
+            ]);
+        }
+
+        if (!$hasInverter && $actualKwp > 0) {
+            $invKw = round($actualKwp * 1.0, 1);
+            $bom[] = [
+                'item' => "Biến tần Inverter hòa lưới {$invKw}kW (Ước tính theo giàn pin)",
+                'specs' => "Công suất {$invKw} kW, Hiệu suất chuyển đổi > 98%, Giám sát Cloud 24/7",
+                'quantity' => 1,
+                'unit' => 'Bộ',
+                'warranty' => '5 năm đổi mới chính hãng',
+                'is_supplemental' => true
+            ];
+        }
+
+        if (!$hasMounting && $panelCount > 0) {
+            $roofStructureName = match ($roofType) {
+                'tile_roof' => 'Bộ phụ kiện kẹp móc ngói Inox 304 & Ray nhôm định hình Anode',
+                'concrete_roof' => 'Hệ giàn khung nghiêng chân đỡ mạ kẽm nhúng nóng + ray nhôm',
+                default => 'Hệ thống kẹp sóng tôn Seamlock/Kliplok & Ray nhôm Anode chống bão'
+            };
+            $bom[] = [
+                'item' => 'Hệ thống khung giá đỡ & ray nhôm định hình',
+                'specs' => $roofStructureName,
+                'quantity' => 1,
+                'unit' => 'Hệ trọn gói',
+                'warranty' => '10 năm chịu bão cấp 12',
+                'is_supplemental' => true
+            ];
+        }
+
+        if (!$hasBox) {
+            $boxSpecs = ($actualKwp >= 10) ? 'Tủ điện đóng cắt 3 Pha 10kW tích hợp SPD Type 2' : 'Tủ điện đóng cắt DC/AC & Chống sét lan truyền 5kW';
+            $bom[] = [
+                'item' => 'Tủ điện an toàn đóng cắt AC/DC & Chống sét lan truyền',
+                'specs' => $boxSpecs . ', Vỏ tủ IP65 chống nước ngoài trời',
+                'quantity' => 1,
+                'unit' => 'Tủ',
+                'warranty' => '3 năm tiêu chuẩn IEC',
+                'is_supplemental' => true
+            ];
+        }
+
+        if (!$hasCables) {
+            $bom[] = [
+                'item' => 'Cáp điện DC Solar 4.0mm² & Đầu nối MC4 IP68',
+                'specs' => 'Cáp DC chuyên dụng chống tia UV, điện áp 1500VDC, đầu nối chống nước IP68',
+                'quantity' => 1,
+                'unit' => 'Gói tiêu chuẩn',
+                'warranty' => '25 năm an toàn điện',
+                'is_supplemental' => true
+            ];
+        }
+
+        // Hạng mục nhân công thi công lắp đặt và hồ sơ nghiệm thu EVN
+        $bom[] = [
+            'item' => 'Nhân công thi công, Kiểm định an toàn & Bàn giao EVN',
+            'specs' => 'Lắp đặt chuẩn kỹ thuật PCCC, thử nghiệm đo điện trở tiếp địa, nghiệm thu công tơ 2 chiều EVN',
+            'quantity' => 1,
+            'unit' => 'Hợp đồng trọn gói',
+            'warranty' => 'Bảo trì kỹ thuật 2 năm',
+            'is_supplemental' => true
+        ];
+
+        return $bom;
+    }
     /**
      * Sinh danh sách bảng bóc tách vật tư & cấu hình thiết bị (Bill of Materials)
      */

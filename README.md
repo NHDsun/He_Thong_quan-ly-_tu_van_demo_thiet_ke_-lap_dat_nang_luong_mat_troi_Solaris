@@ -1,5 +1,8 @@
 # ☀️ SOLARIS - HỆ THỐNG QUẢN LÝ, TƯ VẤN, DEMO THIẾT KẾ & LẮP ĐẶT ĐIỆN MẶT TRỜI (v2.1)
 
+Quy trình dự án hiện tại và hướng dẫn cập nhật database: [Đăng ký, duyệt và triển khai dự án](docs/PROJECT_WORKFLOW.md).
+
+
 [![PHP Version](https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=flat&logo=php&logoColor=white)](https://www.php.net/)
 [![Database](https://img.shields.io/badge/MySQL-InnoDB_utf8mb4-4479A1?style=flat&logo=mysql&logoColor=white)](https://www.mysql.com/)
 [![Realtime](https://img.shields.io/badge/Socket.io-Port_3001-010101?style=flat&logo=socket.io&logoColor=white)](https://socket.io/)
@@ -17,17 +20,17 @@
 
 | STT | Họ Và Tên | MSSV | Vai Trò | Phân Hệ Phụ Trách Chính | Đóng Góp |
 |:---:|:---|:---:|:---|:---|:---:|
-| **1** | **Nguyễn Huy Đạt** | **65130410** | **Trưởng Nhóm / PM**<br>Fullstack Core | • Kiến trúc trung tâm `index.php`, Session Auth, Dual Nav (Ngang $\leftrightarrow$ Dọc 1s).<br>• Cổng Đăng nhập & Đăng ký Gmail xác thực mã OTP 6 số.<br>• Tích hợp máy chủ Socket.io Real-time Port 3001, hiệu ứng Solar Shockwave.<br>• Quản lý Profile người dùng thực tế & 6 Bài tập Form (Bài 1 - 6). | **35%** |
-| **2** | **Lê Chí Hải** | **65130100** | **Frontend Lead** | • CSDL danh mục và 26 thiết bị quang điện Tier-1 (Canadian, LONGi, Sungrow...).<br>• Bộ lọc phân trang Hook `UsePaginationState`.<br>• Kế hoạch dự định thiết bị (Cart) & 6 Bài tập Form/Mảng (Bài 7 - 12). | **20%** |
-| **3** | **Mai Đức Toàn** | **65133959** | **Simulator & Data**<br>**Phụ Trách Báo Cáo** | • Bộ mô phỏng tính toán công suất quang điện và hoàn vốn `UseSolarCalculator.php`.<br>• Sơ đồ mảng pin 2D/3D & bảng bóc tách vật tư kỹ thuật BOM.<br>• Biên soạn Hồ sơ kỹ thuật, Báo cáo & 6 Bài tập Mảng/MySQL (Bài 13 - 18). | **25%** |
-| **4** | **Phan Trần Thịnh** | **65133649** | **Workflow & QA** | • Quy trình thi công lắp đặt 4 giai đoạn, tra cứu mã công trình `SOLAR-YYYY-XXX`.<br>• Tải ảnh an toàn `UseFileUpload.php` băm SHA-256.<br>• Nghiệm thu kỹ thuật EVN & 6 Bài tập MySQL nâng cao (Bài 19 - 24). | **20%** |
+| **1** | **Nguyễn Huy Đạt** | **65130410** | **Trưởng Nhóm / PM**<br>Fullstack Core | • Kiến trúc trung tâm `index.php`, Session Auth, Dual Nav (Ngang $\leftrightarrow$ Dọc 1s).<br>• Cổng Đăng nhập & Đăng ký Gmail xác thực mã OTP 6 số.<br>• Tích hợp máy chủ Socket.io Real-time Port 3001, hiệu ứng Solar Shockwave.<br>• Quản lý Profile người dùng thực tế & 6 Bài tập Form (Bài 1 - 6). | **30%** |
+| **2** | **Lê Chí Hải** | **65130100** | **Frontend Lead** | • CSDL danh mục và 26 thiết bị quang điện Tier-1 (Canadian, LONGi, Sungrow...).<br>• Bộ lọc phân trang Hook `UsePaginationState`.<br>• Kế hoạch dự định thiết bị (Cart) & 6 Bài tập Form/Mảng (Bài 7 - 12). | **25%** |
+| **3** | **Mai Đức Toàn** | **65133959** | **Simulator & Data**<br>**Sizing Engine & Data** | • Bộ mô phỏng tính toán công suất quang điện và hoàn vốn `UseSolarCalculator.php`.<br>• Sơ đồ mảng pin 2D/3D & bảng bóc tách vật tư kỹ thuật BOM.<br>• Chuẩn hóa dữ liệu bức xạ 3 miền & 6 Bài tập Mảng/MySQL (Bài 13 - 18). | **20%** |
+| **4** | **Phan Trần Thịnh** | **65133649** | **Workflow & QA** | • Quy trình thi công lắp đặt 6 giai đoạn, tra cứu mã công trình `SOLAR-YYYY-XXX`.<br>• Quản lý thanh toán hóa đơn dự án, vật tư phát sinh sau khảo sát.<br>• Dashboard tiến độ & 6 Bài tập MySQL nâng cao (Bài 19 - 24). | **25%** |
 
 ```
 ========================================================================================
 TIẾN ĐỘ VÀ CƠ CẤU TỶ TRỌNG ĐÓNG GÓP XÂY DỰNG DỰ ÁN SOLARIS (HOÀN THÀNH 100%)
 ========================================================================================
 [==================================== 100% TỔNG KHỐI LƯỢNG ====================================]
-[ TV1: Nguyễn Huy Đạt (35%) ][ TV2: Lê Chí Hải (20%) ][ TV3: Mai Đức Toàn (25%) ][ TV4: Thịnh (20%) ]
+[ TV1: Nguyễn Huy Đạt (30%) ][ TV2: Lê Chí Hải (25%) ][ TV3: Mai Đức Toàn (20%) ][ TV4: Phan Trần Thịnh (25%) ]
 ========================================================================================
 ```
 

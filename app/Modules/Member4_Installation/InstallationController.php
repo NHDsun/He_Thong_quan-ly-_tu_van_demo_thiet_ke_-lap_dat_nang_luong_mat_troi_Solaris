@@ -42,19 +42,42 @@ final class InstallationController
                 $this->download($workflow, $actor, (int) $_GET['document']);
             }
             $id = max(0, (int) ($_GET['project'] ?? 0));
+            if (!$post && isset($_GET['invoice'])) {
+                $invoice = (new \App\Hooks\UseProjectBilling($workflow))->invoice($id, $actor);
+                header('Cache-Control: private, no-store');
+                require dirname(__DIR__, 3) . '/resources/views/components/installation/invoice.php';
+                exit;
+            }
             if ($post) {
                 try {
                     $workflow->act($actor, $id, $action, $_POST, $_FILES);
-                    $_SESSION['installation_flash'] = 'Đã lưu thay đổi.';
+                    $_SESSION['installation_flash'] = $action === 'pay_project'
+                        ? 'Thanh toán mô phỏng thành công. Không có giao dịch tiền thật.' : 'Đã lưu thay đổi.';
                 } catch (RuntimeException $error) {
                     $_SESSION['installation_flash'] = $error->getMessage();
                 }
-                $this->redirect($id);
+                $this->redirect($id, $action === 'add_material');
             }
-            $view['filter'] = (string) ($_GET['filter'] ?? ($actor['role'] === 'admin' ? 'new' : ($actor['role'] === 'customer' ? 'all' : 'in_progress')));
+            $view['today'] = $workflow->today();
+            $view['filter'] = (string) ($_GET['filter'] ?? ($actor['role'] === 'admin' ? 'pending' : 'all'));
             $view['listing'] = $workflow->listing($actor, $view['filter'], (int) ($_GET['p'] ?? 1));
+            if (!$id && in_array($actor['role'], ['admin', 'technician'], true)) {
+                $view['dashboard'] = $workflow->dashboard($actor);
+            }
             if ($id) {
                 $view['detail'] = $workflow->detail($id, $actor, (int) ($_GET['log_page'] ?? 1), (int) ($_GET['request_page'] ?? 1));
+                $billing = new \App\Hooks\UseProjectBilling($workflow);
+                $view['detail']['billing'] = $billing->details($view['detail']['project'], (int) ($_GET['material_page'] ?? 1), (int) ($_GET['payment_page'] ?? 1));
+                if ($actor['role'] !== 'customer' && $view['detail']['billing']['canAdd']) {
+                    $view['detail']['billing']['products'] = $workflow->rows('SELECT id,name,price,category_id FROM products WHERE is_active=1 ORDER BY name,id');
+                    $view['detail']['billing']['categories'] = $workflow->rows('SELECT c.id,c.name FROM categories c WHERE EXISTS (SELECT 1 FROM products p WHERE p.category_id=c.id AND p.is_active=1) ORDER BY c.name,c.id');
+                }
+                if ($actor['role'] === 'customer') {
+                    return $view;
+                }
+                if ($actor['role'] === 'admin') {
+                    $view['detail']['quote'] = $workflow->rows('SELECT customer_name,customer_phone,customer_email,source,status FROM solar_quotes WHERE id=?', [$view['detail']['project']['quote_id']])[0] ?? null;
+                }
                 $project = $view['detail']['project'];
                 $start = (string) ($_GET['from'] ?? $project['start_date'] ?? date('Y-m-d'));
                 $end = (string) ($_GET['to'] ?? $project['planned_end_date'] ?? date('Y-m-d', strtotime('+20 days')));
@@ -107,9 +130,9 @@ final class InstallationController
         $this->redirect();
     }
 
-    private function redirect(int $id = 0): void
+    private function redirect(int $id = 0, bool $materialPopup = false): void
     {
-        header('Location: index.php?page=installations' . ($id ? '&project=' . $id : ''), true, 303);
+        header('Location: index.php?page=installations' . ($id ? '&project=' . $id : '') . ($materialPopup ? '&material_popup=1' : ''), true, 303);
         exit;
     }
 

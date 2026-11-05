@@ -446,17 +446,17 @@ class ProfileController
                 'id'          => 3,
                 'name'        => 'Mai Đức Toàn',
                 'mssv'        => 'Thành viên 3',
-                'role'        => 'Phụ Trách Simulator, Sizing Engine & Phụ Trách Báo Cáo Dự Án',
+                'role'        => 'Phụ Trách Simulator, Sizing Engine & Mô Phỏng Mặt Bằng 2D',
                 'avatar_icon' => '🧮',
                 'badge_color' => '#38bdf8',
                 'weight'      => 25,
-                'summary'     => 'Phát triển thuật toán quang điện UseSolarCalculator, tính toán KW điện, tiền tạo ra và thời gian hoàn vốn ROI; lập trình mô phỏng mặt bằng mái 2D SVG; bóc tách BOM; quản trị solar_quotes và chịu trách nhiệm chính về hồ sơ báo cáo dự án.',
+                'summary'     => 'Phát triển thuật toán quang điện UseSolarCalculator, tính toán KW điện, tiền tạo ra và thời gian hoàn vốn ROI; lập trình mô phỏng mặt bằng mái 2D SVG; bóc tách vật tư kỹ thuật BOM và quản trị dữ liệu báo giá solar_quotes.',
                 'tasks'       => [
                     'Thuật toán tính toán năng lượng: Lập trình UseSolarCalculator.php tính sản lượng kWh, số tiền tạo ra hàng tháng và thời gian hoàn vốn đầu tư ROI.',
                     'Đồng bộ Kế hoạch dự định: Triển khai calculateFromPlan() lấy thiết bị từ giỏ hàng sang bộ tính toán mô phỏng.',
                     'Mô phỏng mặt bằng 2D SVG: Lập trình sơ đồ bố trí giàn pin động theo hàng x cột và góc đón nắng tối ưu.',
                     'Bóc tách vật tư (BOM) & Báo giá: Quản lý bảng solar_quotes, bóc tách danh mục thiết bị và phân trang báo giá.',
-                    'Phụ trách báo cáo (Documentation Lead): Soạn thảo tài liệu đặc tả kỹ thuật, slide thuyết trình và hồ sơ nghiệm thu dự án.'
+                    'Tối ưu hóa mô phỏng và hiệu năng: Chuẩn hóa dữ liệu bức xạ 3 miền (Bắc, Trung, Nam) và đồng bộ cấu hình phê duyệt sang phân hệ Lắp đặt.'
                 ]
             ],
             [

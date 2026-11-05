@@ -12,7 +12,7 @@
  *    - Khách hàng: Kế hoạch thiết bị dự định, KW điện, tiền tạo ra/tháng, thời gian gỡ vốn, lịch sử báo giá.
  *    - Kỹ thuật viên: Thông tin chuyên môn, danh sách công trình phụ trách, hồ sơ khảo sát.
  *    - Quản trị viên: Bảng tóm tắt hoạt động toàn hệ thống, danh sách báo giá cần duyệt, quản trị công trình.
- * 5. Hồ sơ năng lực 4 thành viên (Nguyễn Huy Đạt 65130410 PM, Lê Chí Hải, Mai Đức Toàn - Báo Cáo, Phan Trần Thịnh) & Biểu đồ WBS.
+ * 5. Hồ sơ năng lực 4 thành viên (Nguyễn Huy Đạt 65130410 PM, Lê Chí Hải, Mai Đức Toàn - Simulator & Data, Phan Trần Thịnh) & Biểu đồ WBS.
  */
 
 $tab = $_GET['tab'] ?? ($activeTab ?? 'account');
@@ -375,7 +375,7 @@ $roleName = match ($userRole) {
                                         </td>
                                         <td style="padding: 0.75rem 1rem; text-align: center;">
                                             <span class="sol-badge sol-badge--emerald" style="font-size: 0.7rem; padding: 0.15rem 0.5rem;">
-                                                <?= htmlspecialchars($q['status'] === 'approved' ? 'Đã duyệt' : ($q['status'] === 'survey_scheduled' ? 'Đã xếp lịch khảo sát' : 'Tiếp nhận')) ?>
+                                                <?= htmlspecialchars(\App\Modules\Member4_Installation\View::label($q['status'])) ?>
                                             </span>
                                         </td>
                                     </tr>
@@ -436,20 +436,14 @@ $roleName = match ($userRole) {
                                             <?= number_format((float)($p['capacity_kwp'] ?? 5.5), 1) ?> kWp
                                         </td>
                                         <td style="padding: 0.75rem 1rem; color: var(--accent-gold);">
-                                            <?= match ($p['current_stage'] ?? 'survey') {
-                                                'survey' => '1. Khảo sát hiện trường mái',
-                                                'material' => '2. Chuẩn bị vật tư thiết bị',
-                                                'installation' => '3. Thi công khung & tấm pin',
-                                                'handover' => '4. Nghiệm thu & Đóng điện EVN',
-                                                default => 'Đang thực hiện'
-                                            } ?>
+                                            <?= htmlspecialchars(\App\Hooks\UseInstallationWorkflow::STAGES[$p['current_stage'] ?? ''] ?? 'Chưa triển khai') ?>
                                         </td>
                                         <td style="padding: 0.75rem 1rem; text-align: right; font-weight: 700; color: var(--accent-emerald);">
                                             <?= number_format((float)($p['total_amount'] ?? 0)) ?> đ
                                         </td>
                                         <td style="padding: 0.75rem 1rem; text-align: center;">
                                             <span class="sol-badge <?= ($p['status'] ?? '') === 'completed' ? 'sol-badge--emerald' : 'sol-badge--amber' ?>" style="font-size: 0.7rem; padding: 0.15rem 0.5rem;">
-                                                <?= ($p['status'] ?? '') === 'completed' ? 'Hoàn thành' : 'Đang thi công' ?>
+                                                <?= htmlspecialchars(\App\Modules\Member4_Installation\View::label($p['status'] ?? 'pending_approval')) ?>
                                             </span>
                                         </td>
                                     </tr>
@@ -529,17 +523,11 @@ $roleName = match ($userRole) {
                                                 <?= number_format((float)($p['capacity_kwp'] ?? 7.7), 1) ?> kWp
                                             </td>
                                             <td style="padding: 0.75rem 1rem; color: var(--accent-gold);">
-                                                <?= match ($p['current_stage'] ?? 'survey') {
-                                                    'survey' => '1. Khảo sát hiện trường mái',
-                                                    'material' => '2. Chuẩn bị vật tư thiết bị',
-                                                    'installation' => '3. Thi công khung & tấm pin',
-                                                    'handover' => '4. Nghiệm thu & Đóng điện EVN',
-                                                    default => 'Đang thực hiện'
-                                                } ?>
+                                                <?= htmlspecialchars(\App\Hooks\UseInstallationWorkflow::STAGES[$p['current_stage'] ?? ''] ?? 'Chưa triển khai') ?>
                                             </td>
                                             <td style="padding: 0.75rem 1rem; text-align: center;">
                                                 <span class="sol-badge <?= ($p['status'] ?? '') === 'completed' ? 'sol-badge--emerald' : 'sol-badge--amber' ?>" style="font-size: 0.7rem; padding: 0.15rem 0.5rem;">
-                                                    <?= ($p['status'] ?? '') === 'completed' ? 'Hoàn thành' : 'Đang thi công' ?>
+                                                    <?= htmlspecialchars(\App\Modules\Member4_Installation\View::label($p['status'] ?? 'pending_approval')) ?>
                                                 </span>
                                             </td>
                                         </tr>
@@ -616,7 +604,7 @@ $roleName = match ($userRole) {
                                             </td>
                                             <td style="padding: 0.75rem 1rem; text-align: center;">
                                                 <span class="sol-badge sol-badge--emerald" style="font-size: 0.7rem; padding: 0.15rem 0.5rem;">
-                                                    <?= htmlspecialchars($q['status'] === 'approved' ? 'Đã duyệt' : ($q['status'] === 'survey_scheduled' ? 'Đã lên lịch khảo sát' : 'Tiếp nhận')) ?>
+                                                    <?= htmlspecialchars(\App\Modules\Member4_Installation\View::label($q['status'])) ?>
                                                 </span>
                                             </td>
                                         </tr>
@@ -852,10 +840,10 @@ $roleName = match ($userRole) {
                     <span>4 Phân hệ phối hợp đồng bộ</span>
                 </div>
                 <div style="display: flex; width: 100%; height: 26px; border-radius: 999px; overflow: hidden; background: #080c14; border: 1px solid var(--border-subtle); box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);">
-                    <div style="width: 35%; background: linear-gradient(90deg, #f59e0b, #fbbf24); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; color: #080c14;" title="Nguyễn Huy Đạt (35%)">TV1: Đạt (35%)</div>
-                    <div style="width: 20%; background: linear-gradient(90deg, #10b981, #34d399); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; color: #080c14;" title="Lê Chí Hải (20%)">TV2: Hải (20%)</div>
-                    <div style="width: 25%; background: linear-gradient(90deg, #0284c7, #38bdf8); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; color: #ffffff;" title="Mai Đức Toàn (25%)">TV3: Toàn (25%)</div>
-                    <div style="width: 20%; background: linear-gradient(90deg, #f97316, #fb923c); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; color: #080c14;" title="Phan Trần Thịnh (20%)">TV4: Thịnh (20%)</div>
+                    <div style="width: 30%; background: linear-gradient(90deg, #f59e0b, #fbbf24); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; color: #080c14;" title="Nguyễn Huy Đạt (30%)">TV1: Đạt (30%)</div>
+                    <div style="width: 25%; background: linear-gradient(90deg, #10b981, #34d399); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; color: #080c14;" title="Lê Chí Hải (25%)">TV2: Hải (25%)</div>
+                    <div style="width: 20%; background: linear-gradient(90deg, #0284c7, #38bdf8); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; color: #ffffff;" title="Mai Đức Toàn (20%)">TV3: Toàn (20%)</div>
+                    <div style="width: 25%; background: linear-gradient(90deg, #f97316, #fb923c); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; color: #080c14;" title="Phan Trần Thịnh (25%)">TV4: Thịnh (25%)</div>
                 </div>
             </div>
 
@@ -863,22 +851,22 @@ $roleName = match ($userRole) {
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
                 <div style="padding: 0.85rem; background: rgba(8, 12, 20, 0.5); border-radius: var(--radius-sm); border-left: 3px solid #f59e0b;">
                     <div style="font-size: 0.8rem; font-weight: 700; color: #ffffff;">Nguyễn Huy Đạt (TV1 - PM)</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Core Arch, Routing, UI/UX, Quản Lý Dự Án, 6 Bài Tập Form (35%)</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Core Arch, Routing, UI/UX, Quản Lý Dự Án, 6 Bài Tập Form (30%)</div>
                 </div>
 
                 <div style="padding: 0.85rem; background: rgba(8, 12, 20, 0.5); border-radius: var(--radius-sm); border-left: 3px solid #10b981;">
                     <div style="font-size: 0.8rem; font-weight: 700; color: #ffffff;">Lê Chí Hải (TV2)</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Catalog 26 SP, Kế hoạch dự định, Tương thích thiết bị (20%)</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Catalog 26 SP, Kế hoạch dự định, Tương thích thiết bị (25%)</div>
                 </div>
 
                 <div style="padding: 0.85rem; background: rgba(8, 12, 20, 0.5); border-radius: var(--radius-sm); border-left: 3px solid #38bdf8;">
                     <div style="font-size: 0.8rem; font-weight: 700; color: #ffffff;">Mai Đức Toàn (TV3)</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Simulator KW/ROI, SVG Mái, BOM, Phụ Trách Báo Cáo Dự Án (25%)</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Simulator KW/ROI, SVG Mái, BOM, Thuật Toán Quang Điện & SVG (20%)</div>
                 </div>
 
                 <div style="padding: 0.85rem; background: rgba(8, 12, 20, 0.5); border-radius: var(--radius-sm); border-left: 3px solid #fb923c;">
                     <div style="font-size: 0.8rem; font-weight: 700; color: #ffffff;">Phan Trần Thịnh (TV4)</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Auth 3 Cấp, Workflow Lắp Đặt, Phân Bổ Kỹ Thuật Viên (20%)</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Workflow Lắp Đặt, Billing & Invoice, Dashboard, Phân Bổ Kỹ Thuật Viên (25%)</div>
                 </div>
             </div>
         </section>
