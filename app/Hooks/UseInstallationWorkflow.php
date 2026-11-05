@@ -51,11 +51,12 @@ final class UseInstallationWorkflow
         if (!$project || !in_array($actor['role'], ['admin', 'technician', 'customer'], true)) {
             throw new RuntimeException('Không tìm thấy dự án hoặc bạn không có quyền truy cập.');
         }
+        // Lịch sử phân công chỉ mở quyền đọc dự án hoàn tất; thao tác ghi vẫn cần phân công hiện tại.
         if ($actor['role'] === 'customer') {
             if ((int) $project['user_id'] !== (int) $actor['id']) {
                 throw new RuntimeException('Bạn không có quyền xem dự án này.');
             }
-        } elseif ($actor['role'] !== 'admin' && !$this->rows('SELECT id FROM project_assignments WHERE project_id=? AND technician_id=? AND ended_at IS NULL', [$id, $actor['id']])) {
+        } elseif ($actor['role'] !== 'admin' && !$this->rows('SELECT id FROM project_assignments WHERE project_id=? AND technician_id=? AND (ended_at IS NULL OR ?=1)', [$id, $actor['id'], (int) (!$lock && $project['status'] === 'completed')])) {
             throw new RuntimeException('Bạn không còn được phân công trong dự án này.');
         }
         return $project;
@@ -80,7 +81,7 @@ final class UseInstallationWorkflow
             $where .= ' AND p.user_id=?';
             $params[] = $actor['id'];
         } elseif ($actor['role'] !== 'admin') {
-            $where .= ' AND EXISTS (SELECT 1 FROM project_assignments a WHERE a.project_id=p.id AND a.technician_id=? AND a.ended_at IS NULL)';
+            $where .= " AND EXISTS (SELECT 1 FROM project_assignments a WHERE a.project_id=p.id AND a.technician_id=? AND (a.ended_at IS NULL OR p.status='completed'))";
             $params[] = $actor['id'];
         }
         if (in_array($filter, ['new', 'scheduled', 'pending_approval', 'rejected', 'in_progress', 'completed', 'cancelled'], true)) {
@@ -103,7 +104,7 @@ final class UseInstallationWorkflow
         $total = (int) $this->rows("SELECT COUNT(*) n FROM projects p WHERE {$where}", $params)[0]['n'];
         $pager = UsePaginationState::make($total, $page);
         $projects = $this->rows("SELECT p.*, (SELECT COUNT(*) FROM project_stages s WHERE s.project_id=p.id AND s.status='approved') approved_count,
-            (SELECT COUNT(*) FROM project_assignments a WHERE a.project_id=p.id AND a.ended_at IS NULL) crew_count,
+            (SELECT COUNT(DISTINCT a.technician_id) FROM project_assignments a WHERE a.project_id=p.id AND (a.ended_at IS NULL OR p.status='completed')) crew_count,
             (SELECT COUNT(*) FROM project_requests r WHERE r.project_id=p.id AND r.status='pending') request_count
             FROM projects p WHERE {$where} ORDER BY {$order} LIMIT {$pager['limit']} OFFSET {$pager['offset']}", $params);
         return [
@@ -160,13 +161,16 @@ final class UseInstallationWorkflow
             return [
                 'project' => $summary,
                 'stages' => $this->rows('SELECT stage,position,status,planned_start,planned_end,started_at,completed_at,proposed_next_start FROM project_stages WHERE project_id=? ORDER BY position', [$id]),
-                'crew' => $this->rows('SELECT u.full_name FROM project_assignments a JOIN users u ON u.id=a.technician_id WHERE a.project_id=? AND a.ended_at IS NULL ORDER BY a.id', [$id]),
+                'crew' => $this->rows('SELECT DISTINCT u.id,u.full_name FROM project_assignments a JOIN users u ON u.id=a.technician_id WHERE a.project_id=? AND (a.ended_at IS NULL OR ?=1) ORDER BY u.id', [$id, (int) ($project['status'] === 'completed')]),
                 'documents' => [],
             ];
         }
         $stages = $this->rows('SELECT * FROM project_stages WHERE project_id=? ORDER BY position', [$id]);
         $documents = $this->rows('SELECT d.*, u.full_name FROM project_documents d JOIN users u ON u.id=d.uploaded_by WHERE project_id=? ORDER BY d.id DESC', [$id]);
-        $crew = $this->rows('SELECT a.*,u.full_name FROM project_assignments a JOIN users u ON u.id=a.technician_id WHERE project_id=? AND ended_at IS NULL ORDER BY a.id', [$id]);
+        $crew = $this->rows('SELECT a.*,u.full_name FROM project_assignments a JOIN users u ON u.id=a.technician_id WHERE project_id=? AND (ended_at IS NULL OR ?=1) ORDER BY a.id', [$id, (int) ($project['status'] === 'completed')]);
+        if ($project['status'] === 'completed') {
+            $crew = array_values(array_column($crew, null, 'technician_id'));
+        }
         // Các yêu cầu cũ có phân trang riêng, không giới hạn ngầm lịch sử.
         $requests = $this->rows("SELECT r.*, u.full_name, old.full_name old_name, next.full_name next_name FROM project_requests r
             JOIN users u ON u.id=r.requested_by LEFT JOIN users old ON old.id=r.old_technician_id

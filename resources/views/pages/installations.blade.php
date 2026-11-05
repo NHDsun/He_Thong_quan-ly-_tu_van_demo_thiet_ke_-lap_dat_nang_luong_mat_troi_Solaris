@@ -33,6 +33,7 @@ if ($admin) {
         'all' => 'Dự án của tôi',
         'scheduled' => 'Chờ bắt đầu',
         'in_progress' => 'Đang thực hiện',
+        'completed' => 'Hoàn tất',
     ];
 }
 ?>

@@ -98,3 +98,11 @@ python tests/workflow-http.py
 ```
 
 Các kiểm tra tạo database tạm với tên riêng, tự xóa sau khi chạy. HTTP test khởi chạy PHP server trên cổng trống, đăng nhập bằng tài khoản kiểm thử, kiểm tra cả hai đường đăng ký, CSRF, quyền truy cập và upload PNG thật; file upload kiểm thử được xóa khi kết thúc. Cần PHP CLI, MySQL/MariaDB và Python 3 cho HTTP test. Có thể đặt `PHP_BINARY` nếu PHP chưa nằm trong PATH.
+
+## Xem lại dự án hoàn tất của kỹ thuật viên
+
+- Danh sách và bộ lọc Hoàn tất cho phép kỹ thuật viên từng có phân công xem lại dự án `completed`, kể cả phân công đã kết thúc hoặc nhân viên đã được thay trước khi bàn giao.
+- Quyền đọc bao gồm chi tiết sáu giai đoạn, nhật ký, hồ sơ/minh chứng và hóa đơn; các điểm truy cập tài liệu và hóa đơn cùng kiểm tra quyền dự án. Người chưa từng được phân công không được truy cập.
+- Quyền ghi vẫn yêu cầu phân công còn hiệu lực và dự án chưa kết thúc. Không mở lại phân công, không thay đổi thời điểm kết thúc, không đưa dự án hoàn tất trở lại dashboard công việc đang làm.
+- Chi tiết và số nhân sự của dự án hoàn tất dùng lịch sử phân công, không đếm trùng nhân viên. Quyền đọc lịch sử này không áp dụng cho dự án đã hủy hay dự án đang thực hiện mà nhân viên đã bị thay.
+- Thay đổi ở tầng ứng dụng, không cần migration database; áp dụng cả dự án đã hoàn tất trước khi cập nhật.

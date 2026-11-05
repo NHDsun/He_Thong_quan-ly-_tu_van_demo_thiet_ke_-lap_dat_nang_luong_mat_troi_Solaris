@@ -108,6 +108,9 @@ try {
     $w->run('UPDATE project_assignments SET ended_at=NOW() WHERE id=?', [$duplicateAssignment]);
     $denied(fn () => $w->act($admin, $id, 'assign', $assignment), 'Cannot duplicate crew');
     $denied(fn () => $w->act($tech, $id, 'submit_stage', []), 'Evidence image required');
+    $formerTech = ['id'=>5,'role'=>'technician'];
+    $w->run('UPDATE project_assignments SET ended_at=NOW() WHERE project_id=? AND technician_id=5',[$id]);
+    $denied(fn () => $w->project($id,$formerTech),'Former technician cannot read an active project');
     foreach (array_keys(Workflow::STAGES) as $i => $stageCode) {
         $stageId = (int) $scalar('SELECT id FROM project_stages WHERE project_id=? AND stage=?', [$id, $stageCode]);
         $denied(fn () => $w->act($admin, $id, 'start_stage', ['stage_id' => $stageId]), 'Admin cannot start for technician');
@@ -151,6 +154,24 @@ try {
         $denied(fn () => $w->act($admin, $id, 'approve_stage', []), 'Repeated stage approval cannot skip next stage');
     }
     $check($status($id) === 'completed', 'Handover completes project');
+    $archived=$w->detail($id,$tech);
+    $check($archived['project']['status']==='completed' && count($archived['documents'])===6,'Formerly assigned technician can read completed stages and evidence');
+    $check(count($archived['logs'])>0 && count($archived['crew'])>0,'Completed detail preserves logs and historical crew');
+    $check($w->project($id,$formerTech)['id']===$id,'Replaced technician can read completed project history');
+    $check($w->listing($tech,'completed',1)['pager']['total']===1,'Completed filter includes historical assignments');
+    $check($w->listing($tech,'all',1)['pager']['total']===1,'All projects includes completed history without duplicates');
+    $check($w->listing($tech,'completed',1)['projects'][0]['crew_count']===2,'Completed crew count uses distinct historical technicians');
+    $check((new \App\Hooks\UseProjectBilling($w))->invoice($id,$tech)['project']['id']===$id,'Historical technician can read completed invoice');
+    $outsider=['id'=>999,'role'=>'technician'];
+    $denied(fn () => $w->project($id,$outsider),'Unassigned technician cannot read completed project');
+    $denied(fn () => (new \App\Hooks\UseProjectBilling($w))->invoice($id,$outsider),'Unassigned technician cannot read completed invoice');
+    $check($w->listing($outsider,'completed',1)['pager']['total']===0,'Completed list does not reveal other technicians projects');
+    $beforeReadOnly=$scalar('SELECT COUNT(*) FROM project_stage_logs WHERE project_id=?',[$id]);
+    foreach (['start_stage','upload','submit_stage','postpone','replacement','add_material','pay_project'] as $action) {
+        $denied(fn () => $w->act($tech,$id,$action,[]),'Completed historical access is read-only: '.$action);
+    }
+    $check($scalar('SELECT COUNT(*) FROM project_stage_logs WHERE project_id=?',[$id])===$beforeReadOnly,'Denied writes do not change completed history');
+
     $check($w->dashboard($admin)['completed_projects'] === 1 && $w->dashboard($tech)['total_projects'] === 0, 'Completion updates admin totals and releases technician dashboard scope');
     $check((int) $scalar('SELECT COUNT(*) FROM project_assignments WHERE project_id=? AND ended_at IS NULL', [$id]) === 0, 'Completion releases crew');
     $check((int) $scalar("SELECT COUNT(*) FROM project_requests WHERE project_id=? AND status='pending'", [$id]) === 0, 'Completion closes pending requests');
@@ -209,6 +230,7 @@ try {
     $w->act($admin, $planProject, 'cancel_project', ['review_note' => 'Khách đề nghị dừng']);
     $check($status($planProject) === 'cancelled', 'Cancellation saved');
     $check((int) $scalar('SELECT COUNT(*) FROM project_assignments WHERE project_id=? AND ended_at IS NULL', [$planProject]) === 0, 'Cancellation releases crew');
+    $denied(fn () => $w->project($planProject,$tech),'Historical read permission does not extend to cancelled projects');
     $check($scalar('SELECT current_stage FROM projects WHERE id=?', [$planProject]) === 'design', 'Cancellation preserves last stage');
     $reject = $make();
     $denied(fn () => $w->act($admin, $reject['project_id'], 'reject_project', []), 'Project rejection requires reason');
