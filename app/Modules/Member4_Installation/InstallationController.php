@@ -52,7 +52,7 @@ final class InstallationController
                 try {
                     $workflow->act($actor, $id, $action, $_POST, $_FILES);
                     $_SESSION['installation_flash'] = $action === 'pay_project'
-                        ? 'Thanh toán mô phỏng thành công. Không có giao dịch tiền thật.' : 'Đã lưu thay đổi.';
+                        ? 'Thanh toán thành công.' : 'Đã lưu thay đổi.';
                 } catch (RuntimeException $error) {
                     $_SESSION['installation_flash'] = $error->getMessage();
                 }
@@ -88,12 +88,12 @@ final class InstallationController
             }
         } catch (PDOException $error) {
             error_log('Installation database: ' . $error->getMessage());
-            $view['error'] = 'Chưa kết nối được dữ liệu lắp đặt. Hãy import database/solaris_data_insert.sql và kiểm tra cấu hình kết nối CSDL.';
+            $view['error'] = 'Không thể tải dữ liệu lắp đặt. Vui lòng thử lại sau.';
         } catch (RuntimeException $error) {
             $view['error'] = $error->getMessage();
         } catch (Throwable $error) {
             error_log('Installation: ' . $error->getMessage());
-            $view['error'] = 'Không thể xử lý yêu cầu. Vui lòng tải lại trang hoặc xem nhật ký máy chủ.';
+            $view['error'] = 'Không thể xử lý yêu cầu. Vui lòng tải lại trang và thử lại.';
         }
         return $view;
     }

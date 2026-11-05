@@ -20,7 +20,7 @@ foreach ($invoice['baseItems'] as $item) {
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Hóa đơn <?= UI::escape($project['contract_code']) ?></title>
     <link rel="stylesheet" href="resources/css/solaris-theme.css">
-    <link rel="stylesheet" href="resources/css/installation-invoice.css">
+    <link rel="stylesheet" href="resources/css/installation-invoice.css?v=<?= filemtime(dirname(__DIR__, 3) . '/css/installation-invoice.css') ?>">
 </head>
 <body>
     <main class="tv4-invoice">
@@ -35,6 +35,7 @@ foreach ($invoice['baseItems'] as $item) {
         <p>Địa chỉ lắp đặt: <?= UI::escape($project['installation_address']) ?></p>
         <p>Thời điểm in: <?= date('d/m/Y H:i') ?></p>
         <p>Phê duyệt mua sắm: <?= UI::escape(UI::label($invoice['stageStatus'])) ?></p>
+        <div class="tv4-invoice-table" role="region" aria-label="Danh sách sản phẩm và chi phí" tabindex="0">
         <table>
             <thead><tr><th>Nội dung</th><th>Số lượng</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead>
             <tbody>
@@ -59,6 +60,7 @@ foreach ($invoice['baseItems'] as $item) {
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
         <dl>
             <?php if ($invoice['baseItems']): ?>
                 <dt>Tổng sản phẩm ban đầu</dt><dd><?= $format($baseItemsTotal) ?></dd>
@@ -70,10 +72,9 @@ foreach ($invoice['baseItems'] as $item) {
             <?php endif; ?>
             <dt>Vật tư phát sinh</dt><dd><?= $format($summary['extra']) ?></dd>
             <dt>Tổng phải thanh toán</dt><dd><?= $format($summary['total']) ?></dd>
-            <dt>Đã thanh toán mô phỏng</dt><dd><?= $format($summary['paid']) ?></dd>
+            <dt>Đã thanh toán</dt><dd><?= $format($summary['paid']) ?></dd>
             <dt>Còn phải trả</dt><dd><?= $format($summary['remaining']) ?></dd>
         </dl>
-        <p>Vật tư phát sinh chỉ được cập nhật trước khi gửi duyệt bước mua sắm. Số liệu trên bản in là số liệu tại thời điểm in.</p>
         <div class="tv4-invoice-signatures"><p>Khách hàng<br><small>(Ký, ghi rõ họ tên)</small></p><p>Đại diện SOLARIS<br><small>(Ký, ghi rõ họ tên)</small></p></div>
     </main>
 </body>

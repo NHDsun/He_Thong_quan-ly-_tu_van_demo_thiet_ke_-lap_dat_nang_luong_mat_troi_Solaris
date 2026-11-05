@@ -110,7 +110,7 @@ final class View
             'replacement_requested' => 'Đề nghị thay nhân viên', 'request_approved' => 'Duyệt yêu cầu',
             'request_rejected' => 'Từ chối yêu cầu', 'request_superseded' => 'Đóng yêu cầu',
             'project_completed' => 'Hoàn tất dự án', 'material_added' => 'Bổ sung vật tư sau khảo sát',
-            'payment_simulated' => 'Thanh toán mô phỏng'][$action] ?? $action;
+            'payment_simulated' => 'Thanh toán'][$action] ?? $action;
     }
 
     public static function documentLabel(string $type): string

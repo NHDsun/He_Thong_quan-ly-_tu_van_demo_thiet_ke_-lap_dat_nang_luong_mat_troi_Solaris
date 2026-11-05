@@ -96,7 +96,7 @@ $availability = $viewData['availability'];
             <?php UI::component('button', 'Phân công & lên lịch khảo sát', ['type' => 'submit']); ?>
         </div>
         <p class="tv4-muted">
-            Lịch tổng thể là dự kiến tham khảo. Không chia đều sáu bước; nhân viên ghi nhận bắt đầu thực tế và đề xuất ngày thực thi bước kế tiếp khi gửi duyệt.
+            Nhân viên đề xuất lịch bước tiếp theo khi gửi duyệt hoàn thành giai đoạn.
         </p>
     </form>
 </section>

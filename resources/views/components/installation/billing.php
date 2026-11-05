@@ -15,16 +15,15 @@ $formatMoney = static fn (int $cents): string => number_format($cents / 100, $ce
         <div><span>Giá trị ban đầu</span><strong><?= $formatMoney($money['base']) ?></strong></div>
         <div><span>Vật tư phát sinh</span><strong><?= $formatMoney($money['extra']) ?></strong></div>
         <div><span>Tổng phải thanh toán</span><strong><?= $formatMoney($money['total']) ?></strong></div>
-        <div><span>Đã thanh toán mô phỏng</span><strong><?= $formatMoney($money['paid']) ?></strong></div>
+        <div><span>Đã thanh toán</span><strong><?= $formatMoney($money['paid']) ?></strong></div>
         <div><span>Còn phải trả</span><strong><?= $formatMoney($money['remaining']) ?></strong></div>
     </div>
-    <p class="tv4-notice">Thanh toán mô phỏng phục vụ bài tập, không thu tiền thật.</p>
     <?php if ($isCustomer && in_array($project['status'], ['in_progress', 'completed'], true) && $money['remaining'] > 0): ?>
         <form method="post">
             <?php UI::form('pay_project'); ?>
             <input type="hidden" name="expected_remaining" value="<?= $money['remaining'] ?>">
-            <label class="tv4-check"><input type="checkbox" name="confirm_simulation" value="1" required> Tôi xác nhận thanh toán mô phỏng <?= $formatMoney($money['remaining']) ?>.</label>
-            <?php UI::component('button', 'Thanh toán mô phỏng', ['type' => 'submit']); ?>
+            <label class="tv4-check"><input type="checkbox" name="confirm_simulation" value="1" required> Tôi xác nhận thanh toán <?= $formatMoney($money['remaining']) ?>.</label>
+            <?php UI::component('button', 'Thanh toán', ['type' => 'submit']); ?>
         </form>
     <?php elseif ($money['remaining'] === 0): ?>
         <p>Đã thanh toán đủ chi phí hiện tại.</p>
@@ -43,7 +42,7 @@ $formatMoney = static fn (int $cents): string => number_format($cents / 100, $ce
         </article>
     <?php endforeach; ?>
     <?php UI::pager($billing['pager'], 'material_page'); ?>
-    <h4>Lịch sử thanh toán mô phỏng</h4>
+    <h4>Lịch sử thanh toán</h4>
     <?php if (!$billing['payments']): ?><p class="tv4-muted">Chưa có thanh toán.</p><?php endif; ?>
     <?php foreach ($billing['payments'] as $payment): ?>
         <p><?= UI::escape($payment['payment_code']) ?> · <?= number_format((float) $payment['amount'], 0, ',', '.') ?> đ · <?= UI::escape($payment['created_at']) ?></p>

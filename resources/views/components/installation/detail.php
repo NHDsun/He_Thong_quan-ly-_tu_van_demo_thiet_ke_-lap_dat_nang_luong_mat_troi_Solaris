@@ -166,7 +166,9 @@ foreach ($detail['crew'] as $member) {
                     </form>
                 <?php endif; ?>
                 <?php if ($stage['stage'] === 'survey'): ?>
-                    <?php UI::component('button', 'Phát sinh vật tư', ['variant' => 'outline', 'size' => 'sm'], ['data-material-open' => 'tv4-material-dialog', 'aria-haspopup' => 'dialog', 'aria-controls' => 'tv4-material-dialog']); ?>
+                    <div class="tv4-actions">
+                        <?php UI::component('button', 'Phát sinh vật tư', ['variant' => 'outline', 'size' => 'sm'], ['data-material-open' => 'tv4-material-dialog', 'aria-haspopup' => 'dialog', 'aria-controls' => 'tv4-material-dialog']); ?>
+                    </div>
                     <?php require __DIR__ . '/material-dialog.php'; ?>
                     <?php require __DIR__ . '/stage-materials.php'; ?>
                 <?php endif; ?>
@@ -241,7 +243,7 @@ foreach ($detail['crew'] as $member) {
                             <label>Ngày thực thi dự kiến của bước tiếp theo
                                 <input type="date" name="next_start_date" min="<?= UI::escape($viewData['today']) ?>" value="<?= UI::escape($stage['proposed_next_start'] && $stage['proposed_next_start'] >= $viewData['today'] ? $stage['proposed_next_start'] : $viewData['today']) ?>" required>
                             </label>
-                            <p class="tv4-muted">Quản lý duyệt hoàn thành bước này đồng thời duyệt lịch dự kiến bước kế tiếp. Nhân viên có thể bắt đầu sớm và ghi nhận thời gian thực tế.</p>
+                            <p class="tv4-muted">Ngày thực thi bước tiếp theo sẽ được quản lý duyệt cùng hồ sơ giai đoạn này.</p>
                         <?php else: ?>
                             <p>Đây là bước cuối; quản lý duyệt để hoàn tất dự án.</p>
                         <?php endif; ?>
@@ -311,7 +313,7 @@ foreach ($detail['crew'] as $member) {
                         <time><?= UI::escape($log['created_at']) ?></time>
                         <strong><?= UI::escape($log['full_name'] ?? 'Hệ thống') ?></strong>
                         <p><?= UI::escape(UI::actionLabel($log['action'])) ?> · <?= UI::escape(Workflow::STAGES[$log['stage']] ?? 'Yêu cầu dự án') ?></p>
-                        <p><?= UI::escape($log['note']) ?></p>
+                        <p><?= UI::escape($log['action'] === 'payment_simulated' ? preg_replace('/\s*\(mô phỏng\)\.$/u', '.', (string) $log['note']) : $log['note']) ?></p>
                         <?php if ($log['from_status'] || $log['to_status']): ?>
                             <small><?= UI::escape(UI::label($log['from_status'] ?? '')) ?> → <?= UI::escape(UI::label($log['to_status'] ?? '')) ?></small>
                         <?php endif; ?>

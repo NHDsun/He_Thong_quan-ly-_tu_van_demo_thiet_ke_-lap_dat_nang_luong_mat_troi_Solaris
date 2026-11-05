@@ -1,18 +1,29 @@
 .tv4-invoice { max-width: 960px; margin: 2rem auto; padding: 2rem; background: var(--bg-card); color: var(--text-primary); font-family: Arial, sans-serif; line-height: 1.6; }
 .tv4-invoice h1, .tv4-invoice a { color: var(--accent-gold); }
-.tv4-invoice-actions { display: flex; gap: 1.5rem; align-items: center; }
+.tv4-invoice-actions { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; align-items: center; margin-bottom: 1.5rem; }
+.tv4-invoice h1 { margin: 0 0 1rem; line-height: 1.4; }
+.tv4-invoice p { margin: .5rem 0; overflow-wrap: anywhere; }
+.tv4-invoice-table { overflow-x: auto; margin: 1.25rem 0; }
+.tv4-invoice-table:focus-visible { outline: 2px solid var(--accent-gold); outline-offset: 3px; }
+.tv4-invoice table { min-width: 600px; }
+.tv4-invoice th:not(:first-child), .tv4-invoice td:not(:first-child) { white-space: nowrap; }
+.tv4-invoice .sol-btn { max-width: 100%; white-space: normal; text-align: center; }
 .tv4-invoice table { width: 100%; border-collapse: collapse; }
 .tv4-invoice th, .tv4-invoice td { border: 1px solid var(--border-subtle); padding: .7rem; text-align: left; overflow-wrap: anywhere; }
-.tv4-invoice dl { display: grid; grid-template-columns: 1fr auto; gap: .5rem; }
+.tv4-invoice dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto); gap: .65rem 1.5rem; margin: 1.25rem 0; overflow-wrap: anywhere; }
 .tv4-invoice dd { text-align: right; margin: 0; font-weight: bold; }
-.tv4-invoice-signatures { display: flex; justify-content: space-around; min-height: 140px; text-align: center; }
+.tv4-invoice-signatures > p { flex: 1; min-width: 0; }
+.tv4-invoice-signatures { display: flex; gap: 1.5rem; justify-content: space-around; margin-top: 2rem; min-height: 140px; text-align: center; }
 @media (max-width: 600px) { .tv4-invoice { padding: 1rem; margin: 0; } .tv4-invoice h1 { font-size: 1.4rem; } .tv4-invoice td, .tv4-invoice th { padding: .3rem; } }
 @media print {
     @page { size: A4; margin: 16mm; }
     body, .tv4-invoice { background: white !important; color: black !important; margin: 0; padding: 0; max-width: none; }
     .tv4-invoice h1 { color: black; }
     .tv4-invoice-actions { display: none; }
+    .tv4-invoice-table { overflow: visible; }
+    .tv4-invoice table { min-width: 0; }
     .tv4-invoice th, .tv4-invoice td { border-color: #777; }
-    .tv4-invoice tr, .tv4-invoice-signatures { break-inside: avoid; }
+    .tv4-invoice tr, .tv4-invoice-signatures > p { flex: 1; min-width: 0; }
+.tv4-invoice-signatures { break-inside: avoid; }
     .tv4-invoice thead { display: table-header-group; }
 }
