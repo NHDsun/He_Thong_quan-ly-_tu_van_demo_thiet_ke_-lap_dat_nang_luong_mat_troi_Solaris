@@ -76,7 +76,7 @@ class SolarDemoController
         $savedQuoteId = null;
 
         // Xử lý khi người dùng gửi form Đăng ký tư vấn / Lưu báo giá hoặc Xác nhận chuyển sang Quản lý lắp đặt
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['action'])) {
             $act = trim($_POST['action']);
             if ($act === 'save_quote' || $act === 'confirm_to_install') {
                 $saveResult = $this->handleSaveQuote($pdo, $cartProducts, $act === 'confirm_to_install');
@@ -247,6 +247,16 @@ class SolarDemoController
                         foreach ($stages as $stg) {
                             $stgStmt = $pdo->prepare("INSERT INTO `project_stages` (`project_id`, `stage`, `position`, `status`, `review_note`) VALUES (?, ?, ?, ?, ?)");
                             $stgStmt->execute([$targetProjectId, $stg[0], $stg[1], $stg[2], $stg[3]]);
+                        }
+
+                        // Đồng bộ danh mục thiết bị từ Kế hoạch vào bảng installation_items cho phân hệ Lắp đặt (TV4)
+                        if (!empty($cartProducts)) {
+                            foreach ($cartProducts as $p) {
+                                if (!empty($p['id']) && (int)$p['id'] > 0) {
+                                    $itemStmt = $pdo->prepare("INSERT INTO `installation_items` (`project_id`, `product_id`, `quantity`, `unit_price`) VALUES (?, ?, ?, ?)");
+                                    $itemStmt->execute([$targetProjectId, (int)$p['id'], max(1, (int)($p['quantity'] ?? 1)), (float)($p['price'] ?? 0)]);
+                                }
+                            }
                         }
                     } catch (\Exception $e) {
                         // Bỏ qua lỗi phụ nếu đã tồn tại mã

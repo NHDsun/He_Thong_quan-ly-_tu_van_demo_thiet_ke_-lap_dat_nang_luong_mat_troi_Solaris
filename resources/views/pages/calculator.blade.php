@@ -132,6 +132,67 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
         </div>
 
         <?php if ($isPlanSource): ?>
+            <?php
+            // Sơ đồ đồng bộ 7 nhóm thiết bị liên kết với phân hệ Giải Pháp & Sản Phẩm (TV2)
+            $diagramCategories = [
+                ['slug' => 'tam-pin', 'label' => 'Tấm pin', 'icon' => '☀️', 'keys' => ['tấm pin', 'tam pin', 'solar panel']],
+                ['slug' => 'inverter', 'label' => 'Inverter', 'icon' => '⚡', 'keys' => ['inverter', 'biến tần']],
+                ['slug' => 'tu-dien', 'label' => 'Tủ điện', 'icon' => '🛡️', 'keys' => ['tủ điện', 'đóng cắt', 'box']],
+                ['slug' => 'khung-gia', 'label' => 'Khung giá', 'icon' => '🔩', 'keys' => ['khung giá', 'khung nhôm', 'ray', 'kẹp']],
+                ['slug' => 'day-cap', 'label' => 'Cáp & MC4', 'icon' => '🔌', 'keys' => ['cáp', 'mc4', 'dây']],
+                ['slug' => 'dong-ho', 'label' => 'Công tơ', 'icon' => '📟', 'keys' => ['đồng hồ', 'công tơ', 'meter']],
+                ['slug' => 'pin-luu-tru', 'label' => 'Pin lưu trữ', 'icon' => '🔋', 'keys' => ['pin lưu trữ', 'lithium', 'battery', 'bess']],
+            ];
+            $diagramState = array_fill(0, count($diagramCategories), null);
+            foreach ($planItems as $pItem) {
+                $categoryName = mb_strtolower((string) ($pItem['category_name'] ?? ''));
+                $itemName = mb_strtolower((string) ($pItem['name'] ?? ''));
+                $itemCode = strtoupper((string) ($pItem['product_code'] ?? ''));
+                foreach ($diagramCategories as $dIndex => $dCat) {
+                    if ($diagramState[$dIndex] !== null) continue;
+                    foreach ($dCat['keys'] as $dKey) {
+                        if (str_contains($categoryName, $dKey) || str_contains($itemName, $dKey) || str_contains($itemCode, strtoupper($dCat['slug']))) {
+                            $diagramState[$dIndex] = $pItem;
+                            break;
+                        }
+                    }
+                }
+            }
+            $syncedGroupsCount = count(array_filter($diagramState));
+            ?>
+
+            <!-- SƠ ĐỒ ĐỒNG BỘ 7 NHÓM THIẾT BỊ HỆ THỐNG -->
+            <section class="solar-system-map sol-glass-card" style="margin-bottom: 1.5rem; background: rgba(14, 22, 38, 0.7); border-color: rgba(245, 158, 11, 0.3);">
+                <div class="system-map-heading" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                    <div>
+                        <span class="sol-badge sol-badge--amber" style="margin-bottom: 0.25rem;">Liên Kết Module TV2 ⇄ TV3</span>
+                        <h3 style="font-size: 1.15rem; color: #ffffff; margin: 0.25rem 0 0.15rem;">Sơ đồ phối ghép 7 nhóm thiết bị hoàn chỉnh</h3>
+                        <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0;">Các nhóm thiết bị được đồng bộ trực tiếp từ Kế hoạch dự định sang bộ mô phỏng kỹ thuật.</p>
+                    </div>
+                    <span class="system-map-progress"><?= $syncedGroupsCount ?>/7 nhóm đã chọn</span>
+                </div>
+                <div class="system-map-flow">
+                    <?php foreach ($diagramCategories as $dIndex => $dCat): $dSelected = $diagramState[$dIndex]; ?>
+                        <div class="system-map-node <?= $dSelected ? 'is-selected' : 'is-missing' ?>">
+                            <div class="system-map-icon"><?= $dCat['icon'] ?></div>
+                            <div class="system-map-node-text">
+                                <strong><?= $dCat['label'] ?></strong>
+                                <?php if ($dSelected): ?>
+                                    <small><?= htmlspecialchars($dSelected['product_code'] ?? $dSelected['name']) ?></small>
+                                    <span class="system-map-status">Đã đồng bộ</span>
+                                <?php else: ?>
+                                    <small>Chưa chọn</small>
+                                    <a href="index.php?page=products&category=<?= $dCat['slug'] ?>">Chọn thêm →</a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <?php if ($dIndex < count($diagramCategories) - 1): ?>
+                            <span class="system-map-connector" aria-hidden="true">→</span>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
+            </section>
+
             <!-- Lưới danh sách thiết bị trong Kế hoạch dự định -->
             <div style="margin-bottom: 1.5rem;">
                 <?php if (empty($planItems)): ?>
@@ -146,27 +207,37 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                         </a>
                     </div>
                 <?php else: ?>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1rem;">
                         <?php foreach ($planItems as $item): ?>
-                            <div style="padding: 1rem 1.15rem; background: rgba(8, 12, 20, 0.65); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
+                            <div style="padding: 1rem 1.15rem; background: rgba(8, 12, 20, 0.7); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
                                 <div style="display: flex; align-items: center; gap: 0.85rem;">
-                                    <div style="width: 44px; height: 44px; border-radius: 8px; background: rgba(14, 22, 38, 0.8); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0;">
-                                        <?= str_contains(mb_strtolower($item['name']), 'pin') ? '☀️' : (str_contains(mb_strtolower($item['name']), 'biến tần') ? '⚡' : (str_contains(mb_strtolower($item['name']), 'lưu trữ') ? '🔋' : '🔧')) ?>
+                                    <div style="width: 44px; height: 44px; border-radius: 8px; background: rgba(14, 22, 38, 0.9); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0;">
+                                        <?= str_contains(mb_strtolower($item['name']), 'pin') ? '☀️' : (str_contains(mb_strtolower($item['name']), 'biến tần') || str_contains(mb_strtolower($item['name']), 'inverter') ? '⚡' : (str_contains(mb_strtolower($item['name']), 'lưu trữ') || str_contains(mb_strtolower($item['name']), 'lithium') ? '🔋' : '🔧')) ?>
                                     </div>
                                     <div>
-                                        <strong style="color: #ffffff; font-size: 0.9rem; display: block; line-height: 1.3;">
+                                        <strong style="color: #ffffff; font-size: 0.88rem; display: block; line-height: 1.3;">
                                             <?= htmlspecialchars($item['name'] ?? 'Thiết bị') ?>
                                         </strong>
-                                        <span style="color: var(--text-secondary); font-size: 0.75rem;">
-                                            <?= htmlspecialchars($item['category_name'] ?? 'Phụ kiện') ?>
-                                            <?= !empty($item['capacity_watts']) ? ' • ' . (int)$item['capacity_watts'] . 'W' : '' ?>
-                                        </span>
+                                        <div style="display: flex; gap: 0.4rem; margin-top: 0.2rem; flex-wrap: wrap;">
+                                            <?php if (!empty($item['product_code'])): ?>
+                                                <span class="sol-badge sol-badge--amber" style="padding: 0.05rem 0.35rem; font-size: 0.7rem;"><?= htmlspecialchars($item['product_code']) ?></span>
+                                            <?php endif; ?>
+                                            <span style="color: var(--text-secondary); font-size: 0.74rem;">
+                                                <?= htmlspecialchars($item['category_name'] ?? 'Phụ kiện') ?>
+                                                <?= !empty($item['capacity_watts']) ? ' • ' . (int)$item['capacity_watts'] . 'W' : '' ?>
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                                 <div style="text-align: right; flex-shrink: 0;">
                                     <span style="display: inline-block; padding: 0.2rem 0.55rem; background: rgba(245, 158, 11, 0.15); border: 1px solid var(--accent-amber); border-radius: 4px; font-weight: 800; font-size: 0.8rem; color: var(--accent-gold);">
                                         x<?= (int)($item['quantity'] ?? 1) ?>
                                     </span>
+                                    <?php if (!empty($item['price'])): ?>
+                                        <div style="font-size: 0.72rem; color: #10b981; margin-top: 0.2rem; font-weight: 600;">
+                                            <?= number_format(((float)$item['price']) * max(1, (int)($item['quantity'] ?? 1)), 0, ',', '.') ?> đ
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -414,23 +485,33 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                 <path d="M <?= $startX + $roofArrayW ?> <?= $startY + ($roofArrayH / 2) ?> L <?= $svgW - 120 ?> <?= $startY + ($roofArrayH / 2) ?> L <?= $svgW - 120 ?> <?= $bosY + 40 ?> L <?= $svgW - 160 ?> <?= $bosY + 40 ?>" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="5,3"/>
                 <text x="<?= $svgW - 105 ?>" y="<?= $startY + ($roofArrayH / 2) + 20 ?>" fill="#f59e0b" font-size="8" font-family="monospace">Cáp DC 4.0mm²</text>
 
+                <?php
+                $dispPanelName = !empty($calc['primary_panel']['name']) ? $calc['primary_panel']['name'] : 'Tấm Pin Tier-1 Mono 550W';
+                $dispInverterName = !empty($calc['primary_inverter']['name']) ? $calc['primary_inverter']['name'] : ('Inverter ' . $calc['estimated_kwp'] . 'kW');
+                $dispBoxName = !empty($calc['primary_box']['name']) ? $calc['primary_box']['name'] : 'Tủ Điện AC/DC & Chống Sét';
+                $dispBatteryName = !empty($calc['primary_battery']['name']) ? $calc['primary_battery']['name'] : null;
+                $hasBatteryActive = ($dispBatteryName !== null && ($calc['primary_battery']['quantity'] ?? 0) > 0);
+                $dispMeterName = !empty($calc['primary_meter']['name']) ? $calc['primary_meter']['name'] : 'Smart Meter 2 Chiều';
+                ?>
+
                 <!-- KHỐI 1: TỦ ĐIỆN AN TOÀN AC/DC & SPD CHỐNG SÉT -->
                 <g transform="translate(<?= $startX ?>, <?= $bosY ?>)">
-                    <rect x="0" y="0" width="130" height="85" rx="6" fill="#111827" stroke="#38bdf8" stroke-width="1.8"/>
+                    <rect x="0" y="0" width="130" height="85" rx="6" fill="#111827" stroke="<?= !empty($calc['primary_box']) ? '#10b981' : '#38bdf8' ?>" stroke-width="1.8"/>
                     <rect x="6" y="6" width="118" height="20" rx="3" fill="#1e293b"/>
-                    <circle cx="16" cy="16" r="4" fill="#10b981"/>
-                    <text x="26" y="19" fill="#ffffff" font-size="9" font-weight="bold">TỦ ĐIỆN AC/DC</text>
+                    <circle cx="16" cy="16" r="4" fill="<?= !empty($calc['primary_box']) ? '#10b981' : '#38bdf8' ?>"/>
+                    <text x="26" y="19" fill="#ffffff" font-size="8" font-weight="bold"><?= htmlspecialchars(mb_strimwidth($dispBoxName, 0, 16, '..')) ?></text>
                     
-                    <rect x="15" y="36" width="30" height="38" rx="2" fill="#1f2937" stroke="#475569" stroke-width="1"/>
-                    <text x="30" y="58" fill="#38bdf8" font-size="8" text-anchor="middle" font-weight="bold">SPD</text>
+                    <rect x="15" y="34" width="30" height="38" rx="2" fill="#1f2937" stroke="#475569" stroke-width="1"/>
+                    <text x="30" y="56" fill="#38bdf8" font-size="8" text-anchor="middle" font-weight="bold">SPD</text>
 
-                    <rect x="55" y="36" width="30" height="38" rx="2" fill="#1f2937" stroke="#475569" stroke-width="1"/>
-                    <text x="70" y="58" fill="#f59e0b" font-size="8" text-anchor="middle" font-weight="bold">MCB</text>
+                    <rect x="55" y="34" width="30" height="38" rx="2" fill="#1f2937" stroke="#475569" stroke-width="1"/>
+                    <text x="70" y="56" fill="#f59e0b" font-size="8" text-anchor="middle" font-weight="bold">MCB</text>
 
-                    <rect x="95" y="36" width="22" height="38" rx="2" fill="#1f2937" stroke="#475569" stroke-width="1"/>
-                    <circle cx="106" cy="55" r="4" fill="#f43f5e"/>
+                    <rect x="95" y="34" width="22" height="38" rx="2" fill="#1f2937" stroke="#475569" stroke-width="1"/>
+                    <circle cx="106" cy="53" r="4" fill="#f43f5e"/>
 
-                    <text x="65" y="100" fill="#cbd5e1" font-size="9" text-anchor="middle" font-weight="bold">1. Tủ Điện An Toàn & SPD</text>
+                    <text x="65" y="100" fill="#cbd5e1" font-size="8.5" text-anchor="middle" font-weight="bold">1. Tủ Điện AC/DC</text>
+                    <text x="65" y="112" fill="<?= !empty($calc['primary_box']) ? '#10b981' : '#64748b' ?>" font-size="7" text-anchor="middle"><?= !empty($calc['primary_box']) ? '● Đã chọn trong kế hoạch' : 'Tiêu chuẩn IEC' ?></text>
                 </g>
 
                 <!-- Dây dẫn nối giữa Tủ điện và Biến tần -->
@@ -439,25 +520,39 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                 <!-- KHỐI 2: BIẾN TẦN INVERTER QUANG ĐIỆN -->
                 <g transform="translate(<?= $startX + 170 ?>, <?= $bosY ?>)">
                     <rect x="0" y="0" width="150" height="85" rx="6" fill="url(#inverterGrad)" stroke="#f59e0b" stroke-width="2"/>
-                    <rect x="15" y="15" width="120" height="30" rx="3" fill="#080c14" stroke="#334155" stroke-width="1"/>
-                    <text x="25" y="32" fill="#10b981" font-size="10" font-family="monospace" font-weight="bold">● <?= $calc['estimated_kwp'] ?> kW · 50Hz</text>
+                    <rect x="10" y="12" width="130" height="32" rx="3" fill="#080c14" stroke="#334155" stroke-width="1"/>
+                    <text x="18" y="27" fill="#10b981" font-size="8" font-family="monospace" font-weight="bold">● <?= $calc['estimated_kwp'] ?> kW · 50Hz</text>
+                    <text x="18" y="39" fill="#fbbf24" font-size="7.5" font-weight="bold"><?= htmlspecialchars(mb_strimwidth($dispInverterName, 0, 20, '..')) ?></text>
                     <line x1="20" y1="58" x2="130" y2="58" stroke="#334155" stroke-width="1.5"/>
                     <line x1="20" y1="64" x2="130" y2="64" stroke="#334155" stroke-width="1.5"/>
-                    <text x="75" y="100" fill="#fbbf24" font-size="9" text-anchor="middle" font-weight="bold">2. Biến Tần Inverter</text>
+                    <text x="75" y="100" fill="#fbbf24" font-size="8.5" text-anchor="middle" font-weight="bold">2. Biến Tần Inverter</text>
+                    <text x="75" y="112" fill="<?= !empty($calc['primary_inverter']) ? '#10b981' : '#f59e0b' ?>" font-size="7" text-anchor="middle"><?= !empty($calc['primary_inverter']) ? '● Model từ kế hoạch' : 'Ước tính hòa lưới' ?></text>
                 </g>
 
                 <!-- Dây dẫn nối từ Inverter sang Pin lưu trữ hoặc Smart Meter -->
-                <line x1="<?= $startX + 320 ?>" y1="<?= $bosY + 42 ?>" x2="<?= $startX + 360 ?>" y2="<?= $bosY + 42 ?>" stroke="#10b981" stroke-width="2.5"/>
+                <line x1="<?= $startX + 320 ?>" y1="<?= $bosY + 42 ?>" x2="<?= $startX + 360 ?>" y2="<?= $bosY + 42 ?>" stroke="<?= $hasBatteryActive ? '#10b981' : '#475569' ?>" stroke-width="2.5"/>
 
                 <!-- KHỐI 3: PIN LƯU TRỮ LITHIUM ESS (NẾU CÓ HOẶC HỆ HYBRID) -->
                 <g transform="translate(<?= $startX + 360 ?>, <?= $bosY ?>)">
-                    <rect x="0" y="0" width="120" height="85" rx="6" fill="url(#batteryGrad)" stroke="#10b981" stroke-width="1.8"/>
-                    <rect x="10" y="12" width="100" height="15" rx="2" fill="#064e3b"/>
-                    <text x="60" y="23" fill="#34d399" font-size="8" text-anchor="middle" font-weight="bold">LITHIUM LIFEPO4</text>
-                    <rect x="25" y="38" width="70" height="10" rx="2" fill="#042f2e" stroke="#10b981" stroke-width="0.8"/>
-                    <rect x="27" y="40" width="55" height="6" rx="1" fill="#10b981"/>
-                    <text x="60" y="65" fill="#a7f3d0" font-size="8" text-anchor="middle">SOC: 98%</text>
-                    <text x="60" y="100" fill="#10b981" font-size="9" text-anchor="middle" font-weight="bold">3. Pin Lưu Trữ ESS</text>
+                    <?php if ($hasBatteryActive): ?>
+                        <rect x="0" y="0" width="120" height="85" rx="6" fill="url(#batteryGrad)" stroke="#10b981" stroke-width="2"/>
+                        <rect x="10" y="10" width="100" height="15" rx="2" fill="#064e3b"/>
+                        <text x="60" y="21" fill="#34d399" font-size="7.5" text-anchor="middle" font-weight="bold">LITHIUM LIFEPO4</text>
+                        <rect x="25" y="32" width="70" height="10" rx="2" fill="#042f2e" stroke="#10b981" stroke-width="0.8"/>
+                        <rect x="27" y="34" width="55" height="6" rx="1" fill="#10b981"/>
+                        <text x="60" y="56" fill="#a7f3d0" font-size="8" text-anchor="middle" font-weight="bold"><?= htmlspecialchars(mb_strimwidth($dispBatteryName, 0, 15, '..')) ?></text>
+                        <text x="60" y="68" fill="#34d399" font-size="7" text-anchor="middle">SOC: 98% · Đã chọn</text>
+                        <text x="60" y="100" fill="#10b981" font-size="8.5" text-anchor="middle" font-weight="bold">3. Pin Lưu Trữ ESS</text>
+                        <text x="60" y="112" fill="#10b981" font-size="7" text-anchor="middle">● Đã đồng bộ từ kế hoạch</text>
+                    <?php else: ?>
+                        <rect x="0" y="0" width="120" height="85" rx="6" fill="#081412" stroke="#475569" stroke-dasharray="4,3" stroke-width="1.5"/>
+                        <rect x="10" y="12" width="100" height="15" rx="2" fill="#0f172a"/>
+                        <text x="60" y="23" fill="#64748b" font-size="7.5" text-anchor="middle">DỰ PHÒNG ESS</text>
+                        <text x="60" y="50" fill="#64748b" font-size="8" text-anchor="middle">Chưa chọn lưu trữ</text>
+                        <text x="60" y="65" fill="#475569" font-size="7" text-anchor="middle">(Tùy chọn bổ sung)</text>
+                        <text x="60" y="100" fill="#64748b" font-size="8.5" text-anchor="middle" font-weight="bold">3. Pin Lưu Trữ ESS</text>
+                        <text x="60" y="112" fill="#64748b" font-size="7" text-anchor="middle">Hòa lưới On-Grid</text>
+                    <?php endif; ?>
                 </g>
 
                 <!-- Dây dẫn nối sang Smart Meter -->
@@ -465,12 +560,13 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
 
                 <!-- KHỐI 4: ĐỒNG HỒ SMART METER & ĐẤU NỐI EVN -->
                 <g transform="translate(<?= $startX + 520 ?>, <?= $bosY ?>)">
-                    <rect x="0" y="0" width="130" height="85" rx="6" fill="#111827" stroke="#38bdf8" stroke-width="1.8"/>
-                    <circle cx="65" cy="35" r="22" fill="#080c14" stroke="#38bdf8" stroke-width="1.2"/>
+                    <rect x="0" y="0" width="130" height="85" rx="6" fill="#111827" stroke="<?= !empty($calc['primary_meter']) ? '#10b981' : '#38bdf8' ?>" stroke-width="1.8"/>
+                    <circle cx="65" cy="35" r="22" fill="#080c14" stroke="<?= !empty($calc['primary_meter']) ? '#10b981' : '#38bdf8' ?>" stroke-width="1.2"/>
                     <text x="65" y="32" fill="#38bdf8" font-size="8" font-family="monospace" text-anchor="middle">kWh EVN</text>
-                    <text x="65" y="44" fill="#fbbf24" font-size="9" font-family="monospace" font-weight="bold" text-anchor="middle">2 CHIỀU</text>
-                    <text x="65" y="72" fill="#94a3b8" font-size="8" text-anchor="middle">Modbus RTU</text>
-                    <text x="65" y="100" fill="#38bdf8" font-size="9" text-anchor="middle" font-weight="bold">4. Smart Meter 2 Chiều</text>
+                    <text x="65" y="44" fill="#fbbf24" font-size="8.5" font-family="monospace" font-weight="bold" text-anchor="middle">2 CHIỀU</text>
+                    <text x="65" y="70" fill="#94a3b8" font-size="7.5" text-anchor="middle"><?= htmlspecialchars(mb_strimwidth($dispMeterName, 0, 16, '..')) ?></text>
+                    <text x="65" y="100" fill="#38bdf8" font-size="8.5" text-anchor="middle" font-weight="bold">4. Smart Meter</text>
+                    <text x="65" y="112" fill="<?= !empty($calc['primary_meter']) ? '#10b981' : '#38bdf8' ?>" font-size="7" text-anchor="middle"><?= !empty($calc['primary_meter']) ? '● Đã chọn trong kế hoạch' : 'Đo đếm 2 chiều EVN' ?></text>
                 </g>
 
                 <!-- Dây AC nối vào Lưới điện EVN và Phụ tải gia đình -->
@@ -693,6 +789,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                         <tr style="border-bottom: 1px solid rgba(245, 158, 11, 0.25); background: rgba(8, 12, 20, 0.7); color: var(--accent-gold); font-size: 0.75rem; text-transform: uppercase;">
                             <th style="padding: 0.75rem 0.85rem;">STT</th>
                             <th style="padding: 0.75rem 0.85rem;">Hạng Mục Thiết Bị</th>
+                            <th style="padding: 0.75rem 0.85rem;">Nguồn Vật Tư</th>
                             <th style="padding: 0.75rem 0.85rem;">Quy Cách & Tiêu Chuẩn Kỹ Thuật</th>
                             <th style="padding: 0.75rem 0.85rem; text-align: center;">Số Lượng</th>
                             <th style="padding: 0.75rem 0.85rem; text-align: center;">ĐVT</th>
@@ -704,7 +801,21 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                             <?php foreach ($calc['bom'] as $index => $b): ?>
                                 <tr style="border-bottom: 1px solid var(--border-subtle); transition: background 0.15s ease;">
                                     <td style="padding: 0.75rem 0.85rem; color: var(--text-muted); font-family: var(--font-mono);"><?= str_pad((string)($index + 1), 2, '0', STR_PAD_LEFT) ?></td>
-                                    <td style="padding: 0.75rem 0.85rem; font-weight: 600; color: #ffffff;"><?= htmlspecialchars($b['item']) ?></td>
+                                    <td style="padding: 0.75rem 0.85rem; font-weight: 600; color: #ffffff;">
+                                        <?= htmlspecialchars($b['item']) ?>
+                                        <?php if (!empty($b['total_price'])): ?>
+                                            <div style="font-size: 0.72rem; color: #10b981; margin-top: 2px;">
+                                                <?= number_format((float)$b['total_price'], 0, ',', '.') ?> đ
+                                            </div>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td style="padding: 0.75rem 0.85rem;">
+                                        <?php if (!empty($b['is_from_cart'])): ?>
+                                            <span class="sol-badge sol-badge--emerald" style="font-size: 0.7rem; padding: 2px 7px;">● Từ Kế Hoạch</span>
+                                        <?php else: ?>
+                                            <span class="sol-badge sol-badge--amber" style="font-size: 0.7rem; padding: 2px 7px;">○ Bổ Sung Chuẩn</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td style="padding: 0.75rem 0.85rem; color: var(--text-secondary);"><?= htmlspecialchars($b['specs']) ?></td>
                                     <td style="padding: 0.75rem 0.85rem; text-align: center; font-weight: 700; color: var(--accent-amber); font-family: var(--font-mono);"><?= $b['quantity'] ?></td>
                                     <td style="padding: 0.75rem 0.85rem; text-align: center; color: var(--text-muted);"><?= htmlspecialchars($b['unit']) ?></td>
