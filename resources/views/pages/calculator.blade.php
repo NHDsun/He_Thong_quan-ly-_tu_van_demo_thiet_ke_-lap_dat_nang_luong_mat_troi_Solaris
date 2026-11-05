@@ -38,7 +38,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
 };
 ?>
 
-<div class="sol-container" style="padding-top: 2rem; padding-bottom: 5rem;">
+<div class="sol-container" style="padding-top: 2rem; padding-bottom: 2rem;">
     <!-- Tiêu đề phân hệ & Giới thiệu -->
     <div class="sol-section-header" style="margin-bottom: 1.75rem;">
         <span class="sol-badge sol-badge--cyan" style="margin-bottom: 0.5rem;">
@@ -1112,7 +1112,11 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
     <!-- ===================================================================== -->
     <!-- DANH SÁCH LỊCH SỬ BÁO GIÁ ĐÃ LƯU (CSDL MySQL solar_quotes)             -->
     <!-- ===================================================================== -->
-    <section id="quote-history" class="sol-glass-card" style="padding: 2.25rem;">
+</div>
+
+<div class="quote-history-wide">
+    <link rel="stylesheet" href="resources/css/calculator-quotes.css?v=<?= filemtime(dirname(__DIR__, 2) . '/css/calculator-quotes.css') ?>">
+    <section id="quote-history" class="sol-glass-card">
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1rem;">
             <div>
                 <span class="sol-badge sol-badge--cyan" style="margin-bottom: 0.4rem;">PHƯƠNG ÁN & YÊU CẦU</span>
@@ -1136,8 +1140,14 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                 </p>
             </div>
         <?php else: ?>
-            <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 0.825rem; text-align: left;">
+            <div class="quote-history-scroll" role="region" aria-label="Danh sách dự toán và yêu cầu" tabindex="0">
+                <table class="quote-history-table">
+                    <colgroup>
+                        <col style="width:110px"><col style="width:180px"><col style="width:135px">
+                        <col style="width:220px"><col style="width:95px"><col style="width:80px">
+                        <col style="width:155px"><col style="width:220px"><col style="width:140px">
+                        <col style="width:240px">
+                    </colgroup>
                     <thead>
                         <tr style="border-bottom: 1px solid rgba(56, 189, 248, 0.3); color: var(--accent-cyan); font-size: 0.75rem; text-transform: uppercase;">
                             <th style="padding: 0.75rem 0.85rem;">Mã Báo Giá</th>
@@ -1164,7 +1174,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                                 <td style="padding: 0.8rem 0.85rem; color: var(--text-secondary); font-family: var(--font-mono);">
                                     <?= htmlspecialchars($q['customer_phone']) ?>
                                 </td>
-                                <td style="padding: 0.8rem 0.85rem; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                <td style="padding: 0.8rem 0.85rem; color: var(--text-secondary);">
                                     <?= htmlspecialchars($q['address']) ?>
                                 </td>
                                 <td style="padding: 0.8rem 0.85rem; text-align: center; color: var(--accent-amber); font-weight: 700;">
@@ -1196,7 +1206,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                                 <td style="padding: 0.8rem 0.85rem; text-align: center; color: var(--text-muted); font-size: 0.75rem;">
                                     <?= !empty($q['created_at']) ? date('d/m/Y H:i', strtotime($q['created_at'])) : 'Vừa xong' ?>
                                 </td>
-                                <td style="padding: 0.8rem; min-width: 220px;">
+                                <td style="padding: 0.8rem;">
                                     <?php if ($q['project_id']): ?>
                                         <a class="sol-btn sol-btn--secondary sol-btn--sm" href="index.php?page=installations&amp;project=<?= (int) $q['project_id'] ?>">Xem dự án</a>
                                     <?php elseif (($currentUser['role'] ?? '') === 'customer' && $q['status'] === 'draft'): ?>
