@@ -1,0 +1,24 @@
+.quote-history-wide { width: 100%; min-width: 0; padding: 0 1rem 5rem; }
+#quote-history { width: 100%; min-width: 0; padding: 1.25rem; }
+.quote-history-scroll { max-width: 100%; overflow-x: auto; }
+.quote-history-scroll:focus-visible { outline: 2px solid var(--accent-gold); outline-offset: 4px; }
+.quote-history-table { width: 100%; min-width: 1575px; table-layout: fixed; border-collapse: collapse; font-size: .825rem; text-align: left; line-height: 1.65; }
+.quote-history-table th, .quote-history-table td { vertical-align: top; }
+.quote-history-table th { white-space: nowrap; }
+.quote-history-table td { overflow-wrap: anywhere; }
+.quote-history-table td:nth-child(1),
+.quote-history-table td:nth-child(3),
+.quote-history-table td:nth-child(5),
+.quote-history-table td:nth-child(6),
+.quote-history-table td:nth-child(7),
+.quote-history-table td:nth-child(9) { white-space: nowrap; }
+.quote-history-table p { margin: .6rem 0; }
+.quote-history-table details { margin-top: .75rem; text-align: left; }
+.quote-history-table summary { cursor: pointer; line-height: 1.6; }
+.quote-history-table .sol-badge { max-width: 100%; white-space: normal; line-height: 1.5; }
+.quote-history-table form { display: flex; flex-direction: column; align-items: stretch; gap: .75rem; }
+.quote-history-table textarea { width: 100%; min-width: 0; min-height: 90px; resize: vertical; padding: .65rem .75rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); background: var(--bg-base); color: var(--text-primary); font: inherit; }
+.quote-history-table .sol-btn { max-width: 100%; white-space: normal; text-align: center; line-height: 1.5; }
+@media (max-width: 760px) {
+    #quote-history { padding: 1.1rem; }
+}

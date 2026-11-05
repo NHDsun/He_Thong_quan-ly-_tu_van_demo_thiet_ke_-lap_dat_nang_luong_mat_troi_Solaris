@@ -101,6 +101,22 @@ if ($admin) {
                     </a>
                 <?php endforeach; ?>
             </nav>
+            <form method="get" class="tv4-project-filters">
+                <input type="hidden" name="page" value="installations">
+                <input type="hidden" name="filter" value="<?= UI::escape($viewData['filter']) ?>">
+                <label>Tìm mã dự án
+                    <input type="search" name="search" maxlength="20" placeholder="Ví dụ: SOLAR-2026-015" value="<?= UI::escape($viewData['search']) ?>">
+                </label>
+                <label>Sắp xếp dự án
+                    <select name="sort">
+                        <?php foreach (\App\Hooks\UseInstallationWorkflow::PROJECT_SORTS as $value => $label): ?>
+                            <option value="<?= UI::escape($value) ?>" <?= $viewData['sort'] === $value ? 'selected' : '' ?>><?= UI::escape($label) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <?php UI::component('button', 'Áp dụng', ['type' => 'submit']); ?>
+                <a class="sol-btn sol-btn--outline" href="<?= UI::escape(UI::url(['search' => null, 'sort' => null, 'p' => 1])) ?>">Đặt lại</a>
+            </form>
             <div class="tv4-list-heading">
                 <h2><?= UI::escape($filters[$viewData['filter']] ?? 'Danh sách dự án') ?></h2>
                 <span><?= $viewData['listing']['pager']['total'] ?> dự án</span>

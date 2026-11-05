@@ -27,6 +27,7 @@
     justify-content: space-between;
     gap: 1rem;
 }
+.tv4-material-heading .sol-btn { flex-shrink: 0; }
 .tv4-material-heading h3 { margin: 0; color: var(--accent-gold); }
 .tv4-material-dialog p { margin: .8rem 0; }
 .tv4-material-dialog h4 { margin: 1.2rem 0 .6rem; }
@@ -38,7 +39,7 @@
 }
 .tv4-material-form {
     display: grid;
-    gap: .65rem;
+    gap: .85rem;
     margin-top: 1rem;
 }
 .tv4-material-selects { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: .6rem; }
@@ -143,6 +144,7 @@ body:has(.tv4-material-dialog[open]) { overflow: hidden; }
     object-fit: cover;
 }
 .tv4-process-image .tv4-stage-number {
+    flex-shrink:0;
     position: absolute;
     top: .85rem;
     left: .85rem;
@@ -358,6 +360,7 @@ body:has(.tv4-material-dialog[open]) { overflow: hidden; }
 }
 
 .tv4 h2 {
+    margin:0 0 .75rem;
     font-size:1.3rem;
 }
 
@@ -367,6 +370,7 @@ body:has(.tv4-material-dialog[open]) { overflow: hidden; }
 }
 
 .tv4 p {
+    margin:.5rem 0;
     color:var(--tv4-muted);
     font-size:.875rem;
     line-height:1.7;
@@ -571,7 +575,9 @@ body:has(.tv4-material-dialog[open]) { overflow: hidden; }
 
 .tv4 .tv4-check {
     display:flex;
-    align-items:center;
+    align-items:flex-start;
+    gap:.65rem;
+    line-height:1.6;
 }
 
 .tv4-notice {
@@ -595,6 +601,7 @@ body:has(.tv4-material-dialog[open]) { overflow: hidden; }
 
 .tv4-pager {
     display:flex;
+    flex-wrap:wrap;
     align-items:center;
     justify-content:flex-end;
     gap:.75rem;
@@ -621,13 +628,15 @@ body:has(.tv4-material-dialog[open]) { overflow: hidden; }
 .tv4-summary-grid {
     width:100%;
     display:grid;
-    grid-template-columns:1fr 1fr 1.6fr 1fr;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.6fr) minmax(0,1fr);
     gap:1rem;
     border-top:1px solid var(--border-subtle);
     padding-top:1.2rem;
 }
 
 .tv4-summary-grid>div {
+    min-width:0;
+    overflow-wrap:anywhere;
     display:grid;
     gap:.4rem;
     font-size:.8rem;
@@ -651,8 +660,9 @@ body:has(.tv4-material-dialog[open]) { overflow: hidden; }
 }
 
 .tv4-steps {
+    padding:0;
     display:grid;
-    grid-template-columns:repeat(6,1fr);
+    grid-template-columns:repeat(6,minmax(0,1fr));
     list-style:none;
     margin:2rem 0;
     gap:.5rem;
@@ -727,11 +737,13 @@ body:has(.tv4-material-dialog[open]) { overflow: hidden; }
 }
 
 .tv4-stage-heading>div {
-    flex:1;
-    min-width:150px;
+    flex:1 1 150px;
+    min-width:0;
+    overflow-wrap:anywhere;
 }
 
 .tv4-stage-number {
+    flex-shrink:0;
     width:35px;
     height:35px;
     display:grid;
@@ -746,6 +758,7 @@ body:has(.tv4-material-dialog[open]) { overflow: hidden; }
 }
 
 .tv4-stage-list > .tv4-stage {
+    scroll-margin-top:6rem;
     width: 92%;
     align-self: center;
     min-width: 0;
@@ -772,7 +785,7 @@ details.tv4-stage[open] .tv4-stage-toggle::after { content: '▴'; }
 
 .tv4-upload {
     display:grid;
-    grid-template-columns:1fr 1.5fr auto;
+    grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) auto;
     gap:.8rem;
     align-items:end;
     border-top:1px dashed var(--border-subtle);
@@ -981,7 +994,7 @@ details.tv4-stage[open] .tv4-stage-toggle::after { content: '▴'; }
         grid-template-columns:1fr;
     }
     .tv4-steps {
-        grid-template-columns:repeat(3,1fr);
+        grid-template-columns:repeat(3,minmax(0,1fr));
         row-gap:1rem;
     }
     .tv4-project-card {
@@ -1024,6 +1037,51 @@ details.tv4-stage[open] .tv4-stage-toggle::after { content: '▴'; }
     .tv4-project-card:hover {
         transform:none;
     }
+}
+
+.tv4 > .tv4-panel + .tv4-panel,
+.tv4 > .tv4-panel + .tv4-notice,
+.tv4 > .tv4-notice + .tv4-panel { margin-top:1.25rem; }
+
+.tv4 .tv4-actions { justify-content:flex-start; gap:.75rem; margin-top:1rem; }
+.tv4 .sol-btn { max-width:100%; white-space:normal; text-align:center; line-height:1.5; }
+.tv4 .tv4-review,
+.tv4 .tv4-billing > form { margin-top:1rem; }
+.tv4 .tv4-review > label:first-of-type { margin-top:0; }
+.tv4 .tv4-stage-heading h3 { margin:0 0 .35rem; }
+.tv4 .tv4-stage-content > :first-child { margin-top:.75rem; }
+.tv4 .tv4-billing h4 { margin:1.5rem 0 .75rem; }
+.tv4 .tv4-billing > form > .sol-btn,
+.tv4 .tv4-review > .sol-btn { margin-top:.5rem; }
+.tv4 .tv4-check input { margin-top:.2rem; }
+.tv4 .tv4-request > strong { display:block; overflow-wrap:anywhere; }
+.tv4 .tv4-summary > div:first-child { min-width:0; overflow-wrap:anywhere; }
+.tv4 .tv4-summary > .tv4-crew,
+.tv4 .tv4-summary > p { flex-basis:100%; }
+.tv4 .tv4-stage-heading .sol-badge { white-space:normal; line-height:1.5; }
+.tv4-material-dialog .tv4-pager { flex-wrap:wrap; }
+
+@media(max-width:560px) {
+    .tv4 .tv4-actions { align-items:stretch; }
+    .tv4 .tv4-actions > .sol-btn { flex:1 1 100%; }
+    .tv4 .tv4-actions > label { width:100%; }
+    .tv4-calendar-filter > label { flex:1 1 140px; min-width:0; }
+    .tv4-calendar-filter > button { width:100%; }
+    .tv4 .tv4-stage-list > .tv4-stage { width:100%; }
+    .tv4 .tv4-summary-grid { grid-template-columns:minmax(0,1fr); }
+    .tv4-material-selects { grid-template-columns:minmax(0,1fr); }
+    .tv4-material-dialog { padding:1rem; }
+    .tv4 .tv4-evidence { max-width:100%; }
+    .tv4 .tv4-evidence img { max-width:100%; }
+}
+
+@media(max-width:760px) {
+    .tv4-stage-list > .tv4-stage { scroll-margin-top:10rem; }
+    body:has(.tv4) .sol-app-topbar { flex-wrap:wrap; gap:.75rem; padding:.75rem 1rem; }
+    body:has(.tv4) .sol-app-topbar__left { min-width:0; flex:1 1 100%; }
+    body:has(.tv4) .sol-app-breadcrumb { flex-wrap:wrap; min-width:0; gap:.35rem .5rem; }
+    body:has(.tv4) .sol-app-topbar__right { width:100%; min-width:0; flex-wrap:wrap; }
+    body:has(.tv4) .sol-app-topbar__right > a { max-width:100%; white-space:normal; }
 }
 
 body:has(.tv4) .sol-nav-tabs {
@@ -1085,4 +1143,16 @@ body:has(.tv4) .glow-ambient-1 {
         font-size:.7rem;
         padding:.45rem .6rem;
     }
+}
+
+.tv4-project-filters { display:grid; grid-template-columns:minmax(0,1fr) minmax(170px,240px) auto auto; gap:.85rem; align-items:end; margin:0 0 1.5rem; }
+.tv4 .tv4-project-filters label { margin:0; min-width:0; }
+.tv4-project-filters > .sol-btn { min-height:44px; }
+@media(max-width:760px) {
+    .tv4-project-filters { grid-template-columns:minmax(0,1fr) auto auto; }
+    .tv4-project-filters > label:first-of-type { grid-column:1 / -1; }
+}
+@media(max-width:420px) {
+    .tv4-project-filters { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .tv4-project-filters > label { grid-column:1 / -1; }
 }

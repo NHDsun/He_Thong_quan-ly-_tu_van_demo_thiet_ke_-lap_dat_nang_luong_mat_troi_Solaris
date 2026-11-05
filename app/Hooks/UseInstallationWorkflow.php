@@ -61,7 +61,15 @@ final class UseInstallationWorkflow
         return $project;
     }
 
-    public function listing(array $actor, string $filter, int $page): array
+    public const PROJECT_SORTS = [
+        'default' => 'Ưu tiên trạng thái',
+        'newest' => 'Mới nhất',
+        'oldest' => 'Cũ nhất',
+        'code_asc' => 'Mã dự án tăng dần',
+        'code_desc' => 'Mã dự án giảm dần',
+    ];
+
+    public function listing(array $actor, string $filter, int $page, string $search = '', string $sort = 'default'): array
     {
         if (!in_array($actor['role'], ['admin', 'technician', 'customer'], true)) {
             throw new RuntimeException('Vui lòng đăng nhập để xem dự án.');
@@ -81,12 +89,23 @@ final class UseInstallationWorkflow
         } elseif ($filter === 'pending' && $actor['role'] === 'admin') {
             $where .= " AND (p.status='pending_approval' OR (p.status IN ('scheduled','in_progress') AND (EXISTS (SELECT 1 FROM project_requests r WHERE r.project_id=p.id AND r.status='pending') OR EXISTS (SELECT 1 FROM project_stages s WHERE s.project_id=p.id AND s.status='pending_approval'))))";
         }
+        $search = mb_substr(trim($search), 0, 20);
+        if ($search !== '') {
+            $where .= ' AND LOCATE(?,p.contract_code)>0';
+            $params[] = $search;
+        }
+        $order = [
+            'newest' => 'p.created_at DESC,p.id DESC',
+            'oldest' => 'p.created_at ASC,p.id ASC',
+            'code_asc' => 'p.contract_code ASC,p.id ASC',
+            'code_desc' => 'p.contract_code DESC,p.id DESC',
+        ][$sort] ?? "FIELD(p.status,'pending_approval','new','scheduled','in_progress','completed','rejected','cancelled'),p.created_at DESC,p.id DESC";
         $total = (int) $this->rows("SELECT COUNT(*) n FROM projects p WHERE {$where}", $params)[0]['n'];
         $pager = UsePaginationState::make($total, $page);
         $projects = $this->rows("SELECT p.*, (SELECT COUNT(*) FROM project_stages s WHERE s.project_id=p.id AND s.status='approved') approved_count,
             (SELECT COUNT(*) FROM project_assignments a WHERE a.project_id=p.id AND a.ended_at IS NULL) crew_count,
             (SELECT COUNT(*) FROM project_requests r WHERE r.project_id=p.id AND r.status='pending') request_count
-            FROM projects p WHERE {$where} ORDER BY FIELD(p.status,'pending_approval','new','scheduled','in_progress','completed','rejected','cancelled'), p.created_at DESC, p.id DESC LIMIT {$pager['limit']} OFFSET {$pager['offset']}", $params);
+            FROM projects p WHERE {$where} ORDER BY {$order} LIMIT {$pager['limit']} OFFSET {$pager['offset']}", $params);
         return [
             'projects' => $projects,
             'pager' => $pager,

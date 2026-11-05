@@ -52,7 +52,7 @@ final class InstallationController
                 try {
                     $workflow->act($actor, $id, $action, $_POST, $_FILES);
                     $_SESSION['installation_flash'] = $action === 'pay_project'
-                        ? 'Thanh toán mô phỏng thành công. Không có giao dịch tiền thật.' : 'Đã lưu thay đổi.';
+                        ? 'Thanh toán thành công.' : 'Đã lưu thay đổi.';
                 } catch (RuntimeException $error) {
                     $_SESSION['installation_flash'] = $error->getMessage();
                 }
@@ -60,7 +60,10 @@ final class InstallationController
             }
             $view['today'] = $workflow->today();
             $view['filter'] = (string) ($_GET['filter'] ?? ($actor['role'] === 'admin' ? 'pending' : 'all'));
-            $view['listing'] = $workflow->listing($actor, $view['filter'], (int) ($_GET['p'] ?? 1));
+            $view['search'] = mb_substr(trim(is_string($_GET['search'] ?? null) ? $_GET['search'] : ''), 0, 20);
+            $sort = is_string($_GET['sort'] ?? null) ? $_GET['sort'] : 'default';
+            $view['sort'] = isset(InstallationWorkflow::PROJECT_SORTS[$sort]) ? $sort : 'default';
+            $view['listing'] = $workflow->listing($actor, $view['filter'], (int) ($_GET['p'] ?? 1), $view['search'], $view['sort']);
             if (!$id && in_array($actor['role'], ['admin', 'technician'], true)) {
                 $view['dashboard'] = $workflow->dashboard($actor);
             }
@@ -88,12 +91,12 @@ final class InstallationController
             }
         } catch (PDOException $error) {
             error_log('Installation database: ' . $error->getMessage());
-            $view['error'] = 'Chưa kết nối được dữ liệu lắp đặt. Hãy import database/solaris_data_insert.sql và kiểm tra cấu hình kết nối CSDL.';
+            $view['error'] = 'Không thể tải dữ liệu lắp đặt. Vui lòng thử lại sau.';
         } catch (RuntimeException $error) {
             $view['error'] = $error->getMessage();
         } catch (Throwable $error) {
             error_log('Installation: ' . $error->getMessage());
-            $view['error'] = 'Không thể xử lý yêu cầu. Vui lòng tải lại trang hoặc xem nhật ký máy chủ.';
+            $view['error'] = 'Không thể xử lý yêu cầu. Vui lòng tải lại trang và thử lại.';
         }
         return $view;
     }

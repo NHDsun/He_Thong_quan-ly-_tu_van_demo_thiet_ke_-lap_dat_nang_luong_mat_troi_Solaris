@@ -57,7 +57,7 @@ final class UseProjectBilling
         }
         // Số dư gửi từ biểu mẫu chỉ dùng để phát hiện trang đã cũ.
         if ((string) ($data['expected_remaining'] ?? '') !== (string) $summary['remaining'] || ($data['confirm_simulation'] ?? '') !== '1') {
-            throw new RuntimeException('Hãy tải lại trang và xác nhận số tiền thanh toán mô phỏng.');
+            throw new RuntimeException('Hãy tải lại trang và xác nhận số tiền thanh toán.');
         }
         $code = 'SIM-' . strtoupper(bin2hex(random_bytes(12)));
         $amount = sprintf('%d.%02d', intdiv($summary['remaining'], 100), $summary['remaining'] % 100);

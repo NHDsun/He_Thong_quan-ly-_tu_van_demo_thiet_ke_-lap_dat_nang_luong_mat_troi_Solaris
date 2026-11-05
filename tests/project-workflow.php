@@ -269,6 +269,25 @@ try {
     $legacyProject=$w->reviewQuote($legacy['quote_id'],1,true,'Duyệt');
     $denied(fn () => $w->act($admin,$legacyProject,'approve_project',[]),'Legacy plan missing products cannot be approved with an empty invoice');
     $check($status($legacyProject)==='pending_approval','Failed deployment leaves request pending');
+    $findA=$make();
+    $findB=$make();
+    $w->run("UPDATE projects SET contract_code='SOLAR-2099-901',user_id=4,created_at='2020-01-01 00:00:00' WHERE id=?",[$findA['project_id']]);
+    $w->run("UPDATE projects SET contract_code='SOLAR-2099-902',created_at='2021-01-01 00:00:00' WHERE id=?",[$findB['project_id']]);
+    $found=$w->listing($admin,'all',1,'2099-90','code_asc');
+    $check($found['pager']['total']===2 && array_column($found['projects'],'id')===[$findA['project_id'],$findB['project_id']], 'Partial code search and ascending code sort');
+    foreach (['code_desc','newest'] as $sortKey) {
+        $check(array_column($w->listing($admin,'all',1,'2099-90',$sortKey)['projects'],'id')===[$findB['project_id'],$findA['project_id']], 'Descending order: '.$sortKey);
+    }
+    $check(array_column($w->listing($admin,'all',1,'2099-90','oldest')['projects'],'id')===[$findA['project_id'],$findB['project_id']], 'Oldest first with stable order');
+    $check($w->listing($customer,'all',1,'2099-90')['pager']['total']===1, 'Code search preserves customer ownership');
+    $check($w->listing($tech,'all',1,'2099-90')['pager']['total']===0, 'Code search preserves technician assignment scope');
+    $w->run("UPDATE projects SET status='new' WHERE id=?",[$findA['project_id']]);
+    $check($w->listing($admin,'pending_approval',1,'2099-90')['pager']['total']===1, 'Search combines with selected status filter');
+    $check($w->listing($admin,'new',1,'2099-90')['projects'][0]['id']===$findA['project_id'], 'Search finds the new project within filter');
+    $check($w->listing($admin,'all',1,'%')['pager']['total']===0, 'Search treats wildcard as literal text');
+    $check($w->listing($admin,'all',1,"' OR 1=1 --")['pager']['total']===0, 'Search binds SQL input as data');
+    $check($w->listing($admin,'all',1,'2099-90','untrusted SQL')['projects']===$w->listing($admin,'all',1,'2099-90')['projects'], 'Unrecognized sort uses safe default');
+    $check($w->listing($admin,'all',1,' SOLAR-2099-902 ')['pager']['total']===1, 'Search trims surrounding whitespace');
     echo "PASS: $checks assertions; isolated database $name\n";
 } finally {
     if (preg_match('/^solaris_workflow_test_[a-f0-9]{10}$/D', $name)) {
