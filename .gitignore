@@ -18,3 +18,7 @@ yarn-error.log
 Thumbs.db
 ~$*
 *.tmp
+
+env.php
+env.*.php
+!env.example.php
