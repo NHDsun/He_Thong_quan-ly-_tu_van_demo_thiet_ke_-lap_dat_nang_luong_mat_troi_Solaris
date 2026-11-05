@@ -59,7 +59,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                 <span style="font-size: 1.35rem;"><?= $alert['type'] === 'success' ? '✅' : ($alert['type'] === 'warning' ? '⚠️' : '❌') ?></span>
                 <span><?= htmlspecialchars($alert['message']) ?></span>
             </div>
-            <a href="index.php?page=calculator<?= $isPlanSource ? '&source=plan' : '' ?>" style="color: var(--text-muted); text-decoration: none; font-size: 1.25rem;">&times;</a>
+            <a href="index.php?page=calculator&source=<?= $isPlanSource ? 'plan' : 'bill' ?>" style="color: var(--text-muted); text-decoration: none; font-size: 1.25rem;">&times;</a>
         </div>
     <?php endif; ?>
 
@@ -100,7 +100,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem;">
             <a href="#step-1-plan" style="text-decoration: none; display: flex; align-items: center; gap: 0.65rem; padding: 0.6rem 0.85rem; background: rgba(245, 158, 11, 0.15); border: 1px solid var(--accent-amber); border-radius: var(--radius-sm); color: #ffffff;">
                 <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent-amber); color: #080c14; font-weight: 800; font-size: 0.75rem;">1</span>
-                <span style="font-size: 0.8rem; font-weight: 600;">1. Đồng Bộ Thiết Bị</span>
+                <span style="font-size: 0.8rem; font-weight: 600;"><?= $isPlanSource ? '1. Đồng Bộ Thiết Bị' : '1. Nhập Hóa Đơn & Gói Lắp Đặt' ?></span>
             </a>
             <?php if (!empty($showStepsFrom2)): ?>
                 <a href="#step-2-simulation" style="text-decoration: none; display: flex; align-items: center; gap: 0.65rem; padding: 0.6rem 0.85rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: var(--radius-sm); color: #ffffff;">
@@ -138,9 +138,11 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
     <section id="step-1-plan" class="sol-glass-card" style="padding: 2rem 2.25rem; margin-bottom: 2.75rem; border-left: 4px solid var(--accent-amber);">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1rem;">
             <div>
-                <span class="sol-badge sol-badge--amber" style="margin-bottom: 0.35rem;">BƯỚC 1 / 4 • ĐỒNG BỘ KẾ HOẠCH DỰ ĐỊNH</span>
+                <span class="sol-badge sol-badge--amber" style="margin-bottom: 0.35rem;">
+                    <?= $isPlanSource ? 'BƯỚC 1 / 4 • ĐỒNG BỘ KẾ HOẠCH DỰ ĐỊNH' : 'BƯỚC 1 / 4 • ƯỚC TÍNH THEO HÓA ĐƠN ĐIỆN EVN' ?>
+                </span>
                 <h2 style="color: #ffffff; font-size: 1.45rem; font-family: var(--font-heading); margin: 0;">
-                    📋 Thiết Bị Trong Kế Hoạch & Thiết Lập Mặt Bằng Mái
+                    <?= $isPlanSource ? '📋 Thiết Bị Trong Kế Hoạch & Thiết Lập Mặt Bằng Mái' : '⚙️ Phân Tích Hóa Đơn Tiền Điện, Gói Giải Pháp & Mặt Bằng Mái' ?>
                 </h2>
             </div>
             <div style="display: flex; gap: 0.5rem;">
@@ -610,22 +612,64 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
             </form>
 
         <?php else: ?>
-            <!-- GIAO DIỆN CHẾ ĐỘ 2: THEO HÓA ĐƠN TIỀN ĐIỆN -->
-            <form method="POST" action="index.php?page=calculator&source=bill#step-2-simulation" style="background: rgba(14, 22, 38, 0.75); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1.5rem;">
-                <input type="hidden" name="calc_source" value="bill">
-                <input type="hidden" name="action" value="update_simulation">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; align-items: end;">
+            <!-- GIAO DIỆN CHẾ ĐỘ 2: THEO HÓA ĐƠN TIỀN ĐIỆN TOÀN DIỆN -->
+            <div style="margin-bottom: 1.35rem; padding: 1.15rem 1.35rem; background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(8, 12, 20, 0.85) 100%); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: var(--radius-md);">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
                     <div>
-                        <label style="display: block; font-size: 0.85rem; color: #cbd5e1; font-weight: 600; margin-bottom: 0.45rem;">
-                            Hóa đơn tiền điện trung bình hàng tháng (VNĐ):
+                        <strong style="color: #ffffff; font-size: 0.95rem; display: block; margin-bottom: 0.25rem;">
+                            💡 Thuật Toán Tự Động Thiết Kế Theo Biểu Giá Điện EVN (3.000 VNĐ/kWh • 4.5h Nắng Đỉnh)
+                        </strong>
+                        <p style="color: var(--text-secondary); font-size: 0.825rem; margin: 0; line-height: 1.5;">
+                            Nhập số tiền điện trung bình hàng tháng hoặc chọn nhanh các mức tiêu thụ phổ biến bên dưới. Hệ thống sẽ tự động tính toán công suất giàn pin ($kWp$), diện tích mái, bóc tách vật tư BOM và dựng sơ đồ 2D.
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 0.45rem; flex-wrap: wrap;">
+                        <?php
+                        $billPresets = [
+                            1500000  => '1.5 Triệu',
+                            3000000  => '3 Triệu',
+                            5000000  => '5 Triệu',
+                            8000000  => '8 Triệu',
+                            15000000 => '15 Triệu',
+                            30000000 => '30 Triệu (C&I)',
+                        ];
+                        $curBillVal = (int)($calc['monthly_bill'] ?? 3000000);
+                        foreach ($billPresets as $presetVal => $presetLabel):
+                            $isPresetActive = ($curBillVal === $presetVal);
+                        ?>
+                            <button
+                                type="button"
+                                onclick="setBillPreset(<?= $presetVal ?>)"
+                                class="sol-btn <?= $isPresetActive ? 'sol-btn--solar' : 'sol-btn--secondary' ?> sol-btn--sm bill-preset-btn"
+                                data-bill="<?= $presetVal ?>"
+                                style="font-size: 0.76rem; padding: 0.35rem 0.7rem;"
+                            >
+                                <?= $presetLabel ?>
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+
+            <form id="billSimForm" method="POST" action="index.php?page=calculator&source=bill#step-2-simulation" style="background: rgba(14, 22, 38, 0.75); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1.5rem;">
+                <input type="hidden" name="calc_source" value="bill">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; align-items: end; margin-bottom: 1.25rem;">
+                    <div>
+                        <label style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #cbd5e1; font-weight: 600; margin-bottom: 0.45rem;">
+                            <span>Hóa đơn tiền điện / tháng (VNĐ):</span>
+                            <strong id="liveBillText" style="color: var(--accent-gold);"><?= number_format((int)($calc['monthly_bill'] ?? 3000000), 0, ',', '.') ?> đ</strong>
                         </label>
                         <input 
                             type="number" 
+                            id="monthlyBillInput"
                             name="monthly_bill" 
                             value="<?= (int)($calc['monthly_bill'] ?? 3000000) ?>" 
                             step="100000" 
                             min="500000"
-                            style="width: 100%; padding: 0.75rem 1rem; background: rgba(8, 12, 20, 0.8); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #ffffff; font-size: 0.95rem; font-family: var(--font-mono);"
+                            max="500000000"
+                            required
+                            oninput="updateLiveBillPreview(this.value)"
+                            style="width: 100%; padding: 0.75rem 1rem; background: rgba(8, 12, 20, 0.85); border: 1px solid rgba(245, 158, 11, 0.45); border-radius: var(--radius-sm); color: #ffffff; font-size: 0.95rem; font-family: var(--font-mono); font-weight: 700;"
                         >
                     </div>
                     <div>
@@ -636,26 +680,106 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                             type="number" 
                             name="roof_area" 
                             value="<?= htmlspecialchars((string)($calc['provided_roof_area'] ?? $calc['required_roof_area'] ?? 35)) ?>" 
-                            style="width: 100%; padding: 0.75rem 1rem; background: rgba(8, 12, 20, 0.8); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #ffffff; font-size: 0.95rem;"
+                            min="10"
+                            max="10000"
+                            step="1"
+                            required
+                            style="width: 100%; padding: 0.75rem 1rem; background: rgba(8, 12, 20, 0.85); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #ffffff; font-size: 0.95rem; font-family: var(--font-mono);"
                         >
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.85rem; color: #cbd5e1; font-weight: 600; margin-bottom: 0.45rem;">
-                            Gói hệ thống:
+                            Gói giải pháp hệ thống:
                         </label>
-                        <select name="package" style="width: 100%; padding: 0.75rem 1rem; background: rgba(8, 12, 20, 0.8); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #ffffff; font-size: 0.95rem;">
-                            <option value="residential" <?= ($calc['package_key'] ?? '') === 'residential' ? 'selected' : '' ?>>Hòa Lưới Dân Dụng (Hộ Gia Đình)</option>
-                            <option value="commercial" <?= ($calc['package_key'] ?? '') === 'commercial' ? 'selected' : '' ?>>Thương Mại & Doanh Nghiệp (C&I)</option>
-                            <option value="hybrid" <?= ($calc['package_key'] ?? '') === 'hybrid' ? 'selected' : '' ?>>Lưu Trữ Hybrid ESS (Có Pin)</option>
+                        <select name="package" style="width: 100%; padding: 0.75rem 1rem; background: rgba(8, 12, 20, 0.85); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #ffffff; font-size: 0.95rem;">
+                            <option value="residential" <?= ($calc['package_key'] ?? '') === 'residential' ? 'selected' : '' ?>>Hòa Lưới Dân Dụng (Hộ Gia Đình - 14Tr/kWp)</option>
+                            <option value="hybrid" <?= ($calc['package_key'] ?? '') === 'hybrid' ? 'selected' : '' ?>>Lưu Trữ Hybrid ESS (Có Pin Lithium - 22Tr/kWp)</option>
+                            <option value="commercial" <?= ($calc['package_key'] ?? '') === 'commercial' ? 'selected' : '' ?>>Thương Mại &amp; Doanh Nghiệp (C&amp;I - 13Tr/kWp)</option>
+                            <option value="agri" <?= ($calc['package_key'] ?? '') === 'agri' ? 'selected' : '' ?>>Nông Nghiệp Bơm Nước (Agri-Solar - 13.5Tr/kWp)</option>
                         </select>
                     </div>
                     <div>
-                        <button type="submit" class="sol-btn sol-btn--solar" style="width: 100%; padding: 0.8rem 1.25rem; font-size: 0.95rem; font-weight: 700;">
-                            ⚡ Cập Nhật Tính Toán &amp; Mô Phỏng
-                        </button>
+                        <label style="display: block; font-size: 0.85rem; color: #cbd5e1; font-weight: 600; margin-bottom: 0.45rem;">
+                            Kết cấu mặt bằng mái nhà:
+                        </label>
+                        <select name="roof_type" style="width: 100%; padding: 0.75rem 1rem; background: rgba(8, 12, 20, 0.85); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #ffffff; font-size: 0.95rem;">
+                            <option value="metal_roof" <?= ($calc['roof_type'] ?? '') === 'metal_roof' ? 'selected' : '' ?>>Mái tôn sóng / Seamlock</option>
+                            <option value="tile_roof" <?= ($calc['roof_type'] ?? '') === 'tile_roof' ? 'selected' : '' ?>>Mái ngói Thái / Nhật</option>
+                            <option value="concrete_roof" <?= ($calc['roof_type'] ?? '') === 'concrete_roof' ? 'selected' : '' ?>>Sân thượng Bê tông cốt thép</option>
+                        </select>
                     </div>
                 </div>
+
+                <!-- Tóm tắt nhanh thông số ước tính hiện tại -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0.85rem; padding: 1rem 1.25rem; background: rgba(8, 12, 20, 0.7); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); margin-bottom: 1.25rem;">
+                    <div>
+                        <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; display: block;">Điện tiêu thụ từ hóa đơn:</span>
+                        <strong id="liveKwhText" style="color: #38bdf8; font-size: 1.05rem;">~<?= number_format($calc['monthly_kwh'] ?? 1000, 0, ',', '.') ?> kWh/tháng</strong>
+                    </div>
+                    <div>
+                        <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; display: block;">Công suất &amp; Số tấm pin:</span>
+                        <strong id="liveKwpText" style="color: var(--accent-amber); font-size: 1.05rem;"><?= $calc['estimated_kwp'] ?> kWp (<?= $calc['panel_count'] ?> tấm 550W)</strong>
+                    </div>
+                    <div>
+                        <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; display: block;">Diện tích mái yêu cầu:</span>
+                        <strong id="liveAreaText" style="color: <?= (isset($calc['is_roof_sufficient']) && !$calc['is_roof_sufficient']) ? '#fb7185' : '#10b981' ?>; font-size: 1.05rem;">
+                            <?= $calc['required_roof_area'] ?> m² <?= (isset($calc['is_roof_sufficient']) && !$calc['is_roof_sufficient']) ? '(Thiếu diện tích)' : '(Đủ diện tích)' ?>
+                        </strong>
+                    </div>
+                    <div>
+                        <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; display: block;">Dự toán &amp; Hoàn vốn:</span>
+                        <strong style="color: var(--accent-gold); font-size: 1.05rem;"><?= $calc['estimated_total_cost_formatted'] ?> (~<?= $calc['payback_text'] ?? ($calc['payback_years'] . ' năm') ?>)</strong>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 0.85rem; flex-wrap: wrap; justify-content: flex-end;">
+                    <button type="submit" name="action" value="apply_bill_to_plan" class="sol-btn sol-btn--secondary" style="padding: 0.8rem 1.35rem; font-size: 0.9rem; font-weight: 700; border: 1px solid rgba(56, 189, 248, 0.45); color: #bae6fd;">
+                        🔄 Đưa Cấu Hình Gợi Ý Vào Kế Hoạch Dự Định (Giỏ Hàng)
+                    </button>
+                    <button type="submit" name="action" value="update_simulation" class="sol-btn sol-btn--solar" style="padding: 0.8rem 1.75rem; font-size: 0.95rem; font-weight: 800; box-shadow: 0 4px 18px rgba(245, 158, 11, 0.4);">
+                        ⚡ Cập Nhật Tính Toán &amp; Xem Mô Phỏng 2D
+                    </button>
+                </div>
             </form>
+
+            <script>
+                function setBillPreset(amount) {
+                    const input = document.getElementById('monthlyBillInput');
+                    if (input) {
+                        input.value = amount;
+                        updateLiveBillPreview(amount);
+                    }
+                    document.querySelectorAll('.bill-preset-btn').forEach(btn => {
+                        if (parseInt(btn.getAttribute('data-bill'), 10) === amount) {
+                            btn.classList.remove('sol-btn--secondary');
+                            btn.classList.add('sol-btn--solar');
+                        } else {
+                            btn.classList.remove('sol-btn--solar');
+                            btn.classList.add('sol-btn--secondary');
+                        }
+                    });
+                }
+
+                function updateLiveBillPreview(val) {
+                    const bill = Math.max(500000, parseFloat(val) || 3000000);
+                    const fmt = new Intl.NumberFormat('vi-VN').format(bill);
+                    const elBill = document.getElementById('liveBillText');
+                    const elKwh = document.getElementById('liveKwhText');
+                    const elKwp = document.getElementById('liveKwpText');
+                    const elArea = document.getElementById('liveAreaText');
+                    if (elBill) elBill.innerText = fmt + ' đ';
+
+                    const monthlyKwh = Math.round(bill / 3000);
+                    const rawKwp = monthlyKwh / (4.5 * 30);
+                    const panels = Math.max(4, Math.ceil((rawKwp * 1000) / 550));
+                    const actualKwp = ((panels * 550) / 1000).toFixed(2).replace(/.00$/, '');
+                    const reqArea = (panels * 2.5).toFixed(1).replace(/.0$/, '');
+
+                    if (elKwh) elKwh.innerText = '~' + new Intl.NumberFormat('vi-VN').format(monthlyKwh) + ' kWh/tháng';
+                    if (elKwp) elKwp.innerText = actualKwp + ' kWp (' + panels + ' tấm 550W)';
+                    if (elArea) elArea.innerText = reqArea + ' m² (Nhấn Cập nhật để vẽ 2D)';
+                }
+            </script>
         <?php endif; ?>
     </section>
 
@@ -991,9 +1115,9 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
             </div>
         </div>
 
-        <?php if (!empty($calc['is_roof_sufficient']) && !$calc['is_roof_sufficient']): ?>
+        <?php if (isset($calc['is_roof_sufficient']) && !$calc['is_roof_sufficient']): ?>
             <div style="margin-top: 1.25rem; padding: 0.9rem 1.2rem; border-radius: var(--radius-sm); background: rgba(244, 63, 94, 0.15); border: 1px solid var(--accent-rose); font-size: 0.85rem; color: #fecdd3;">
-                ⚠️ <strong>Cảnh báo diện tích:</strong> Diện tích mái khai báo (<?= $calc['provided_roof_area'] ?> m²) nhỏ hơn diện tích yêu cầu cho giàn pin (<?= $calc['required_roof_area'] ?> m²). Kỹ sư sẽ tư vấn phương án dựng giàn khung nâng cao khi khảo sát hiện trường.
+                ⚠️ <strong>Cảnh báo diện tích:</strong> Diện tích mái khai báo (<strong><?= $calc['provided_roof_area'] ?> m²</strong>) nhỏ hơn diện tích yêu cầu cho giàn pin <?= $calc['panel_count'] ?> tấm (<strong><?= $calc['required_roof_area'] ?> m²</strong> — diện tích hiện tại tối đa lắp được khoảng <strong><?= (int)($calc['max_panels_by_roof'] ?? 0) ?> tấm</strong> trên mặt phẳng đơn). Kỹ sư sẽ tư vấn phương án dựng giàn khung nâng cao hoặc chọn tấm pin công suất lớn hơn khi khảo sát hiện trường.
             </div>
         <?php endif; ?>
     </section>
@@ -1020,7 +1144,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                             ⚡ NĂNG LƯỢNG QUANG ĐIỆN
                         </span>
                         <div style="font-size: 0.825rem; color: #cbd5e1; font-weight: 700; text-transform: uppercase;">
-                            Số KW Điện Tạo Ra Từ Kế Hoạch
+                            <?= $isPlanSource ? 'Số KW Điện Tạo Ra Từ Kế Hoạch' : 'Số KW Điện Tạo Ra Theo Hóa Đơn' ?>
                         </div>
                     </div>
                     <span style="font-size: 1.75rem;">☀️</span>
@@ -1039,7 +1163,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                 <div style="margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--border-subtle);">
                     <div style="font-size: 0.75rem; color: var(--text-muted);">Sản Lượng Điện Ước Tính:</div>
                     <div style="font-family: var(--font-heading); font-size: 1.75rem; font-weight: 800; color: var(--accent-cyan); line-height: 1.1;">
-                        ~<?= number_format($calc['monthly_kwh'] ?? (($calc['yearly_kwh_produced'] ?? 0) / 12), 1, ',', '.') ?> <span style="font-size: 0.95rem; color: #ffffff;">kWh / tháng</span>
+                        ~<?= number_format($calc['monthly_kwh_produced'] ?? $calc['monthly_kwh'] ?? (($calc['yearly_kwh_produced'] ?? 0) / 12), 1, ',', '.') ?> <span style="font-size: 0.95rem; color: #ffffff;">kWh / tháng</span>
                     </div>
                     <div style="font-size: 0.775rem; color: var(--text-secondary); margin-top: 0.2rem;">
                         Tương đương <strong>~<?= number_format($calc['yearly_kwh_produced'], 0, ',', '.') ?> số điện (kWh)/năm</strong>
@@ -1194,6 +1318,8 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                                     <td style="padding: 0.75rem 0.85rem;">
                                         <?php if (!empty($b['is_from_cart'])): ?>
                                             <span class="sol-badge sol-badge--emerald" style="font-size: 0.7rem; padding: 2px 7px;">● Từ Kế Hoạch</span>
+                                        <?php elseif (!empty($b['is_from_bill'])): ?>
+                                            <span class="sol-badge sol-badge--cyan" style="font-size: 0.7rem; padding: 2px 7px;">● Chuẩn Gói Hóa Đơn</span>
                                         <?php else: ?>
                                             <span class="sol-badge sol-badge--amber" style="font-size: 0.7rem; padding: 2px 7px;">○ Bổ Sung Chuẩn</span>
                                         <?php endif; ?>
@@ -1247,12 +1373,12 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
             <p class="sol-notice">Đăng nhập bằng tài khoản khách hàng để lưu dự toán hoặc đăng ký khảo sát. <a href="index.php?page=auth">Đăng nhập</a></p>
         <?php endif; ?>
         <!-- Form xác nhận & gửi yêu cầu khảo sát thi công -->
-        <form method="POST" action="index.php?page=calculator<?= $isPlanSource ? '&source=plan' : '' ?>" style="max-width: 820px; margin: 0 auto;">
+        <form method="POST" action="index.php?page=calculator&source=<?= $isPlanSource ? 'plan' : 'bill' ?>" style="max-width: 820px; margin: 0 auto;">
             <input type="hidden" name="csrf" value="<?= htmlspecialchars($_SESSION['solar_csrf'], ENT_QUOTES) ?>">
             <input type="hidden" name="request_key" value="<?= htmlspecialchars($_POST['request_key'] ?? bin2hex(random_bytes(32)), ENT_QUOTES) ?>">
             <input type="hidden" name="calc_source" value="<?= htmlspecialchars($source ?? 'plan') ?>">
             <input type="hidden" name="monthly_bill" value="<?= (int)($calc['monthly_bill'] ?? $calc['monthly_money'] ?? 3000000) ?>">
-            <input type="hidden" name="roof_area" value="<?= $calc['required_roof_area'] ?>">
+            <input type="hidden" name="roof_area" value="<?= htmlspecialchars((string)($calc['provided_roof_area'] ?? $calc['required_roof_area'] ?? 35)) ?>">
             <input type="hidden" name="package" value="<?= htmlspecialchars($calc['package_key'] ?? 'residential') ?>">
             <input type="hidden" name="roof_type" value="<?= htmlspecialchars($calc['roof_type'] ?? 'metal_roof') ?>">
 
@@ -1323,7 +1449,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                     rows="3" 
                     placeholder="Ghi chú thêm về hướng nhà, độ dốc mái tôn hoặc giờ hẹn kỹ sư khảo sát..."
                     style="width: 100%; padding: 0.75rem 1rem; background: rgba(8, 12, 20, 0.7); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #ffffff; font-size: 0.9rem; font-family: inherit;"
-                ><?= $isPlanSource ? "Cấu hình từ Kế hoạch dự định: {$calc['estimated_kwp']} kWp ({$calc['panel_count']} tấm pin). Dự toán: {$calc['estimated_total_cost_formatted']}." : '' ?></textarea>
+                ><?= $isPlanSource ? "Cấu hình từ Kế hoạch dự định: {$calc['estimated_kwp']} kWp ({$calc['panel_count']} tấm pin). Dự toán: {$calc['estimated_total_cost_formatted']}." : "Ước tính theo hóa đơn điện ({$calc['monthly_bill_formatted']}/tháng) - {$calc['package_name']}: {$calc['estimated_kwp']} kWp ({$calc['panel_count']} tấm pin), {$roofTypeName}. Dự toán: {$calc['estimated_total_cost_formatted']}." ?></textarea>
             </div>
 
             <!-- NÚT XÁC NHẬN CHUYỂN SANG QUẢN LÝ LẮP ĐẶT (ĐIỂM NHẤN CHÍNH) -->

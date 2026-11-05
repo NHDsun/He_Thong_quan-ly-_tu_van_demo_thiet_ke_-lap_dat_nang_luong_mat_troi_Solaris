@@ -47,6 +47,11 @@ class UseSolarCalculator
             'name' => 'Lưu Trữ Hybrid ESS (Pin Lithium)',
             'price_per_kwp' => 22000000,
             'desc' => 'Tích hợp pin Lithium LiFePO4 cấp điện 24/7 liên tục ngay cả khi mất điện lưới.'
+        ],
+        'agri' => [
+            'name' => 'Nông Nghiệp Bơm Nước (Agri-Solar)',
+            'price_per_kwp' => 13500000,
+            'desc' => 'Cấp nguồn độc lập cho máy bơm tưới tiêu trang trại, biến tần bơm điều tốc theo nắng.'
         ]
     ];
 
@@ -570,6 +575,8 @@ class UseSolarCalculator
         // 5. Dự toán đầu tư trọn gói (VND)
         $pricePerKwp = self::PACKAGE_PRICING[$packageKey]['price_per_kwp'];
         $estimatedTotalCost = round($actualKwp * $pricePerKwp);
+        $deviceCost = round($estimatedTotalCost * 0.88);
+        $installCost = $estimatedTotalCost - $deviceCost;
 
         // 6. Tiết kiệm tài chính
         $monthlySavings = round($monthlyBill * self::SAVINGS_RATIO);
@@ -578,8 +585,23 @@ class UseSolarCalculator
         // 7. Thời gian hoàn vốn (năm)
         // Công thức: Nam_hoan_von = Chi_phi_dau_tu / (Hoa_don_thang * 12 * 0.9)
         $paybackYears = 0;
+        $paybackYearsDecimal = 0;
         if ($yearlySavings > 0) {
+            $paybackYearsDecimal = round($estimatedTotalCost / $yearlySavings, 2);
             $paybackYears = round($estimatedTotalCost / $yearlySavings, 1);
+        }
+        $paybackYearsInt = (int) floor($paybackYearsDecimal);
+        $paybackMonths = (int) round(($paybackYearsDecimal - $paybackYearsInt) * 12);
+        if ($paybackMonths >= 12) {
+            $paybackYearsInt += 1;
+            $paybackMonths = 0;
+        }
+        $paybackText = $paybackYearsInt > 0 ? "{$paybackYearsInt} năm" : "";
+        if ($paybackMonths > 0) {
+            $paybackText .= ($paybackText !== "" ? " " : "") . "{$paybackMonths} tháng";
+        }
+        if ($paybackText === "") {
+            $paybackText = $paybackYears . " năm";
         }
 
         // 8. Phân tích lợi ích tài chính 25 năm (vòng đời tiêu chuẩn bảo hành tấm pin)
@@ -589,6 +611,8 @@ class UseSolarCalculator
 
         // 9. Sản lượng điện hàng năm và Chỉ số phát thải xanh (ESG)
         // Hệ số suy hao hệ thống trung bình 18% (Performance Ratio = 0.82)
+        $dailyKwh = round($actualKwp * self::PEAK_SUN_HOURS * 0.82, 2);
+        $monthlyKwhProduced = round($dailyKwh * 30, 1);
         $yearlyKwhProduced = round($actualKwp * self::PEAK_SUN_HOURS * 365 * 0.82);
         $co2SavedKgYearly = round($yearlyKwhProduced * self::CO2_KG_PER_KWH);
         $treesEquivalentYearly = (int) round($co2SavedKgYearly / 20); // 1 cây hấp thụ ~20kg CO2/năm
@@ -599,13 +623,36 @@ class UseSolarCalculator
         // 11. Bóc tách vật tư chính (Bill of Materials - BOM)
         $bom = self::generateBOM($actualKwp, $panelCount, $packageKey, $roofType);
 
+        // 12. Thông tin thiết bị đại diện cho Sơ đồ 2D Topology (Step 2)
+        $invKva = round($actualKwp * 1.0, 1);
+        $invLabel = match ($packageKey) {
+            'hybrid' => "Inverter Hybrid {$invKva}kW",
+            'commercial' => "Inverter 3 Pha {$invKva}kW",
+            'agri' => "Solar Pump Inv {$invKva}kW",
+            default => "Inverter Hòa Lưới {$invKva}kW"
+        };
+        $primaryBattery = ($packageKey === 'hybrid') ? [
+            'name' => 'Pin Lithium ESS ' . round($actualKwp * 1.5, 1) . 'kWh',
+            'quantity' => 1,
+            'capacity_watts' => round($actualKwp * 1500)
+        ] : null;
+
         return [
+            'is_from_plan'           => false,
+            'source'                 => 'bill',
+            'primary_panel'          => ['name' => 'Tấm Pin Tier-1 Mono 550W', 'quantity' => $panelCount],
+            'primary_inverter'       => ['name' => $invLabel, 'quantity' => 1],
+            'primary_battery'        => $primaryBattery,
+            'primary_box'            => ['name' => ($actualKwp >= 10 ? 'Tủ Điện 3 Pha & SPD' : 'Tủ Điện AC/DC & SPD'), 'quantity' => 1],
+            'primary_meter'          => ['name' => ($actualKwp >= 10 ? 'Smart Meter 3 Pha' : 'Smart Meter 2 Chiều'), 'quantity' => 1],
             'monthly_bill'           => $monthlyBill,
             'monthly_bill_formatted' => number_format($monthlyBill, 0, ',', '.') . ' VNĐ',
             'package_key'            => $packageKey,
             'package_name'           => self::PACKAGE_PRICING[$packageKey]['name'],
             'roof_type'              => $roofType,
+            'daily_kwh'              => $dailyKwh,
             'monthly_kwh'            => round($monthlyKwh, 1),
+            'monthly_kwh_produced'   => $monthlyKwhProduced,
             'estimated_kwp'          => $actualKwp,
             'panel_count'            => $panelCount,
             'panel_wattage'          => self::PANEL_WATTAGE,
@@ -614,13 +661,20 @@ class UseSolarCalculator
             'is_roof_sufficient'     => $isRoofSufficient,
             'max_panels_by_roof'     => $maxPanelsByRoof,
             'price_per_kwp'          => $pricePerKwp,
+            'device_cost'            => $deviceCost,
+            'install_cost'           => $installCost,
             'estimated_total_cost'   => $estimatedTotalCost,
             'estimated_total_cost_formatted' => number_format($estimatedTotalCost, 0, ',', '.') . ' VNĐ',
+            'monthly_money'          => $monthlySavings,
+            'monthly_money_formatted'=> number_format($monthlySavings, 0, ',', '.') . ' VNĐ',
             'monthly_savings'        => $monthlySavings,
             'monthly_savings_formatted' => number_format($monthlySavings, 0, ',', '.') . ' VNĐ',
             'yearly_savings'         => $yearlySavings,
             'yearly_savings_formatted'  => number_format($yearlySavings, 0, ',', '.') . ' VNĐ',
+            'payback_years_decimal'  => $paybackYearsDecimal,
             'payback_years'          => $paybackYears,
+            'payback_months'         => $paybackMonths,
+            'payback_text'           => $paybackText,
             'total_25yr_savings'     => $total25YearSavings,
             'net_25yr_profit'        => $net25YearProfit,
             'net_25yr_profit_formatted' => number_format($net25YearProfit, 0, ',', '.') . ' VNĐ',
@@ -838,70 +892,87 @@ class UseSolarCalculator
      */
     public static function generateBOM(float $kwp, int $panelCount, string $packageKey, string $roofType): array
     {
-        $inverterKva = round($kwp * 1.1, 1);
-        $inverterType = ($packageKey === 'hybrid') 
-            ? 'Inverter Hybrid thông minh đa kênh sạc ESS' 
-            : ($kwp >= 10 ? 'Biến tần Inverter hòa lưới 3 Pha IP65' : 'Biến tần Inverter hòa lưới 1 Pha IP65');
+        $inverterKva = round($kwp * 1.0, 1);
+        $inverterType = match ($packageKey) {
+            'hybrid' => 'Inverter Hybrid thông minh đa kênh sạc xả ESS, chuyển mạch UPS <10ms',
+            'agri' => 'Biến tần bơm năng lượng mặt trời Solar Pump Inverter MPPT IP65',
+            default => ($kwp >= 10 ? 'Biến tần Inverter hòa lưới 3 Pha IP65 hiệu suất 98.6%' : 'Biến tần Inverter hòa lưới 1 Pha IP65 hiệu suất 98.4%')
+        };
 
         $roofStructureName = match ($roofType) {
-            'tile_roof' => 'Bộ phụ kiện kẹp móc ngói Inox 304 & Ray nhôm định hình Anode',
-            'concrete_roof' => 'Hệ giàn khung nghiêng chân đỡ mạ kẽm nhúng nóng + ray nhôm',
-            default => 'Hệ thống kẹp sóng tôn Seamlock/Kliplok & Ray nhôm Anode chống bão'
+            'tile_roof' => 'Bộ phụ kiện kẹp móc ngói Inox 304 & Ray nhôm định hình AL6005-T5 Anode',
+            'concrete_roof' => 'Hệ giàn khung nghiêng chân đỡ mạ kẽm nhúng nóng + Ray nhôm AL6005-T5',
+            default => 'Hệ thống kẹp sóng tôn Seamlock/Kliplok & Ray nhôm AL6005-T5 Anode chống bão'
         };
 
         $bom = [
             [
-                'item' => 'Tấm pin mặt trời Tier-1',
-                'specs' => 'Công nghệ Mono Perc Half-cell 550Wp, Hiệu suất > 21.3%, Hãng Tier-1 (Longi / Jinko / Canadian)',
+                'item' => 'Tấm pin mặt trời Tier-1 Mono Half-Cell 550W',
+                'specs' => 'Công nghệ Mono PERC Half-cell 550Wp, Hiệu suất > 21.5%, Chuẩn Tier-1 (Canadian / LONGi / Jinko)',
                 'quantity' => $panelCount,
                 'unit' => 'Tấm',
-                'warranty' => '12 năm vật lý, 25 năm hiệu suất > 80%'
+                'warranty' => '12 năm vật lý, 25 năm hiệu suất > 84.8%',
+                'is_from_bill' => true
             ],
             [
-                'item' => 'Biến tần Inverter hòa lưới',
-                'specs' => "Công suất {$inverterKva} kW, {$inverterType}, Giám sát WiFi/Cloud 24/7",
+                'item' => ($packageKey === 'hybrid' ? 'Biến tần Inverter Hybrid Lưu Trữ' : 'Biến tần Inverter Quang Điện'),
+                'specs' => "Công suất {$inverterKva} kW, {$inverterType}, Giám sát SCADA Cloud 24/7",
                 'quantity' => 1,
                 'unit' => 'Bộ',
-                'warranty' => '5 năm đổi mới chính hãng'
+                'warranty' => '5 năm đổi mới chính hãng',
+                'is_from_bill' => true
             ],
             [
-                'item' => 'Hệ thống giá đỡ cơ khí',
+                'item' => 'Hệ thống khung giá đỡ & ray nhôm định hình',
                 'specs' => $roofStructureName,
-                'quantity' => 1,
-                'unit' => 'Hệ trọn gói',
-                'warranty' => '10 năm chịu bão cấp 12'
+                'quantity' => max(4, (int) ceil($panelCount / 2)),
+                'unit' => 'Thanh / Bộ',
+                'warranty' => '10 năm chịu bão cấp 12',
+                'is_from_bill' => true
             ],
             [
-                'item' => 'Tủ điện an toàn AC/DC & SPD',
-                'specs' => 'Tích hợp chống sét lan truyền SPD Type 2, Aptomat DC 1000V, AC RCBO chống dòng rò',
+                'item' => 'Tủ điện an toàn đóng cắt AC/DC & SPD',
+                'specs' => ($kwp >= 10 ? 'Tủ điện 3 Pha tích hợp ATS & SPD Type 2 1000VDC, Vỏ IP65' : 'Tích hợp chống sét lan truyền SPD Type 2, MCB DC 1000V, RCBO chống dòng rò'),
                 'quantity' => 1,
                 'unit' => 'Tủ',
-                'warranty' => '3 năm tiêu chuẩn IEC'
+                'warranty' => '3 năm tiêu chuẩn IEC 60364',
+                'is_from_bill' => true
             ],
             [
-                'item' => 'Cáp điện & Phụ kiện đấu nối',
-                'specs' => 'Cáp DC chuyên dụng chống UV 1x4mm², Cáp AC Cadivi đồng nguyên chất, Đầu nối MC4 IP68',
+                'item' => 'Cáp điện DC Solar 4.0mm² & Đầu nối MC4 IP68',
+                'specs' => 'Cáp DC chuyên dụng lõi đồng mạ thiếc chống tia UV 1500VDC, Đầu nối chống nước MC4 IP68',
+                'quantity' => max(1, (int) ceil($panelCount / 12)),
+                'unit' => 'Cuộn (100m)',
+                'warranty' => '25 năm an toàn điện',
+                'is_from_bill' => true
+            ],
+            [
+                'item' => 'Bộ đồng hồ đo đếm năng lượng Smart Meter 2 Chiều',
+                'specs' => ($kwp >= 10 ? 'Smart Meter 3 Pha RS485 Modbus RTU, đo đếm & bám tải Zero-Export' : 'Smart Meter 1 Pha RS485 Modbus RTU, đo đếm hòa lưới 2 chiều chính xác Class 1.0'),
                 'quantity' => 1,
-                'unit' => 'Gói',
-                'warranty' => '5 năm an toàn điện'
+                'unit' => 'Bộ',
+                'warranty' => '2 năm kiểm định chính hãng',
+                'is_from_bill' => true
             ],
             [
-                'item' => 'Thi công, Kiểm định & Nghiệm thu EVN',
-                'specs' => 'Lắp đặt chuẩn kỹ thuật PCCC, hỗ trợ hồ sơ thỏa thuận đấu nối và nghiệm thu hòa lưới EVN',
+                'item' => 'Nhân công thi công, Kiểm định an toàn & Nghiệm thu EVN',
+                'specs' => 'Lắp đặt chuẩn kỹ thuật PCCC, đo điện trở tiếp địa <4 Ohm, hồ sơ đấu nối công tơ 2 chiều EVN',
                 'quantity' => 1,
                 'unit' => 'Hợp đồng',
-                'warranty' => 'Bảo trì kỹ thuật 2 năm'
+                'warranty' => 'Bảo trì kỹ thuật 2 năm',
+                'is_from_bill' => true
             ]
         ];
 
         if ($packageKey === 'hybrid') {
             $batteryCapacityKwh = round($kwp * 1.5, 1);
             array_splice($bom, 2, 0, [[
-                'item' => 'Bộ Pin Lưu Trữ Điện Lithium',
-                'specs' => "Cell pin LiFePO4 dung lượng {$batteryCapacityKwh} kWh, 6.000 chu kỳ nạp xả DOD 90%",
+                'item' => 'Bộ Pin Lưu Trữ Điện Lithium LiFePO4 (ESS)',
+                'specs' => "Cell pin LiFePO4 dung lượng {$batteryCapacityKwh} kWh, BMS thông minh, >6.000 chu kỳ sạc xả DOD 90%",
                 'quantity' => 1,
                 'unit' => 'Bộ ESS',
-                'warranty' => '10 năm bảo hành dung lượng'
+                'warranty' => '10 năm bảo hành dung lượng',
+                'is_from_bill' => true
             ]]);
         }
 

@@ -1,6 +1,11 @@
 <?php
 declare(strict_types=1);
 
+// Nạp Composer Autoloader (PHPMailer qua Gmail SMTP)
+if (is_file(__DIR__ . '/vendor/autoload.php')) {
+    require_once __DIR__ . '/vendor/autoload.php';
+}
+
 // Đăng ký Autoloader chuẩn PSR-4 cho namespace App\
 spl_autoload_register(function (string $class): void {
     $prefix = "App" . chr(92);
@@ -387,6 +392,7 @@ if ($page === 'profile') {
             </div>
         <?php endif; ?>
         <!-- ================================================================= -->
+        <!-- ================================================================= -->
         <!-- 1. HERO SECTION SIÊU HIỆN ĐẠI & DẢI THÔNG SỐ LIVE TICKER         -->
         <!-- ================================================================= -->
         <section class="sol-hero sol-hero--modern">
@@ -403,7 +409,7 @@ if ($page === 'profile') {
                         <span>⚡ Hiệu suất chuỗi Pin: <strong>98.8% Tier-1</strong></span>
                     </div>
                     <div class="sol-live-ticker__item">
-                        <span>🌱 Giảm CO2 hôm nay: <strong>+1.4 Tấn</strong></span>
+                        <span>🌱 Giảm phát thải CO2: <strong>+1.4 Tấn/ngày</strong></span>
                     </div>
                     <div class="sol-live-ticker__item">
                         <span class="sol-realtime-badge" id="rtBadge">
@@ -414,31 +420,51 @@ if ($page === 'profile') {
                 </div>
 
                 <div class="sol-hero__badge" style="margin-bottom: 1.25rem;">
-                    <span class="sol-badge sol-badge--amber" style="padding: 0.35rem 0.95rem; font-size: 0.8rem;">
-                        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;box-shadow:0 0 8px #f59e0b;"></span>
-                        Công Nghệ Điện Mặt Trời Thế Hệ Mới 2026 • Chuẩn Tier-1 BloombergNEF
+                    <span class="sol-badge sol-badge--amber" style="padding: 0.4rem 1.15rem; font-size: 0.825rem; font-weight: 700; letter-spacing: 0.5px; box-shadow: 0 4px 16px rgba(245, 158, 11, 0.25);">
+                        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;box-shadow:0 0 10px #f59e0b;"></span>
+                        CÔNG NGHỆ ĐIỆN MẶT TRỜI THẾ HỆ MỚI 2026 • CHUẨN TIER-1 BLOOMBERGNEF
                     </span>
                 </div>
 
-                <h1 class="sol-hero__title" style="font-size: clamp(2.2rem, 5vw, 3.6rem); line-height: 1.15; margin-bottom: 1.25rem;">
+                <h1 class="sol-hero__title" style="font-size: clamp(2.3rem, 5.2vw, 3.8rem); line-height: 1.15; margin-bottom: 1.35rem; font-weight: 800; letter-spacing: -0.5px;">
                     Khai Phá Nguồn Điện Mặt Trời <br>
-                    <span class="highlight" style="background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Thông Minh, Bền Vững & Tối Ưu Chi Phí</span>
+                    <span class="highlight" style="background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 45%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Thông Minh, Bền Vững & Tối Ưu Chi Phí</span>
                 </h1>
 
-                <p class="sol-hero__desc" style="max-width: 780px; margin: 0 auto 2rem; font-size: 1.05rem; line-height: 1.65; color: #cbd5e1;">
-                    Hệ thống quản lý, tư vấn thiết kế và giám sát thi công điện mặt trời toàn diện. Tự động liên kết kế hoạch dự định thiết bị, mô phỏng công suất phát điện $kWp$, tính toán thời gian gỡ vốn đầu tư và đồng bộ thời gian thực mượt mà.
+                <p class="sol-hero__desc" style="max-width: 820px; margin: 0 auto 2.25rem; font-size: 1.1rem; line-height: 1.7; color: #cbd5e1;">
+                    Hệ sinh thái toàn diện quản lý vòng đời quang điện: Từ tư vấn báo giá, thiết kế mô phỏng 3D, lập kế hoạch dự định thiết bị, đến giám sát thi công 6 giai đoạn chuẩn EVN và đồng bộ SCADA IoT thời gian thực.
                 </p>
 
+                <!-- Nhóm nút hành động chính (Đã loại bỏ nút Khám phá 26 vật tư quang điện) -->
                 <div class="sol-hero__actions" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                    <a href="index.php?page=calculator" class="sol-btn sol-btn--solar sol-btn--lg" style="box-shadow: 0 6px 24px rgba(245, 158, 11, 0.45); font-size: 1rem; padding: 0.85rem 1.85rem;">
+                    <a href="index.php?page=calculator" class="sol-btn sol-btn--solar sol-btn--lg" style="box-shadow: 0 8px 30px rgba(245, 158, 11, 0.5); font-size: 1.025rem; padding: 0.95rem 2.15rem; font-weight: 700; border-radius: 8px;">
                         ⚡ Demo Thiết Kế & Báo Giá
                     </a>
-                    <a href="index.php?page=cart" class="sol-btn sol-btn--secondary sol-btn--lg" style="font-size: 1rem; padding: 0.85rem 1.75rem;">
+                    <a href="index.php?page=cart" class="sol-btn sol-btn--secondary sol-btn--lg" style="font-size: 1.025rem; padding: 0.95rem 1.95rem; font-weight: 600; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.18);">
                         📋 Kế Hoạch Dự Định Thiết Bị
                     </a>
-                    <a href="index.php?page=products" class="sol-btn sol-btn--outline sol-btn--lg" style="font-size: 1rem; padding: 0.85rem 1.75rem;">
-                        ☀️ Khám Phá 26 Vật Tư Quang Điện
+                    <a href="index.php?page=installations" class="sol-btn sol-btn--secondary sol-btn--lg" style="font-size: 1.025rem; padding: 0.95rem 1.95rem; font-weight: 600; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.45); color: #6ee7b7;">
+                        🏗️ Tiến Độ Thi Công 6 Giai Đoạn
                     </a>
+                </div>
+
+                <!-- Dải điểm nổi bật bảo chứng uy tín (Trust Badges) -->
+                <div style="display: flex; justify-content: center; align-items: center; gap: 1.75rem; flex-wrap: wrap; margin-top: 2.25rem; padding-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: #cbd5e1;">
+                        <span style="color: #f59e0b; font-size: 1rem;">🛡️</span>
+                        <span>Bảo Hành Tuyến Tính <strong>25 Năm</strong></span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: #38bdf8; font-size: 1rem;">⚡</span>
+                        <span>Đấu Nối Lưới 2 Chiều <strong>EVN Chuẩn Mực</strong></span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: #cbd5e1;">
+                        <span style="color: #10b981; font-size: 1rem;">📉</span>
+                        <span>Cắt Giảm <strong>75% - 90%</strong> Tiền Điện</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: #cbd5e1;">
+                        <span style="color: #c084fc; font-size: 1rem;">📱</span>
+                        <span>Giám Sát SCADA & IoT <strong>Thời Gian Thực</strong></span>
+                    </div>
                 </div>
             </div>
         </section>
@@ -448,24 +474,29 @@ if ($page === 'profile') {
         <!-- ================================================================= -->
         <section class="sol-metrics" style="padding: 1.5rem 0 3.5rem;">
             <div class="sol-container">
-                <div class="sol-metrics__grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-                    <div class="sol-metric-card" style="position: relative; overflow: hidden;">
+                <div class="sol-metrics__grid" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1.25rem;">
+                    <div class="sol-metric-card" style="position: relative; overflow: hidden; border-top: 2px solid #f59e0b;">
+                        <div style="font-size: 1.75rem; margin-bottom: 0.35rem;">💰</div>
                         <span class="sol-metric-card__value sol-counter" data-target="90" data-suffix="%">90%</span>
                         <span class="sol-metric-card__label">Tiết Kiệm Tiền Điện Hàng Tháng</span>
                     </div>
-                    <div class="sol-metric-card">
+                    <div class="sol-metric-card" style="position: relative; overflow: hidden; border-top: 2px solid #38bdf8;">
+                        <div style="font-size: 1.75rem; margin-bottom: 0.35rem;">🛡️</div>
                         <span class="sol-metric-card__value sol-counter" data-target="25" data-suffix=" Năm">25 Năm</span>
-                        <span class="sol-metric-card__label">Bảo Hành Hiệu Suất Tuyến Tính</span>
+                        <span class="sol-metric-card__label">Bảo Hành Hiệu Suất Tuyến Tính Tier-1</span>
                     </div>
-                    <div class="sol-metric-card">
+                    <div class="sol-metric-card" style="position: relative; overflow: hidden; border-top: 2px solid #10b981;">
+                        <div style="font-size: 1.75rem; margin-bottom: 0.35rem;">⏱️</div>
                         <span class="sol-metric-card__value sol-counter" data-target="3.5" data-suffix=" Năm" data-decimal="1">3.5 Năm</span>
-                        <span class="sol-metric-card__label">Thời Gian Hoàn Vốn Đầu Tư</span>
+                        <span class="sol-metric-card__label">Thời Gian Hoàn Vốn Đầu Tư Dự Kiến</span>
                     </div>
-                    <div class="sol-metric-card">
+                    <div class="sol-metric-card" style="position: relative; overflow: hidden; border-top: 2px solid #a855f7;">
+                        <div style="font-size: 1.75rem; margin-bottom: 0.35rem;">📡</div>
                         <span class="sol-metric-card__value sol-counter" data-target="100" data-suffix="%">100%</span>
-                        <span class="sol-metric-card__label">Giám Sát IoT Thời Gian Thực 24/7</span>
+                        <span class="sol-metric-card__label">Giám Sát IoT & Cảnh Báo Lỗi 24/7</span>
                     </div>
-                    <div class="sol-metric-card">
+                    <div class="sol-metric-card" style="position: relative; overflow: hidden; border-top: 2px solid #fbbf24;">
+                        <div style="font-size: 1.75rem; margin-bottom: 0.35rem;">🏢</div>
                         <span class="sol-metric-card__value sol-counter" data-target="1250" data-suffix="+">1.250+</span>
                         <span class="sol-metric-card__label">Công Trình Đã Nghiệm Thu Đóng Điện</span>
                     </div>
@@ -474,20 +505,20 @@ if ($page === 'profile') {
         </section>
 
         <!-- ================================================================= -->
-        <!-- 3. SLIDER / CAROUSEL 4 GIẢI PHÁP NĂNG LƯỢNG SIÊU MƯỢT (SOCKET SYNC)-->
+        <!-- 3. SLIDER / CAROUSEL 4 GIẢI PHÁP NĂNG LƯỢNG MẶT TRỜI CHUYÊN BIỆT    -->
         <!-- ================================================================= -->
-        <section class="sol-solutions" style="padding: 2rem 0 4rem; position: relative;">
+        <section class="sol-solutions" style="padding: 2.5rem 0 4.5rem; position: relative;">
             <div class="sol-container">
-                <div class="sol-section-header" style="text-align: center; margin-bottom: 2rem;">
-                    <span class="sol-badge sol-badge--amber" style="margin-bottom: 0.75rem;">MÔ HÌNH HỆ THỐNG TIÊU CHUẨN</span>
-                    <h2 class="sol-section-title" style="font-size: 2.25rem;">4 Giải Pháp Năng Lượng Tối Ưu Cho Mọi Công Trình</h2>
-                    <p class="sol-section-subtitle" style="max-width: 650px; margin: 0 auto;">
-                        Chuyển slide mượt mà, đồng bộ trạng thái qua Socket.io và thiết kế phù hợp từng nhu cầu từ hộ gia đình đến nhà máy công nghiệp.
+                <div class="sol-section-header" style="text-align: center; margin-bottom: 2.25rem;">
+                    <span class="sol-badge sol-badge--amber" style="margin-bottom: 0.75rem;">MÔ HÌNH HỆ THỐNG QUANG ĐIỆN TIÊU CHUẨN</span>
+                    <h2 class="sol-section-title" style="font-size: 2.35rem; font-weight: 800;">4 Giải Pháp Năng Lượng Tối Ưu Cho Mọi Công Trình</h2>
+                    <p class="sol-section-subtitle" style="max-width: 680px; margin: 0 auto; color: #94a3b8; font-size: 1rem; line-height: 1.6;">
+                        Tùy biến linh hoạt từ hộ gia đình dân dụng, biệt thự cao cấp đến nhà xưởng sản xuất quy mô lớn và hệ thống nông nghiệp độc lập.
                     </p>
                 </div>
 
                 <!-- Bộ điều khiển Carousel & Phân loại -->
-                <div style="display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                <div style="display: flex; justify-content: center; gap: 0.65rem; margin-bottom: 1.75rem; flex-wrap: wrap;">
                     <button type="button" class="sol-btn sol-btn--solar sol-btn--sm sol-cat-tab active" onclick="goToSlide(0)">Tất Cả (4 Gói)</button>
                     <button type="button" class="sol-btn sol-btn--secondary sol-btn--sm sol-cat-tab" onclick="goToSlide(0)">Hòa Lưới On-Grid</button>
                     <button type="button" class="sol-btn sol-btn--secondary sol-btn--sm sol-cat-tab" onclick="goToSlide(1)">Lưu Trữ Hybrid ESS</button>
@@ -501,128 +532,140 @@ if ($page === 'profile') {
                         
                         <!-- Slide 1: Hòa Lưới On-Grid -->
                         <div class="sol-carousel-slide">
-                            <div class="sol-solution-box">
+                            <div class="sol-solution-box" style="border-color: rgba(245, 158, 11, 0.4);">
                                 <div>
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
                                         <span class="sol-badge sol-badge--amber">PHỔ BIẾN NHẤT</span>
-                                        <span style="font-size: 0.75rem; color: #10b981; font-weight: 700;">Hoàn vốn ~3.5 năm</span>
+                                        <span style="font-size: 0.8rem; color: #10b981; font-weight: 700; background: rgba(16, 185, 129, 0.12); padding: 0.2rem 0.6rem; border-radius: 999px;">Hoàn vốn ~3.5 năm</span>
                                     </div>
-                                    <h3 style="color: #ffffff; font-size: 1.35rem; font-family: var(--font-heading); margin: 0 0 0.65rem;">
+                                    <h3 style="color: #ffffff; font-size: 1.4rem; font-family: var(--font-heading); margin: 0 0 0.75rem; font-weight: 700;">
                                         Hệ Thống Hòa Lưới (On-Grid)
                                     </h3>
-                                    <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.55; margin-bottom: 1.25rem;">
+                                    <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6; margin-bottom: 1.25rem;">
                                         Phù hợp tối ưu cho hộ gia đình và văn phòng làm việc tiêu thụ điện nhiều vào ban ngày. Cắt giảm ngay các bậc thang giá điện cao nhất của EVN.
                                     </p>
-                                    <ul style="list-style: none; padding: 0; margin: 0 0 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.825rem; color: #cbd5e1;">
-                                        <li style="display: flex; align-items: center; gap: 0.5rem;">
-                                            <span style="color: #10b981;">✓</span> Chi phí đầu tư thấp nhất, không tốn bảo dưỡng ắc quy
+                                    <ul style="list-style: none; padding: 0; margin: 0 0 1.5rem; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem; color: #cbd5e1;">
+                                        <li style="display: flex; align-items: center; gap: 0.6rem;">
+                                            <span style="color: #10b981; font-weight: 800;">✓</span> Chi phí đầu tư thấp nhất, không tốn bảo dưỡng ắc quy
                                         </li>
-                                        <li style="display: flex; align-items: center; gap: 0.5rem;">
-                                            <span style="color: #10b981;">✓</span> Inverter hòa lưới hiệu suất 98.6% đồng bộ chuẩn EVN
+                                        <li style="display: flex; align-items: center; gap: 0.6rem;">
+                                            <span style="color: #10b981; font-weight: 800;">✓</span> Inverter hòa lưới hiệu suất 98.6% đồng bộ chuẩn EVN
                                         </li>
-                                        <li style="display: flex; align-items: center; gap: 0.5rem;">
-                                            <span style="color: #10b981;">✓</span> Tự động ngắt Anti-Islanding bảo vệ an toàn điện lực
+                                        <li style="display: flex; align-items: center; gap: 0.6rem;">
+                                            <span style="color: #10b981; font-weight: 800;">✓</span> Tự động ngắt Anti-Islanding bảo vệ an toàn điện lực
+                                        </li>
+                                        <li style="display: flex; align-items: center; gap: 0.6rem;">
+                                            <span style="color: #10b981; font-weight: 800;">✓</span> Tấm pin Mono Half-Cell 550W Tier-1 tuổi thọ 30 năm
                                         </li>
                                     </ul>
                                 </div>
-                                <a href="index.php?page=calculator&package=residential" class="sol-btn sol-btn--solar sol-btn--sm" style="width: 100%; text-align: center;">
-                                    Khám Phá Gói Dân Dụng →
+                                <a href="index.php?page=calculator&source=bill&package=residential#step-2-simulation" class="sol-btn sol-btn--solar sol-btn--sm" style="width: 100%; text-align: center; font-weight: 700; padding: 0.7rem 1rem;">
+                                    ⚡ Khám Phá Gói Dân Dụng →
                                 </a>
                             </div>
                         </div>
 
                         <!-- Slide 2: Lưu Trữ Hybrid ESS -->
                         <div class="sol-carousel-slide">
-                            <div class="sol-solution-box" style="border-color: rgba(56, 189, 248, 0.4);">
+                            <div class="sol-solution-box" style="border-color: rgba(56, 189, 248, 0.45);">
                                 <div>
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
                                         <span class="sol-badge sol-badge--cyan">ĐỘ TIN CẬY 24/7</span>
-                                        <span style="font-size: 0.75rem; color: #38bdf8; font-weight: 700;">UPS &lt;10ms</span>
+                                        <span style="font-size: 0.8rem; color: #38bdf8; font-weight: 700; background: rgba(56, 189, 248, 0.12); padding: 0.2rem 0.6rem; border-radius: 999px;">UPS &lt;10ms</span>
                                     </div>
-                                    <h3 style="color: #ffffff; font-size: 1.35rem; font-family: var(--font-heading); margin: 0 0 0.65rem;">
+                                    <h3 style="color: #ffffff; font-size: 1.4rem; font-family: var(--font-heading); margin: 0 0 0.75rem; font-weight: 700;">
                                         Hệ Thống Lưu Trữ (Hybrid ESS)
                                     </h3>
-                                    <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.55; margin-bottom: 1.25rem;">
-                                        Tích hợp Pin lưu trữ Lithium LiFePO4 thế hệ mới. Đảm bảo nguồn điện liên tục 24/7 cho thiết bị trọng yếu ngay cả khi lưới điện EVN bị mất.
+                                    <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6; margin-bottom: 1.25rem;">
+                                        Tích hợp Pin lưu trữ Lithium LiFePO4 thế hệ mới. Đảm bảo nguồn điện liên tục 24/7 cho thiết bị trọng yếu ngay cả khi lưới điện EVN bị gián đoạn.
                                     </p>
-                                    <ul style="list-style: none; padding: 0; margin: 0 0 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.825rem; color: #cbd5e1;">
-                                        <li style="display: flex; align-items: center; gap: 0.5rem;">
-                                            <span style="color: #38bdf8;">✓</span> Cung cấp điện liên tục ban đêm và khi sự cố mất điện
+                                    <ul style="list-style: none; padding: 0; margin: 0 0 1.5rem; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem; color: #cbd5e1;">
+                                        <li style="display: flex; align-items: center; gap: 0.6rem;">
+                                            <span style="color: #38bdf8; font-weight: 800;">✓</span> Cung cấp điện liên tục ban đêm và khi mất điện lưới
                                         </li>
-                                        <li style="display: flex; align-items: center; gap: 0.5rem;">
-                                            <span style="color: #38bdf8;">✓</span> Pin Lithium 10.000 chu kỳ sạc xả, tuổi thọ trên 15 năm
+                                        <li style="display: flex; align-items: center; gap: 0.6rem;">
+                                            <span style="color: #38bdf8; font-weight: 800;">✓</span> Pin Lithium 10.000 chu kỳ sạc xả, tuổi thọ trên 15 năm
                                         </li>
-                                        <li style="display: flex; align-items: center; gap: 0.5rem;">
-                                            <span style="color: #38bdf8;">✓</span> Chuyển mạch UPS không gián đoạn máy tính, camera & tủ lạnh
+                                        <li style="display: flex; align-items: center; gap: 0.6rem;">
+                                            <span style="color: #38bdf8; font-weight: 800;">✓</span> Chuyển mạch UPS không trễ cho máy chủ, camera & tủ lạnh
+                                        </li>
+                                        <li style="display: flex; align-items: center; gap: 0.6rem;">
+                                            <span style="color: #38bdf8; font-weight: 800;">✓</span> Tùy chọn mở rộng dung lượng linh hoạt từ 5kWh đến 40kWh
                                         </li>
                                     </ul>
                                 </div>
-                                <a href="index.php?page=calculator&package=hybrid" class="sol-btn sol-btn--secondary sol-btn--sm" style="width: 100%; text-align: center; border-color: rgba(56, 189, 248, 0.5);">
-                                    Khám Phá Gói Hybrid Lưu Trữ →
+                                <a href="index.php?page=calculator&source=bill&package=hybrid#step-2-simulation" class="sol-btn sol-btn--secondary sol-btn--sm" style="width: 100%; text-align: center; border-color: rgba(56, 189, 248, 0.5); color: #bae6fd; font-weight: 700; padding: 0.7rem 1rem;">
+                                    🔋 Khám Phá Gói Hybrid Lưu Trữ →
                                 </a>
                             </div>
                         </div>
 
                         <!-- Slide 3: Thương Mại & Nhà Xưởng C&I -->
                         <div class="sol-carousel-slide">
-                            <div class="sol-solution-box" style="border-color: rgba(168, 85, 247, 0.4);">
+                            <div class="sol-solution-box" style="border-color: rgba(168, 85, 247, 0.45);">
                                 <div>
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
                                         <span class="sol-badge sol-badge--amber" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border-color: rgba(168, 85, 247, 0.3);">DOANH NGHIỆP C&I</span>
-                                        <span style="font-size: 0.75rem; color: #c084fc; font-weight: 700;">Chứng chỉ ESG</span>
+                                        <span style="font-size: 0.8rem; color: #c084fc; font-weight: 700; background: rgba(168, 85, 247, 0.12); padding: 0.2rem 0.6rem; border-radius: 999px;">Chứng chỉ ESG</span>
                                     </div>
-                                    <h3 style="color: #ffffff; font-size: 1.35rem; font-family: var(--font-heading); margin: 0 0 0.65rem;">
+                                    <h3 style="color: #ffffff; font-size: 1.4rem; font-family: var(--font-heading); margin: 0 0 0.75rem; font-weight: 700;">
                                         Mái Nhà Xưởng (C&I 20kWp - 1MWp)
                                     </h3>
-                                    <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.55; margin-bottom: 1.25rem;">
-                                        Quy mô lớn từ 20kWp đến hàng Megawatt cho nhà máy, khu công nghiệp, cao ốc văn phòng. Triệt tiêu đỉnh chi phí điện sản xuất giờ cao điểm.
+                                    <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6; margin-bottom: 1.25rem;">
+                                        Quy mô lớn cho nhà máy sản xuất, khu công nghiệp và tòa nhà văn phòng. Triệt tiêu đỉnh chi phí điện sản xuất giờ cao điểm và giảm nhiệt độ nhà xưởng.
                                     </p>
-                                    <ul style="list-style: none; padding: 0; margin: 0 0 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.825rem; color: #cbd5e1;">
-                                        <li style="display: flex; align-items: center; gap: 0.5rem;">
-                                            <span style="color: #c084fc;">✓</span> Giảm chi phí điện sản xuất giờ cao điểm lên tới 4.000đ/kWh
+                                    <ul style="list-style: none; padding: 0; margin: 0 0 1.5rem; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem; color: #cbd5e1;">
+                                        <li style="display: flex; align-items: center; gap: 0.6rem;">
+                                            <span style="color: #c084fc; font-weight: 800;">✓</span> Cắt giảm biểu giá điện giờ cao điểm lên tới 4.000đ/kWh
                                         </li>
-                                        <li style="display: flex; align-items: center; gap: 0.5rem;">
-                                            <span style="color: #c084fc;">✓</span> Đạt chứng chỉ xanh ESG, I-REC xuất khẩu châu Âu & Mỹ
+                                        <li style="display: flex; align-items: center; gap: 0.6rem;">
+                                            <span style="color: #c084fc; font-weight: 800;">✓</span> Cấp chứng chỉ xanh I-REC, hỗ trợ xuất khẩu châu Âu & Mỹ
                                         </li>
-                                        <li style="display: flex; align-items: center; gap: 0.5rem;">
-                                            <span style="color: #c084fc;">✓</span> Thời gian hoàn vốn ấn tượng chỉ từ 3.2 đến 3.8 năm
+                                        <li style="display: flex; align-items: center; gap: 0.6rem;">
+                                            <span style="color: #c084fc; font-weight: 800;">✓</span> Thời gian hoàn vốn ấn tượng chỉ từ 3.2 đến 3.8 năm
+                                        </li>
+                                        <li style="display: flex; align-items: center; gap: 0.6rem;">
+                                            <span style="color: #c084fc; font-weight: 800;">✓</span> Hạ nhiệt mái nhà xưởng 3°C - 5°C, giảm tải điều hòa
                                         </li>
                                     </ul>
                                 </div>
-                                <a href="index.php?page=calculator&package=commercial" class="sol-btn sol-btn--secondary sol-btn--sm" style="width: 100%; text-align: center; border-color: rgba(168, 85, 247, 0.5);">
-                                    Khám Phá Gói Doanh Nghiệp →
+                                <a href="index.php?page=calculator&source=bill&package=commercial&monthly_bill=15000000&roof_area=120#step-2-simulation" class="sol-btn sol-btn--secondary sol-btn--sm" style="width: 100%; text-align: center; border-color: rgba(168, 85, 247, 0.5); color: #e9d5ff; font-weight: 700; padding: 0.7rem 1rem;">
+                                    🏭 Khám Phá Gói Doanh Nghiệp →
                                 </a>
                             </div>
                         </div>
 
                         <!-- Slide 4: Nông Nghiệp Bơm Nước Năng Lượng Mặt Trời -->
                         <div class="sol-carousel-slide">
-                            <div class="sol-solution-box" style="border-color: rgba(16, 185, 129, 0.4);">
+                            <div class="sol-solution-box" style="border-color: rgba(16, 185, 129, 0.45);">
                                 <div>
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
                                         <span class="sol-badge sol-badge--emerald">NÔNG NGHIỆP XANH</span>
-                                        <span style="font-size: 0.75rem; color: #10b981; font-weight: 700;">Độc lập 100%</span>
+                                        <span style="font-size: 0.8rem; color: #10b981; font-weight: 700; background: rgba(16, 185, 129, 0.12); padding: 0.2rem 0.6rem; border-radius: 999px;">Độc lập 100%</span>
                                     </div>
-                                    <h3 style="color: #ffffff; font-size: 1.35rem; font-family: var(--font-heading); margin: 0 0 0.65rem;">
-                                        Bơm Nước Năng Lượng (Agri-Solar)
+                                    <h3 style="color: #ffffff; font-size: 1.4rem; font-family: var(--font-heading); margin: 0 0 0.75rem; font-weight: 700;">
+                                        Bơm Nước Nông Nghiệp (Agri-Solar)
                                     </h3>
-                                    <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.55; margin-bottom: 1.25rem;">
-                                        Giải pháp cấp nguồn tự động cho máy bơm nước tưới tiêu trang trại sầu riêng, thanh long, cà phê mà không cần kéo đường dây điện lưới tốn kém.
+                                    <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6; margin-bottom: 1.25rem;">
+                                        Giải pháp cấp nguồn tự động cho máy bơm tưới tiêu trang trại sầu riêng, thanh long, cà phê mà không cần kéo đường dây điện lưới tốn kém.
                                     </p>
-                                    <ul style="list-style: none; padding: 0; margin: 0 0 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.825rem; color: #cbd5e1;">
-                                        <li style="display: flex; align-items: center; gap: 0.5rem;">
-                                            <span style="color: #10b981;">✓</span> Tiết kiệm 100% chi phí xăng dầu chạy máy nổ tưới tiêu
+                                    <ul style="list-style: none; padding: 0; margin: 0 0 1.5rem; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem; color: #cbd5e1;">
+                                        <li style="display: flex; align-items: center; gap: 0.6rem;">
+                                            <span style="color: #10b981; font-weight: 800;">✓</span> Tiết kiệm 100% chi phí xăng dầu chạy máy nổ tưới tiêu
                                         </li>
-                                        <li style="display: flex; align-items: center; gap: 0.5rem;">
-                                            <span style="color: #10b981;">✓</span> Tự động điều biến tốc độ bơm nước theo cường độ ánh nắng
+                                        <li style="display: flex; align-items: center; gap: 0.6rem;">
+                                            <span style="color: #10b981; font-weight: 800;">✓</span> Tự động điều biến tốc độ bơm nước theo cường độ ánh nắng
                                         </li>
-                                        <li style="display: flex; align-items: center; gap: 0.5rem;">
-                                            <span style="color: #10b981;">✓</span> Vận hành bền bỉ trên 25 năm trong điều kiện khắc nghiệt
+                                        <li style="display: flex; align-items: center; gap: 0.6rem;">
+                                            <span style="color: #10b981; font-weight: 800;">✓</span> Vận hành bền bỉ trên 25 năm trong điều kiện khắc nghiệt
+                                        </li>
+                                        <li style="display: flex; align-items: center; gap: 0.6rem;">
+                                            <span style="color: #10b981; font-weight: 800;">✓</span> Bảo vệ chống chạy khô máy bơm khi nguồn nước cạn
                                         </li>
                                     </ul>
                                 </div>
-                                <a href="index.php?page=calculator&package=agri" class="sol-btn sol-btn--secondary sol-btn--sm" style="width: 100%; text-align: center; border-color: rgba(16, 185, 129, 0.5);">
-                                    Khám Phá Gói Bơm Nước →
+                                <a href="index.php?page=calculator&source=bill&package=agri&monthly_bill=5000000&roof_area=60#step-2-simulation" class="sol-btn sol-btn--secondary sol-btn--sm" style="width: 100%; text-align: center; border-color: rgba(16, 185, 129, 0.5); color: #a7f3d0; font-weight: 700; padding: 0.7rem 1rem;">
+                                    🌱 Khám Phá Gói Bơm Nước →
                                 </a>
                             </div>
                         </div>
@@ -631,7 +674,7 @@ if ($page === 'profile') {
                 </div>
 
                 <!-- Nút điều hướng Carousel (Prev / Next & Dots) -->
-                <div class="sol-carousel-nav">
+                <div class="sol-carousel-nav" style="margin-top: 1.5rem;">
                     <button type="button" class="sol-carousel-btn" onclick="prevSlide()" aria-label="Slide trước">❮</button>
                     <div class="sol-carousel-dots" id="carouselDots">
                         <button type="button" class="sol-carousel-dot active" onclick="goToSlide(0)"></button>
@@ -649,42 +692,42 @@ if ($page === 'profile') {
         <!-- ================================================================= -->
         <section class="sol-calc-widget" style="padding: 2.5rem 0 4.5rem;">
             <div class="sol-container">
-                <div class="sol-calc-widget__card" style="border: 1.5px solid rgba(245, 158, 11, 0.45); box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
+                <div class="sol-calc-widget__card" style="border: 1.5px solid rgba(245, 158, 11, 0.45); box-shadow: 0 25px 60px rgba(0,0,0,0.65); border-radius: var(--radius-lg); background: rgba(11, 17, 30, 0.85); backdrop-filter: blur(16px);">
                     <div class="sol-calc-widget__grid">
                         <div>
                             <span class="sol-badge sol-badge--amber" style="margin-bottom: 0.75rem;">CÔNG CỤ MÔ PHỎNG THÔNG MINH</span>
-                            <h2 style="font-size: 2rem; color: #ffffff; margin-bottom: 0.75rem; font-family: var(--font-heading);">
+                            <h2 style="font-size: 2.15rem; color: #ffffff; margin-bottom: 0.85rem; font-family: var(--font-heading); font-weight: 800;">
                                 Ước Tính Tiềm Năng Năng Lượng & Gỡ Vốn
                             </h2>
-                            <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.95rem; line-height: 1.6;">
-                                Kéo chọn mức tiền điện trung bình hàng tháng và khu vực địa lý của bạn để hệ thống tự động tính toán công suất $kWp$, số lượng tấm pin và thời gian hoàn vốn đầu tư dự kiến.
+                            <p style="color: var(--text-secondary); margin-bottom: 1.75rem; font-size: 0.95rem; line-height: 1.65;">
+                                Chọn vùng địa lý lắp đặt và trượt chọn hóa đơn tiền điện trung bình hàng tháng. Thuật toán sẽ tính toán tức thì công suất tối ưu ($kWp$), diện tích mái lắp đặt và thời gian hoàn vốn đầu tư.
                             </p>
 
                             <!-- Chọn khu vực bức xạ nắng -->
-                            <div style="margin-bottom: 1.5rem;">
-                                <label style="display: block; font-size: 0.825rem; color: #cbd5e1; font-weight: 600; margin-bottom: 0.5rem;">
-                                    Khu vực địa lý lắp đặt (Số giờ nắng đỉnh):
+                            <div style="margin-bottom: 1.75rem;">
+                                <label style="display: block; font-size: 0.85rem; color: #cbd5e1; font-weight: 700; margin-bottom: 0.65rem;">
+                                    Khu vực địa lý lắp đặt (Số giờ nắng đỉnh trung bình):
                                 </label>
-                                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;" id="regionBtns">
-                                    <button type="button" class="sol-btn sol-btn--secondary sol-btn--sm sol-region-btn" data-hours="3.8" onclick="setRegion(3.8, this)">
+                                <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;" id="regionBtns">
+                                    <button type="button" class="sol-btn sol-btn--secondary sol-btn--sm sol-region-btn" data-hours="3.8" data-region="north" onclick="setRegion(3.8, 'north', this)">
                                         Miền Bắc (3.8h)
                                     </button>
-                                    <button type="button" class="sol-btn sol-btn--secondary sol-btn--sm sol-region-btn" data-hours="4.8" onclick="setRegion(4.8, this)">
+                                    <button type="button" class="sol-btn sol-btn--secondary sol-btn--sm sol-region-btn" data-hours="4.8" data-region="central" onclick="setRegion(4.8, 'central', this)">
                                         Miền Trung (4.8h)
                                     </button>
-                                    <button type="button" class="sol-btn sol-btn--solar sol-btn--sm sol-region-btn active" data-hours="5.2" onclick="setRegion(5.2, this)">
+                                    <button type="button" class="sol-btn sol-btn--solar sol-btn--sm sol-region-btn active" data-hours="5.2" data-region="south" onclick="setRegion(5.2, 'south', this)">
                                         Miền Nam (5.2h)
                                     </button>
                                 </div>
                             </div>
 
-                            <div class="sol-calc-form">
-                                <label class="sol-calc-label">
-                                    <span>Hóa đơn tiền điện bình quân:</span>
-                                    <strong id="billDisplay" style="color: var(--accent-gold); font-size: 1.25rem;">3.000.000 VNĐ</strong>
+                            <div class="sol-calc-form" style="background: rgba(14, 22, 38, 0.6); padding: 1.25rem 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                                <label class="sol-calc-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                                    <span style="font-size: 0.9rem; color: #cbd5e1;">Hóa đơn tiền điện bình quân mỗi tháng:</span>
+                                    <strong id="billDisplay" style="color: var(--accent-gold); font-size: 1.35rem; font-family: var(--font-heading);">3.000.000 VNĐ</strong>
                                 </label>
-                                <input type="range" class="sol-range" id="billRange" min="500000" max="20000000" step="500000" value="3000000" oninput="calculateSolarHome(this.value)">
-                                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;">
+                                <input type="range" class="sol-range" id="billRange" min="500000" max="20000000" step="500000" value="3000000" oninput="calculateSolarHome(this.value)" style="width: 100%; cursor: pointer;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">
                                     <span>500K</span>
                                     <span>5 Triệu</span>
                                     <span>10 Triệu</span>
@@ -694,37 +737,37 @@ if ($page === 'profile') {
                         </div>
 
                         <!-- Khối kết quả hiển thị thời gian gỡ vốn & công suất -->
-                        <div class="sol-calc-result" style="background: rgba(8, 12, 20, 0.85); border: 1px solid var(--border-subtle); padding: 1.75rem; border-radius: var(--radius-md);">
-                            <div class="sol-calc-result__header" style="color: #ffffff; font-size: 1.15rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem; margin-bottom: 1rem;">
-                                📊 Thông Số Đề Xuất Tối Ưu
+                        <div class="sol-calc-result" style="background: rgba(8, 12, 20, 0.9); border: 1px solid rgba(245, 158, 11, 0.3); padding: 1.85rem; border-radius: var(--radius-md); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                            <div class="sol-calc-result__header" style="color: #ffffff; font-size: 1.15rem; font-weight: 700; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.85rem; margin-bottom: 1.15rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <span>📊</span> Thông Số Kỹ Thuật Đề Xuất
                             </div>
                             
-                            <div class="sol-calc-result__item">
-                                <span>Công suất khuyến nghị:</span>
-                                <strong id="resKwp" style="color: var(--accent-gold); font-size: 1.15rem;">6.4 kWp</strong>
+                            <div class="sol-calc-result__item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0;">
+                                <span style="color: #94a3b8; font-size: 0.875rem;">Công suất hệ thống:</span>
+                                <strong id="resKwp" style="color: var(--accent-gold); font-size: 1.25rem;">6.4 kWp</strong>
                             </div>
-                            <div class="sol-calc-result__item">
-                                <span>Số lượng tấm pin (Mono 550W):</span>
-                                <strong id="resPanels">12 Tấm</strong>
+                            <div class="sol-calc-result__item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0;">
+                                <span style="color: #94a3b8; font-size: 0.875rem;">Số lượng tấm pin (Mono 550W):</span>
+                                <strong id="resPanels" style="color: #ffffff; font-size: 1rem;">12 Tấm</strong>
                             </div>
-                            <div class="sol-calc-result__item">
-                                <span>Diện tích mái yêu cầu:</span>
-                                <strong id="resArea">~30 m²</strong>
+                            <div class="sol-calc-result__item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0;">
+                                <span style="color: #94a3b8; font-size: 0.875rem;">Diện tích sàn mái yêu cầu:</span>
+                                <strong id="resArea" style="color: #ffffff; font-size: 1rem;">~30 m²</strong>
                             </div>
-                            <div class="sol-calc-result__item">
-                                <span>Tiền điện tiết kiệm ước tính:</span>
-                                <strong id="resSavings" style="color: #10b981; font-size: 1.05rem;">~2.7 Tr/tháng (32.4 Tr/năm)</strong>
+                            <div class="sol-calc-result__item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0;">
+                                <span style="color: #94a3b8; font-size: 0.875rem;">Tiền điện tiết kiệm ước tính:</span>
+                                <strong id="resSavings" style="color: #10b981; font-size: 1.1rem;">~2.7 Tr/tháng (32.4 Tr/năm)</strong>
                             </div>
-                            <div class="sol-calc-result__item" style="border-top: 1px dashed var(--border-subtle); padding-top: 0.75rem; margin-top: 0.75rem;">
-                                <span style="font-weight: 700; color: #ffffff;">Thời gian gỡ vốn dự kiến:</span>
-                                <strong id="resPayback" style="color: #f59e0b; font-size: 1.15rem;">3 Năm 6 Tháng</strong>
+                            <div class="sol-calc-result__item" style="border-top: 1px dashed var(--border-subtle); padding-top: 0.85rem; margin-top: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-weight: 700; color: #ffffff; font-size: 0.95rem;">Thời gian gỡ vốn dự kiến:</span>
+                                <strong id="resPayback" style="color: #f59e0b; font-size: 1.25rem; font-weight: 800;">3 Năm 6 Tháng</strong>
                             </div>
 
-                            <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.65rem;">
-                                <a id="btnSimulate" href="index.php?page=calculator&source=plan" class="sol-btn sol-btn--solar" style="width: 100%; text-align: center; font-size: 0.95rem;">
-                                    🚀 Đưa Vào Kế Hoạch & Demo Thiết Kế 3D →
+                            <div style="margin-top: 1.65rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                                <a id="btnSimulate" href="index.php?page=calculator&source=bill&monthly_bill=3000000&region=south#step-2-simulation" class="sol-btn sol-btn--solar" style="width: 100%; text-align: center; font-size: 0.95rem; font-weight: 700; padding: 0.8rem 1rem;">
+                                    🚀 Mô Phỏng Chi Tiết Theo Hóa Đơn Này →
                                 </a>
-                                <a href="index.php?page=cart" class="sol-btn sol-btn--outline" style="width: 100%; text-align: center; font-size: 0.85rem;">
+                                <a href="index.php?page=cart" class="sol-btn sol-btn--outline" style="width: 100%; text-align: center; font-size: 0.875rem; padding: 0.65rem 1rem;">
                                     📋 Xem Kế Hoạch Dự Định Thiết Bị
                                 </a>
                             </div>
@@ -735,73 +778,90 @@ if ($page === 'profile') {
         </section>
 
         <!-- ================================================================= -->
-        <!-- 5. QUY TRÌNH 5 BƯỚC THI CÔNG & LẮP ĐẶT CHUẨN QUỐC TẾ (KẾ THỪA TV4) -->
+        <!-- 5. QUY TRÌNH 6 GIAI ĐOẠN QUẢN LÝ THI CÔNG & LẮP ĐẶT CHUẨN EVN       -->
         <!-- ================================================================= -->
-        <section style="padding: 2.5rem 0 4.5rem; background: rgba(8, 12, 20, 0.45); border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle);">
+        <section style="padding: 3rem 0 5rem; background: rgba(8, 12, 20, 0.5); border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle);">
             <div class="sol-container">
-                <div class="sol-section-header" style="text-align: center; margin-bottom: 2rem;">
-                    <span class="sol-badge sol-badge--emerald" style="margin-bottom: 0.5rem;">QUY TRÌNH QUẢN LÝ THI CÔNG CHUẨN MỰC</span>
-                    <h2 class="sol-section-title" style="font-size: 2.25rem;">5 Bước Lắp Đặt & Bàn Giao Hệ Thống Chuẩn EVN</h2>
-                    <p class="sol-section-subtitle" style="max-width: 650px; margin: 0 auto;">
-                        Phân hệ Quản Lý Lắp Đặt (TV4) kết hợp giám sát chặt chẽ từ khảo sát, thi công cơ điện đến nghiệm thu đóng điện lưới.
+                <div class="sol-section-header" style="text-align: center; margin-bottom: 2.5rem;">
+                    <span class="sol-badge sol-badge--emerald" style="margin-bottom: 0.6rem;">QUY TRÌNH QUẢN LÝ THI CÔNG TOÀN DIỆN</span>
+                    <h2 class="sol-section-title" style="font-size: 2.35rem; font-weight: 800;">6 Giai Đoạn Lắp Đặt & Bàn Giao Hệ Thống Chuẩn EVN</h2>
+                    <p class="sol-section-subtitle" style="max-width: 700px; margin: 0 auto; color: #94a3b8; font-size: 1rem; line-height: 1.6;">
+                        Tích hợp phân hệ Quản Lý Lắp Đặt (TV4) giám sát tiến độ thời gian thực từ khâu khảo sát Drone 3D, thi công cơ điện, kiểm định an toàn đến nghiệm thu nối lưới.
                     </p>
                 </div>
 
-                <div class="sol-steps-grid">
+                <div class="sol-steps-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem;">
                     <div class="sol-step-card">
-                        <span class="sol-step-badge">BƯỚC 1</span>
-                        <div style="font-size: 2.2rem; margin-bottom: 0.75rem;">🛰️</div>
-                        <h4 style="color: #ffffff; font-size: 1.05rem; font-family: var(--font-heading); margin: 0 0 0.4rem;">
+                        <span class="sol-step-badge">GIAI ĐOẠN 1</span>
+                        <div style="font-size: 2.2rem; margin-bottom: 0.85rem;">🛰️</div>
+                        <h4 style="color: #ffffff; font-size: 1.1rem; font-family: var(--font-heading); margin: 0 0 0.5rem; font-weight: 700;">
                             Khảo Sát Drone 3D
                         </h4>
-                        <p style="color: var(--text-secondary); font-size: 0.8rem; line-height: 1.5; margin: 0;">
-                            Quét hiện trạng mái nhà bằng Drone, đo đạc kết cấu giàn mái, kiểm tra hướng nắng và đo góc đổ bóng bằng cảm biến quang học.
+                        <p style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.55; margin: 0;">
+                            Quét hiện trạng mái nhà bằng Drone, đo đạc trắc địa kết cấu xà gồ, hướng nắng và đo góc đổ bóng bằng cảm biến quang học.
                         </p>
                     </div>
 
                     <div class="sol-step-card">
-                        <span class="sol-step-badge">BƯỚC 2</span>
-                        <div style="font-size: 2.2rem; margin-bottom: 0.75rem;">📐</div>
-                        <h4 style="color: #ffffff; font-size: 1.05rem; font-family: var(--font-heading); margin: 0 0 0.4rem;">
-                            Mô Phỏng Demo 3D
+                        <span class="sol-step-badge">GIAI ĐOẠN 2</span>
+                        <div style="font-size: 2.2rem; margin-bottom: 0.85rem;">📐</div>
+                        <h4 style="color: #ffffff; font-size: 1.1rem; font-family: var(--font-heading); margin: 0 0 0.5rem; font-weight: 700;">
+                            Mô Phỏng Demo CAD
                         </h4>
-                        <p style="color: var(--text-secondary); font-size: 0.8rem; line-height: 1.5; margin: 0;">
+                        <p style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.55; margin: 0;">
                             Phân hệ Demo Thiết Kế (TV3) dựng sơ đồ mảng pin 2D/3D, tính toán chuỗi String điện áp Voc/Isc và xuất bảng vật tư kỹ thuật BOM.
                         </p>
                     </div>
 
                     <div class="sol-step-card">
-                        <span class="sol-step-badge">BƯỚC 3</span>
-                        <div style="font-size: 2.2rem; margin-bottom: 0.75rem;">🏗️</div>
-                        <h4 style="color: #ffffff; font-size: 1.05rem; font-family: var(--font-heading); margin: 0 0 0.4rem;">
-                            Thi Công Khung Giàn
+                        <span class="sol-step-badge">GIAI ĐOẠN 3</span>
+                        <div style="font-size: 2.2rem; margin-bottom: 0.85rem;">📦</div>
+                        <h4 style="color: #ffffff; font-size: 1.1rem; font-family: var(--font-heading); margin: 0 0 0.5rem; font-weight: 700;">
+                            Phê Duyệt & Mua Sắm
                         </h4>
-                        <p style="color: var(--text-secondary); font-size: 0.8rem; line-height: 1.5; margin: 0;">
-                            Lắp đặt hệ thống rail nhôm Anode chống ăn mòn muối biển, bulong Inox 304 và cố định tấm pin Tier-1 chịu bão cấp 12 an toàn tuyệt đối.
+                        <p style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.55; margin: 0;">
+                            Đồng bộ danh mục thiết bị từ Kế hoạch dự định (TV2), phê duyệt báo giá và mua sắm vật tư Tier-1 chính hãng đầy đủ chứng nhận CO/CQ.
                         </p>
                     </div>
 
                     <div class="sol-step-card">
-                        <span class="sol-step-badge">BƯỚC 4</span>
-                        <div style="font-size: 2.2rem; margin-bottom: 0.75rem;">⚡</div>
-                        <h4 style="color: #ffffff; font-size: 1.05rem; font-family: var(--font-heading); margin: 0 0 0.4rem;">
-                            Đấu Nối Inverter & ATS
+                        <span class="sol-step-badge">GIAI ĐOẠN 4</span>
+                        <div style="font-size: 2.2rem; margin-bottom: 0.85rem;">🏗️</div>
+                        <h4 style="color: #ffffff; font-size: 1.1rem; font-family: var(--font-heading); margin: 0 0 0.5rem; font-weight: 700;">
+                            Thi Công Cơ Điện
                         </h4>
-                        <p style="color: var(--text-secondary); font-size: 0.8rem; line-height: 1.5; margin: 0;">
-                            Đấu nối tủ điện chống sét lan truyền Type 2, tiếp địa trở kháng &lt;4 Ohm, đấu nối Inverter hòa lưới và Pin Lithium ESS lưu trữ.
+                        <p style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.55; margin: 0;">
+                            Lắp đặt rail nhôm Anode chống bão cấp 12, cố định tấm pin bằng kẹp Inox 304, đấu nối Inverter và tủ điện ATS chống sét Type 2.
                         </p>
                     </div>
 
                     <div class="sol-step-card">
-                        <span class="sol-step-badge">BƯỚC 5</span>
-                        <div style="font-size: 2.2rem; margin-bottom: 0.75rem;">🔌</div>
-                        <h4 style="color: #ffffff; font-size: 1.05rem; font-family: var(--font-heading); margin: 0 0 0.4rem;">
-                            Nghiệm Thu Đóng Điện
+                        <span class="sol-step-badge">GIAI ĐOẠN 5</span>
+                        <div style="font-size: 2.2rem; margin-bottom: 0.85rem;">⚡</div>
+                        <h4 style="color: #ffffff; font-size: 1.1rem; font-family: var(--font-heading); margin: 0 0 0.5rem; font-weight: 700;">
+                            Đo Kiểm & Nối Lưới
                         </h4>
-                        <p style="color: var(--text-secondary); font-size: 0.8rem; line-height: 1.5; margin: 0;">
-                            Phối hợp điện lực EVN lắp công tơ 2 chiều, tải lên biên bản nghiệm thu PCCC và kích hoạt ứng dụng giám sát SCADA trên di động.
+                        <p style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.55; margin: 0;">
+                            Đo tiếp địa trở kháng &lt;4 Ohm, thử nghiệm điện trở cách điện, nghiệm thu an toàn điện và phối hợp EVN lắp công tơ 2 chiều.
                         </p>
                     </div>
+
+                    <div class="sol-step-card">
+                        <span class="sol-step-badge">GIAI ĐOẠN 6</span>
+                        <div style="font-size: 2.2rem; margin-bottom: 0.85rem;">📱</div>
+                        <h4 style="color: #ffffff; font-size: 1.1rem; font-family: var(--font-heading); margin: 0 0 0.5rem; font-weight: 700;">
+                            Bàn Giao & SCADA IoT
+                        </h4>
+                        <p style="color: var(--text-secondary); font-size: 0.825rem; line-height: 1.55; margin: 0;">
+                            Bàn giao hồ sơ hoàn công, nghiệm thu PCCC và kích hoạt tài khoản giám sát SCADA trên ứng dụng điện thoại 24/7.
+                        </p>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 2.5rem;">
+                    <a href="index.php?page=installations" class="sol-btn sol-btn--solar sol-btn--sm" style="font-weight: 700; padding: 0.75rem 1.75rem;">
+                        📋 Truy Cập Hệ Thống Quản Lý Thi Công Lắp Đặt →
+                    </a>
                 </div>
             </div>
         </section>
@@ -813,38 +873,41 @@ if ($page === 'profile') {
             <div class="sol-container">
                 <div class="sol-section-header" style="text-align: center; margin-bottom: 2.5rem;">
                     <span class="sol-badge sol-badge--amber" style="margin-bottom: 0.5rem;">HIỆU QUẢ ĐẦU TƯ RÕ RỆT</span>
-                    <h2 class="sol-section-title" style="font-size: 2.25rem;">So Sánh Trực Quan Trước & Sau Khi Lắp Điện Mặt Trời</h2>
+                    <h2 class="sol-section-title" style="font-size: 2.35rem; font-weight: 800;">So Sánh Trực Quan Trước & Sau Khi Lắp Điện Mặt Trời</h2>
+                    <p class="sol-section-subtitle" style="max-width: 650px; margin: 0 auto; color: #94a3b8; font-size: 1rem;">
+                        Đánh giá tác động tài chính, sự an toàn và giá trị vận hành thực tế đối với công trình của bạn.
+                    </p>
                 </div>
 
-                <div class="sol-glass-card" style="padding: 1.75rem; overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem; color: #ffffff;">
+                <div class="sol-glass-card" style="padding: 1.75rem; overflow-x: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: rgba(11, 17, 30, 0.75);">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.925rem; color: #ffffff;">
                         <thead>
-                            <tr style="border-bottom: 2px solid var(--border-subtle); background: rgba(8, 12, 20, 0.7); text-align: left;">
-                                <th style="padding: 1rem 1.25rem; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Tiêu Chí Đánh Giá</th>
-                                <th style="padding: 1rem 1.25rem; color: #f43f5e; font-size: 0.95rem;">❌ Trước Khi Lắp Đặt</th>
-                                <th style="padding: 1rem 1.25rem; color: #10b981; font-size: 0.95rem;">✅ Sau Khi Lắp Hệ Thống Solaris</th>
+                            <tr style="border-bottom: 2px solid var(--border-subtle); background: rgba(8, 12, 20, 0.8); text-align: left;">
+                                <th style="padding: 1.15rem 1.25rem; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Tiêu Chí Đánh Giá</th>
+                                <th style="padding: 1.15rem 1.25rem; color: #f43f5e; font-size: 0.95rem; font-weight: 700;">❌ Trước Khi Lắp Đặt</th>
+                                <th style="padding: 1.15rem 1.25rem; color: #10b981; font-size: 0.95rem; font-weight: 700;">✅ Sau Khi Lắp Hệ Thống Solaris</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
-                                <td style="padding: 1rem 1.25rem; font-weight: 600;">Hóa đơn tiền điện hàng tháng</td>
-                                <td style="padding: 1rem 1.25rem; color: #fca5a5;">Chi trả toàn bộ theo bậc thang giá cao (lên tới 3.300đ/kWh)</td>
-                                <td style="padding: 1rem 1.25rem; color: #86efac; font-weight: 700;">Cắt giảm 75% - 90% chi phí điện lưới EVN mỗi tháng</td>
+                                <td style="padding: 1.1rem 1.25rem; font-weight: 600;">Hóa đơn tiền điện hàng tháng</td>
+                                <td style="padding: 1.1rem 1.25rem; color: #fca5a5;">Chi trả toàn bộ theo bậc thang giá cao (lên tới 3.300đ/kWh)</td>
+                                <td style="padding: 1.1rem 1.25rem; color: #86efac; font-weight: 700;">Cắt giảm 75% - 90% chi phí điện lưới EVN mỗi tháng</td>
                             </tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
-                                <td style="padding: 1rem 1.25rem; font-weight: 600;">Ứng phó sự cố mất điện đột ngột</td>
-                                <td style="padding: 1rem 1.25rem; color: #fca5a5;">Ngừng toàn bộ sinh hoạt, thiết bị máy tính, tủ lạnh, camera mất nguồn</td>
-                                <td style="padding: 1rem 1.25rem; color: #86efac; font-weight: 700;">Hệ thống Hybrid tự động cấp nguồn UPS &lt;10ms không gián đoạn</td>
+                                <td style="padding: 1.1rem 1.25rem; font-weight: 600;">Ứng phó sự cố mất điện đột ngột</td>
+                                <td style="padding: 1.1rem 1.25rem; color: #fca5a5;">Ngừng toàn bộ sinh hoạt, thiết bị máy tính, camera mất nguồn</td>
+                                <td style="padding: 1.1rem 1.25rem; color: #86efac; font-weight: 700;">Hệ thống Hybrid tự động cấp nguồn UPS &lt;10ms không gián đoạn</td>
                             </tr>
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
-                                <td style="padding: 1rem 1.25rem; font-weight: 600;">Nhiệt độ phòng áp mái nhà</td>
-                                <td style="padding: 1rem 1.25rem; color: #fca5a5;">Nắng nóng bức xạ trực tiếp xuống sàn mái bê tông / mái tôn</td>
-                                <td style="padding: 1rem 1.25rem; color: #86efac; font-weight: 700;">Giảm nhiệt độ tầng áp mái từ 3°C - 5°C, giảm tải máy lạnh</td>
+                                <td style="padding: 1.1rem 1.25rem; font-weight: 600;">Nhiệt độ phòng áp mái nhà</td>
+                                <td style="padding: 1.1rem 1.25rem; color: #fca5a5;">Nắng nóng bức xạ trực tiếp xuống sàn mái bê tông / mái tôn</td>
+                                <td style="padding: 1.1rem 1.25rem; color: #86efac; font-weight: 700;">Giảm nhiệt độ tầng áp mái từ 3°C - 5°C, giảm tải máy lạnh</td>
                             </tr>
                             <tr>
-                                <td style="padding: 1rem 1.25rem; font-weight: 600;">Giá trị bất động sản & Môi trường</td>
-                                <td style="padding: 1rem 1.25rem; color: #fca5a5;">Không có điểm nhấn công nghệ xanh, phát thải khí CO2 trung bình</td>
-                                <td style="padding: 1rem 1.25rem; color: #86efac; font-weight: 700;">Tăng giá trị công trình, đạt chuẩn công trình xanh net-zero ESG</td>
+                                <td style="padding: 1.1rem 1.25rem; font-weight: 600;">Giá trị bất động sản & Môi trường</td>
+                                <td style="padding: 1.1rem 1.25rem; color: #fca5a5;">Không có điểm nhấn công nghệ xanh, phát thải khí CO2 trung bình</td>
+                                <td style="padding: 1.1rem 1.25rem; color: #86efac; font-weight: 700;">Tăng giá trị công trình, đạt chuẩn công trình xanh Net-Zero ESG</td>
                             </tr>
                         </tbody>
                     </table>
@@ -857,49 +920,52 @@ if ($page === 'profile') {
         <!-- ================================================================= -->
         <section style="padding: 2.5rem 0 5rem;">
             <div class="sol-container">
-                <div class="sol-section-header" style="text-align: center; margin-bottom: 2rem;">
+                <div class="sol-section-header" style="text-align: center; margin-bottom: 2.25rem;">
                     <span class="sol-badge sol-badge--amber" style="margin-bottom: 0.5rem;">CÔNG TRÌNH THỰC TẾ</span>
-                    <h2 class="sol-section-title" style="font-size: 2.25rem;">Dự Án Tiêu Biểu Solaris Đã Triển Khai</h2>
+                    <h2 class="sol-section-title" style="font-size: 2.35rem; font-weight: 800;">Dự Án Tiêu Biểu Solaris Đã Triển Khai</h2>
+                    <p class="sol-section-subtitle" style="max-width: 650px; margin: 0 auto; color: #94a3b8; font-size: 1rem;">
+                        Hơn 1.250 công trình trên toàn quốc hoạt động bền bỉ, mang lại nguồn điện sạch và lợi ích tài chính bền vững.
+                    </p>
                 </div>
 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 3.5rem;">
-                    <div class="sol-glass-card" style="padding: 1.5rem;">
-                        <span class="sol-badge sol-badge--amber" style="margin-bottom: 0.5rem;">BIỆT THỰ THẢO ĐIỀN</span>
-                        <h4 style="color: #ffffff; font-size: 1.2rem; margin: 0 0 0.5rem; font-family: var(--font-heading);">
+                    <div class="sol-glass-card" style="padding: 1.65rem; border-radius: var(--radius-md); border-top: 3px solid #f59e0b;">
+                        <span class="sol-badge sol-badge--amber" style="margin-bottom: 0.75rem;">BIỆT THỰ THẢO ĐIỀN</span>
+                        <h4 style="color: #ffffff; font-size: 1.25rem; margin: 0 0 0.5rem; font-family: var(--font-heading); font-weight: 700;">
                             Biệt Thự Vườn Thảo Điền (TP. Thủ Đức)
                         </h4>
-                        <p style="color: var(--text-secondary); font-size: 0.825rem; margin-bottom: 1rem;">
-                            Hệ thống Hybrid ESS 15kWp kết hợp 30 tấm pin Longi 550W và Pin Lithium Sungrow 15kWh.
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6; margin-bottom: 1.25rem;">
+                            Hệ thống Hybrid ESS 15kWp kết hợp 30 tấm pin Longi 550W và Pin Lithium Sungrow 15kWh, đảm bảo điện liên tục cho điều hòa và thiết bị gia dụng cao cấp.
                         </p>
-                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #10b981; font-weight: 700; border-top: 1px dashed var(--border-subtle); padding-top: 0.75rem;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.825rem; color: #10b981; font-weight: 700; border-top: 1px dashed var(--border-subtle); padding-top: 0.85rem;">
                             <span>Sản lượng: 1.950 kWh/tháng</span>
                             <span>Tiết kiệm: ~6.2 Tr/tháng</span>
                         </div>
                     </div>
 
-                    <div class="sol-glass-card" style="padding: 1.5rem;">
-                        <span class="sol-badge sol-badge--cyan" style="margin-bottom: 0.5rem;">NHÀ MÁY DỆT MAY VSIP</span>
-                        <h4 style="color: #ffffff; font-size: 1.2rem; margin: 0 0 0.5rem; font-family: var(--font-heading);">
+                    <div class="sol-glass-card" style="padding: 1.65rem; border-radius: var(--radius-md); border-top: 3px solid #38bdf8;">
+                        <span class="sol-badge sol-badge--cyan" style="margin-bottom: 0.75rem;">NHÀ MÁY DỆT MAY VSIP</span>
+                        <h4 style="color: #ffffff; font-size: 1.25rem; margin: 0 0 0.5rem; font-family: var(--font-heading); font-weight: 700;">
                             Nhà Máy Dệt May VSIP Hải Phòng
                         </h4>
-                        <p style="color: var(--text-secondary); font-size: 0.825rem; margin-bottom: 1rem;">
-                            Hệ thống C&I Rooftop 250kWp sử dụng Inverter chuỗi Huawei FusionSolar và tấm Canadian Solar.
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6; margin-bottom: 1.25rem;">
+                            Hệ thống C&I Rooftop 250kWp sử dụng Inverter chuỗi Huawei FusionSolar và tấm Canadian Solar, tối ưu chi phí điện sản xuất và đạt chứng chỉ xanh I-REC.
                         </p>
-                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #10b981; font-weight: 700; border-top: 1px dashed var(--border-subtle); padding-top: 0.75rem;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.825rem; color: #10b981; font-weight: 700; border-top: 1px dashed var(--border-subtle); padding-top: 0.85rem;">
                             <span>Sản lượng: 31.000 kWh/tháng</span>
                             <span>Hoàn vốn: 3.4 Năm</span>
                         </div>
                     </div>
 
-                    <div class="sol-glass-card" style="padding: 1.5rem;">
-                        <span class="sol-badge sol-badge--emerald" style="margin-bottom: 0.5rem;">RESORT CAM RANH</span>
-                        <h4 style="color: #ffffff; font-size: 1.2rem; margin: 0 0 0.5rem; font-family: var(--font-heading);">
+                    <div class="sol-glass-card" style="padding: 1.65rem; border-radius: var(--radius-md); border-top: 3px solid #10b981;">
+                        <span class="sol-badge sol-badge--emerald" style="margin-bottom: 0.75rem;">RESORT CAM RANH</span>
+                        <h4 style="color: #ffffff; font-size: 1.25rem; margin: 0 0 0.5rem; font-family: var(--font-heading); font-weight: 700;">
                             Resort Nghỉ Dưỡng Cam Ranh (Khánh Hòa)
                         </h4>
-                        <p style="color: var(--text-secondary); font-size: 0.825rem; margin-bottom: 1rem;">
-                            Hệ thống Hybrid ESS 100kWp độc lập kết hợp Deye Inverter và khối pin LiFePO4 dung lượng lớn.
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6; margin-bottom: 1.25rem;">
+                            Hệ thống Hybrid ESS 100kWp độc lập kết hợp Deye Inverter và khối pin LiFePO4 dung lượng lớn, cung cấp năng lượng sạch không tiếng ồn cho khu nghỉ dưỡng.
                         </p>
-                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #10b981; font-weight: 700; border-top: 1px dashed var(--border-subtle); padding-top: 0.75rem;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.825rem; color: #10b981; font-weight: 700; border-top: 1px dashed var(--border-subtle); padding-top: 0.85rem;">
                             <span>Sản lượng: 14.500 kWh/tháng</span>
                             <span>Độc lập: 95%</span>
                         </div>
@@ -907,24 +973,24 @@ if ($page === 'profile') {
                 </div>
 
                 <!-- Đối tác công nghệ Tier-1 thế giới -->
-                <div style="text-align: center;">
-                    <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1.5px; margin-bottom: 1.25rem;">
+                <div style="text-align: center; background: rgba(11, 17, 30, 0.6); padding: 2rem 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                    <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1.5px; margin-bottom: 1.5rem; font-weight: 700;">
                         ĐỐI TÁC THIẾT BỊ QUANG ĐIỆN TIER-1 TOÀN CẦU ĐỒNG HÀNH CÙNG SOLARIS
                     </div>
-                    <div style="display: flex; justify-content: center; align-items: center; gap: 2rem; flex-wrap: wrap; opacity: 0.85;">
-                        <span style="font-size: 1.05rem; font-weight: 800; color: #ffffff; letter-spacing: 1px;">LONGI</span>
-                        <span style="font-size: 1.05rem; font-weight: 800; color: #38bdf8; letter-spacing: 1px;">CanadianSolar</span>
-                        <span style="font-size: 1.05rem; font-weight: 800; color: #f43f5e; letter-spacing: 1px;">HUAWEI</span>
-                        <span style="font-size: 1.05rem; font-weight: 800; color: #f59e0b; letter-spacing: 1px;">SUNGROW</span>
-                        <span style="font-size: 1.05rem; font-weight: 800; color: #10b981; letter-spacing: 1px;">Growatt</span>
-                        <span style="font-size: 1.05rem; font-weight: 800; color: #a855f7; letter-spacing: 1px;">Deye</span>
-                        <span style="font-size: 1.05rem; font-weight: 800; color: #ffffff; letter-spacing: 1px;">Schneider</span>
-                        <span style="font-size: 1.05rem; font-weight: 800; color: #38bdf8; letter-spacing: 1px;">EVN</span>
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 2.25rem; flex-wrap: wrap; opacity: 0.9;">
+                        <span style="font-size: 1.15rem; font-weight: 800; color: #ffffff; letter-spacing: 1.5px;">LONGI</span>
+                        <span style="font-size: 1.15rem; font-weight: 800; color: #38bdf8; letter-spacing: 1.5px;">CanadianSolar</span>
+                        <span style="font-size: 1.15rem; font-weight: 800; color: #f43f5e; letter-spacing: 1.5px;">HUAWEI</span>
+                        <span style="font-size: 1.15rem; font-weight: 800; color: #f59e0b; letter-spacing: 1.5px;">SUNGROW</span>
+                        <span style="font-size: 1.15rem; font-weight: 800; color: #10b981; letter-spacing: 1.5px;">Growatt</span>
+                        <span style="font-size: 1.15rem; font-weight: 800; color: #a855f7; letter-spacing: 1.5px;">Deye</span>
+                        <span style="font-size: 1.15rem; font-weight: 800; color: #ffffff; letter-spacing: 1.5px;">Schneider</span>
+                        <span style="font-size: 1.15rem; font-weight: 800; color: #38bdf8; letter-spacing: 1.5px;">EVN</span>
                     </div>
                 </div>
             </div>
         </section>
-    </main>
+</main>
 
     <footer class="sol-footer">
         <div class="sol-container">
@@ -1437,9 +1503,11 @@ if ($page === 'profile') {
 
         // 5. CÔNG CỤ TÍNH TOÁN CÔNG SUẤT & THỜI GIAN GỠ VỐN (HOME ROI CALCULATOR)
         let currentPeakHours = 5.2; // Mặc định Miền Nam (5.2h nắng đỉnh)
+        let currentRegionKey = 'south';
 
-        function setRegion(hours, btn) {
+        function setRegion(hours, regionKey, btn) {
             currentPeakHours = parseFloat(hours) || 5.2;
+            currentRegionKey = regionKey || 'south';
             document.querySelectorAll('.sol-region-btn').forEach(b => {
                 b.classList.remove('sol-btn--solar', 'active');
                 b.classList.add('sol-btn--secondary');
@@ -1493,7 +1561,7 @@ if ($page === 'profile') {
                 elPayback.innerText = `${paybackYears} Năm ${paybackMonths} Tháng`;
             }
             if (btnSim) {
-                btnSim.href = `index.php?page=calculator&source=plan&bill=${bill}&kwp=${kwp}`;
+                btnSim.href = `index.php?page=calculator&source=bill&monthly_bill=${bill}&region=${currentRegionKey}&roof_area=${Math.max(45, area)}#step-2-simulation`;
             }
         }
 

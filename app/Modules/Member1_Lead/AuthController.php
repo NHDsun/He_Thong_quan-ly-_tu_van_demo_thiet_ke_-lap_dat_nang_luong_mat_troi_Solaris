@@ -176,11 +176,15 @@ class AuthController
                             ];
 
                             // Gửi mã OTP đến Gmail (và tạo dữ liệu hộp thư ảo)
-                            self::sendOtpEmail($email, $fullName, $otpCode);
+                            $mailRes = self::sendOtpEmail($email, $fullName, $otpCode);
 
                             $_SESSION['auth_step'] = 'verify_otp';
                             $step = 'verify_otp';
-                            $success = "Mã xác nhận 6 số đã được gửi thành công đến Gmail: {$email}";
+                            if (($mailRes['mode'] ?? '') === 'live_smtp') {
+                                $success = "Mã xác thực 6 số đã được gửi trực tiếp qua Gmail SMTP đến: {$email}. Vui lòng kiểm tra hộp thư đến (hoặc hòm thư Spam)!";
+                            } else {
+                                $success = "Mã xác nhận 6 số đã được gửi đến Gmail: {$email}";
+                            }
                         }
                     } catch (Throwable $e) {
                         $error = "Lỗi kiểm tra CSDL: " . $e->getMessage();
@@ -257,10 +261,14 @@ class AuthController
                     $_SESSION['pending_registration']['otp_code'] = $newOtp;
                     $_SESSION['pending_registration']['otp_expires_at'] = time() + 600;
 
-                    self::sendOtpEmail($pending['email'], $pending['full_name'], $newOtp);
+                    $mailRes = self::sendOtpEmail($pending['email'], $pending['full_name'], $newOtp);
 
                     $step = 'verify_otp';
-                    $success = "Đã gửi lại mã xác nhận OTP mới đến Gmail: {$pending['email']}";
+                    if (($mailRes['mode'] ?? '') === 'live_smtp') {
+                        $success = "Đã gửi lại mã xác thực OTP mới trực tiếp qua Gmail SMTP đến: {$pending['email']}";
+                    } else {
+                        $success = "Đã gửi lại mã xác nhận OTP mới đến Gmail: {$pending['email']}";
+                    }
                 } else {
                     $error = "Không tìm thấy thông tin đăng ký để gửi lại mã. Vui lòng đăng ký lại.";
                     $step = 'register';
@@ -284,77 +292,11 @@ class AuthController
     }
 
     /**
-     * Gửi email xác nhận OTP chuẩn HTML và lưu vào Session Sandbox
+     * Gửi email xác nhận OTP chuẩn HTML qua PHPMailer & Gmail SMTP
+     * (Dựa trên bài giảng Phát Triển Phần Mềm Mã Nguồn Mở - Thầy Nguyễn Hải Triều)
      */
-    public static function sendOtpEmail(string $toEmail, string $fullName, string $otpCode): bool
+    public static function sendOtpEmail(string $toEmail, string $fullName, string $otpCode): array
     {
-        $subject = "=?UTF-8?B?" . base64_encode("[SOLARIS] Mã xác nhận đăng ký tài khoản của bạn") . "?=";
-        $headers = [
-            'MIME-Version: 1.0',
-            'Content-type: text/html; charset=utf-8',
-            'From: SOLARIS Energy <no-reply@solaris.vn>',
-            'Reply-To: support@solaris.vn',
-            'X-Mailer: PHP/' . phpversion()
-        ];
-
-        $htmlBody = '
-        <!DOCTYPE html>
-        <html lang="vi">
-        <head>
-            <meta charset="utf-8">
-            <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #0b1120; color: #f1f5f9; margin: 0; padding: 24px; }
-                .email-card { max-width: 520px; margin: 0 auto; background: #0f172a; border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 12px; padding: 32px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
-                .header { text-align: center; margin-bottom: 24px; }
-                .brand { font-size: 24px; font-weight: 800; color: #f59e0b; letter-spacing: 1px; }
-                .brand span { color: #38bdf8; }
-                .greeting { font-size: 16px; margin-bottom: 12px; color: #e2e8f0; }
-                .otp-box { background: rgba(245, 158, 11, 0.1); border: 2px dashed #f59e0b; border-radius: 8px; text-align: center; padding: 20px; margin: 24px 0; }
-                .otp-title { font-size: 13px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
-                .otp-number { font-size: 38px; font-weight: 900; letter-spacing: 8px; color: #fbbf24; font-family: "Courier New", monospace; text-shadow: 0 0 12px rgba(245, 158, 11, 0.5); }
-                .note { font-size: 13px; color: #94a3b8; line-height: 1.5; margin-bottom: 24px; }
-                .footer { border-top: 1px solid #1e293b; padding-top: 16px; font-size: 12px; color: #64748b; text-align: center; }
-            </style>
-        </head>
-        <body>
-            <div class="email-card">
-                <div class="header">
-                    <div class="brand">SOLAR<span>IS</span> ENERGY</div>
-                    <div style="font-size: 12px; color: #38bdf8; margin-top: 4px;">Hệ Thống Năng Lượng Mặt Trời Thông Minh</div>
-                </div>
-                <div class="greeting">Xin chào <strong>' . htmlspecialchars($fullName) . '</strong>,</div>
-                <p style="color: #cbd5e1; font-size: 14px; line-height: 1.6;">
-                    Cảm ơn bạn đã đăng ký tài khoản tại <strong>SOLARIS</strong>. Để hoàn tất kích hoạt tài khoản, vui lòng sử dụng mã xác nhận một lần (OTP) dưới đây:
-                </p>
-                <div class="otp-box">
-                    <div class="otp-title">MÃ XÁC THỰC GMAIL (HIỆU LỰC 10 PHÚT)</div>
-                    <div class="otp-number">' . htmlspecialchars($otpCode) . '</div>
-                </div>
-                <div class="note">
-                    ⚠️ Tuyệt đối không cung cấp mã xác thực này cho bất kỳ ai. Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email.
-                </div>
-                <div class="footer">
-                    © 2026 SOLARIS Energy System • Hotline: 0909.888.SOLAR<br>
-                    Website: http://localhost/PHP/Doan/
-                </div>
-            </div>
-        </body>
-        </html>';
-
-        // Gọi PHP mail() chuẩn
-        @mail($toEmail, $subject, $htmlBody, implode("\r\n", $headers));
-
-        // Lưu vào Session Sandbox để người dùng có thể xem tức thì trên localhost
-        $_SESSION['last_sent_mail'] = [
-            'to'        => $toEmail,
-            'subject'   => '[SOLARIS] Mã xác nhận đăng ký tài khoản của bạn',
-            'otp'       => $otpCode,
-            'full_name' => $fullName,
-            'time'      => date('H:i:s d/m/Y'),
-            'expires'   => date('H:i:s', time() + 600),
-            'html'      => $htmlBody
-        ];
-
-        return true;
+        return \App\Services\MailService::sendOtp($toEmail, $fullName, $otpCode);
     }
 }

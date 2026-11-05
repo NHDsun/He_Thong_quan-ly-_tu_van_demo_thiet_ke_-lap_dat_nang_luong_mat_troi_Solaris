@@ -296,19 +296,25 @@ $lastMail = $authData['last_mail'] ?? null;
 <div class="sol-mail-modal-overlay" id="simulatedMailModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 999999; align-items: center; justify-content: center; padding: 1.5rem; backdrop-filter: blur(8px);">
     <div class="sol-mail-modal" style="background: #0f172a; border: 1px solid rgba(56, 189, 248, 0.5); border-radius: 14px; width: 100%; max-width: 580px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); overflow: hidden; animation: popIn 0.25s ease;">
         <!-- TOPBAR GMAIL -->
-        <div style="background: #1e293b; padding: 0.85rem 1.25rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1);">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <div style="background: #1e293b; padding: 0.85rem 1.25rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); flex-wrap: wrap; gap: 0.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
                 <span style="font-size: 1.2rem;">📬</span>
-                <span style="font-weight: 700; color: #ffffff; font-size: 0.95rem;">Hộp Thư Đến Gmail (Mô Phỏng Trực Tiếp)</span>
+                <span style="font-weight: 700; color: #ffffff; font-size: 0.95rem;">Hộp Thư Đến Gmail (PHPMailer & SMTP)</span>
+                <?php if (!empty($lastMail['is_live'])): ?>
+                    <span style="font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #34d399; font-weight: 700;">🟢 Gmail SMTP Live</span>
+                <?php else: ?>
+                    <span style="font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #fbbf24; font-weight: 700;">🟠 Sandbox Mô Phỏng</span>
+                <?php endif; ?>
             </div>
             <button type="button" onclick="closeSimulatedMailModal()" style="background: none; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer;">✕</button>
         </div>
 
         <!-- THÔNG TIN THƯ -->
         <div style="padding: 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(15, 23, 42, 0.6); font-size: 0.825rem; color: #cbd5e1;">
-            <div style="margin-bottom: 0.35rem;"><strong>Từ:</strong> SOLARIS Energy &lt;no-reply@solaris.vn&gt;</div>
+            <div style="margin-bottom: 0.35rem;"><strong>Từ:</strong> SOLARIS Energy System &lt;no-reply@solaris.vn&gt;</div>
             <div style="margin-bottom: 0.35rem;"><strong>Đến:</strong> <?= htmlspecialchars($lastMail['to']) ?></div>
             <div style="margin-bottom: 0.35rem;"><strong>Tiêu đề:</strong> <span style="color: #fbbf24;"><?= htmlspecialchars($lastMail['subject']) ?></span></div>
+            <div style="margin-bottom: 0.35rem;"><strong>Giao thức:</strong> <code style="color: #38bdf8; font-family: monospace;">PHPMailer 7.1 / smtp.gmail.com:587 TLS</code></div>
             <div><strong>Thời gian gửi:</strong> <?= htmlspecialchars($lastMail['time']) ?></div>
         </div>
 
