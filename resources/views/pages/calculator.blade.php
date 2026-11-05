@@ -117,16 +117,16 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                 </a>
             <?php else: ?>
                 <div style="display: flex; align-items: center; gap: 0.65rem; padding: 0.6rem 0.85rem; background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius-sm); color: var(--text-muted); opacity: 0.7;">
-                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #334155; color: #94a3b8; font-weight: 800; font-size: 0.75rem;">🔒</span>
-                    <span style="font-size: 0.8rem;">2. Mô Phỏng 2D (Chờ Cập Nhật)</span>
+                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #334155; color: #94a3b8; font-weight: 800; font-size: 0.75rem;">2</span>
+                    <span style="font-size: 0.8rem; font-weight: 600;">2. Mô Phỏng Bố Trí 2D</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.65rem; padding: 0.6rem 0.85rem; background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius-sm); color: var(--text-muted); opacity: 0.7;">
-                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #334155; color: #94a3b8; font-weight: 800; font-size: 0.75rem;">🔒</span>
-                    <span style="font-size: 0.8rem;">3. Thông Số & Tài Chính</span>
+                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #334155; color: #94a3b8; font-weight: 800; font-size: 0.75rem;">3</span>
+                    <span style="font-size: 0.8rem; font-weight: 600;">3. Thông Số &amp; Tài Chính</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.65rem; padding: 0.6rem 0.85rem; background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius-sm); color: var(--text-muted); opacity: 0.7;">
-                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #334155; color: #94a3b8; font-weight: 800; font-size: 0.75rem;">🔒</span>
-                    <span style="font-size: 0.8rem;">4. Xác Nhận Cấu Hình</span>
+                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #334155; color: #94a3b8; font-weight: 800; font-size: 0.75rem;">4</span>
+                    <span style="font-size: 0.8rem; font-weight: 600;">4. Xác Nhận Cấu Hình</span>
                 </div>
             <?php endif; ?>
         </div>
@@ -226,11 +226,10 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                         <span style="font-size: 1.5rem; line-height: 1;">⚠️</span>
                         <div>
                             <strong style="color: #ffffff; font-size: 0.95rem; display: block; margin-bottom: 0.25rem;">
-                                Kế hoạch dự định chưa đủ các thiết bị bắt buộc để mô phỏng (Thiếu <?= count($missingRequired) ?> nhóm kỹ thuật):
+                                Kế hoạch dự định chưa đủ các thiết bị bắt buộc (Thiếu <?= count($missingRequired) ?> nhóm kỹ thuật):
                             </strong>
                             <div style="font-size: 0.825rem; color: #fecdd3; line-height: 1.5;">
-                                Đang thiếu: <strong style="color: #ffffff;"><?= implode(', ', $missingRequired) ?></strong>.
-                                <br>Hệ thống chỉ hiển thị từ Bước 2 trở đi khi bạn đã chọn đầy đủ các thiết bị trên và nhấn nút <strong>"Cập Nhật"</strong>.
+                                Đang thiếu: <strong style="color: #ffffff;"><?= implode(', ', $missingRequired) ?></strong>. Vui lòng bổ sung đầy đủ thiết bị trước khi cập nhật.
                             </div>
                         </div>
                     </div>
@@ -354,11 +353,6 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                         <button type="submit" class="sol-btn sol-btn--solar" style="width: 100%; padding: 0.8rem 1.25rem; font-size: 0.95rem; font-weight: 700; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35); display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
                             <span>⚡</span> Cập Nhật Diện Tích Mái &amp; Mô Phỏng
                         </button>
-                        <?php if (!empty($missingRequired)): ?>
-                            <small style="display: block; color: #f43f5e; font-size: 0.75rem; margin-top: 0.35rem; text-align: center; font-weight: 600;">
-                                ⚠️ Cần đủ 6 nhóm thiết bị để mở khóa Bước 2
-                            </small>
-                        <?php endif; ?>
                     </div>
                 </div>
             </form>
@@ -973,12 +967,9 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
             <span class="sol-badge" style="background: rgba(236, 72, 153, 0.15); color: #f472b6; border: 1px solid #ec4899; margin-bottom: 0.45rem;">
                 BƯỚC 4 / 4 • XÁC NHẬN CẤU HÌNH
             </span>
-            <h2 style="color: #ffffff; font-size: 1.85rem; font-family: var(--font-heading); margin-bottom: 0.65rem;">
+            <h2 style="color: #ffffff; font-size: 1.85rem; font-family: var(--font-heading); margin-bottom: 0;">
                 Xác Nhận Cấu Hình Phương Án
             </h2>
-            <p style="color: var(--text-secondary); font-size: 0.925rem; line-height: 1.5;">
-                Sau khi kiểm tra mô phỏng mặt bằng 2D và hiệu quả tài chính, hãy điền thông tin công trình và nhấn <strong>Xác nhận cấu hình</strong> để lưu dự toán vào CSDL và tự động chuyển sang phân hệ Quản lý lắp đặt.
-            </p>
         </div>
 
         <!-- Hộp tóm tắt phương án chốt trước khi xác nhận -->
@@ -1111,43 +1102,6 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
             </div>
         </form>
     </section>
-    <?php else: ?>
-        <!-- ================================================================= -->
-        <!-- KHỐI CHỜ MỞ KHÓA: CHỈ HIỂN THỊ TỪ BƯỚC 2 TRỞ ĐI KHI NHẤN CẬP NHẬT  -->
-        <!-- VÀ YÊU CẦU PHẢI ĐẦY ĐỦ CÁC THIẾT BỊ BẮT BUỘC                      -->
-        <!-- ================================================================= -->
-        <section class="sol-glass-card" style="text-align: center; padding: 3.5rem 2rem; margin-bottom: 3.5rem; border: 1.5px dashed rgba(245, 158, 11, 0.45); background: rgba(8, 12, 20, 0.55); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);">
-            <div style="display: inline-flex; align-items: center; justify-content: center; width: 68px; height: 68px; border-radius: 50%; background: rgba(245, 158, 11, 0.15); border: 1.5px solid rgba(245, 158, 11, 0.45); font-size: 2.2rem; margin-bottom: 1.25rem;">
-                🔒
-            </div>
-            <h3 style="color: #ffffff; font-size: 1.45rem; font-family: var(--font-heading); margin: 0 0 0.75rem;">
-                Mô Phỏng Sơ Đồ 2D &amp; Báo Cáo Hiệu Quả Đầu Tư (Bước 2, 3, 4) Đang Chờ Kích Hoạt
-            </h3>
-            <p style="color: var(--text-secondary); font-size: 0.95rem; max-width: 680px; margin: 0 auto 1.75rem; line-height: 1.65;">
-                <?php if ($isPlanSource): ?>
-                    Hệ thống chỉ hiển thị từ <strong>Bước 2 trở đi</strong> khi bạn nhấn nút <strong>"Cập Nhật"</strong> và <strong>Kế hoạch dự định phải có đầy đủ 6 nhóm thiết bị bắt buộc</strong> (Tấm pin, Inverter, Tủ điện, Khung giá, Cáp điện, Đồng hồ).
-                <?php else: ?>
-                    Vui lòng điền mức hóa đơn tiền điện và diện tích mái nhà ở Bước 1, sau đó nhấn nút <strong>"⚡ Cập Nhật Tính Toán &amp; Mô Phỏng"</strong> để mở khóa sơ đồ bố trí thiết bị 2D và bảng hiệu quả đầu tư từ Bước 2 trở đi.
-                <?php endif; ?>
-            </p>
-
-            <?php if ($isPlanSource): ?>
-                <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                    <?php if (!empty($missingRequired)): ?>
-                        <form method="POST" action="index.php?page=calculator&source=plan" style="margin: 0;">
-                            <input type="hidden" name="action" value="fill_full_system">
-                            <button type="submit" class="sol-btn sol-btn--solar" style="font-size: 0.95rem; font-weight: 700; padding: 0.85rem 1.6rem; box-shadow: 0 4px 18px rgba(245, 158, 11, 0.45); display: inline-flex; align-items: center; gap: 0.6rem;">
-                                <span>⚡</span> Bổ Sung Đầy Đủ Trọn Bộ 6 Nhóm Chuẩn Vào Kế Hoạch (1-Click)
-                            </button>
-                        </form>
-                    <?php else: ?>
-                        <a href="#step-1-plan" class="sol-btn sol-btn--solar" style="font-size: 0.95rem; font-weight: 700; padding: 0.85rem 1.6rem; box-shadow: 0 4px 18px rgba(245, 158, 11, 0.45); text-decoration: none; display: inline-flex; align-items: center; gap: 0.6rem;">
-                            <span>⬆️</span> Nhấn "Cập Nhật Diện Tích Mái &amp; Mô Phỏng" Ở Bước 1
-                        </a>
-                    <?php endif; ?>
-                </div>
-            <?php endif; ?>
-        </section>
     <?php endif; ?>
 
     <!-- ===================================================================== -->
