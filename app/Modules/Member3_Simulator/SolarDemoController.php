@@ -327,13 +327,28 @@ class SolarDemoController
         $pagination = new UsePaginationState((int) $stmt->fetchColumn(), 20, null, 'p');
         $limit = $pagination->getLimit();
         $offset = $pagination->getOffset();
-        $stmt = $pdo->prepare("SELECT q.*,p.id project_id,p.status project_status FROM solar_quotes q LEFT JOIN projects p ON p.quote_id=q.id WHERE {$where} ORDER BY q.status='pending_approval' DESC,q.id DESC LIMIT {$limit} OFFSET {$offset}");
+        $schema = [];
+        $columns = $pdo->query("SELECT TABLE_NAME, COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('solar_quotes','projects','solar_quote_items')");
+        foreach ($columns as $column) {
+            $schema[$column['TABLE_NAME']][$column['COLUMN_NAME']] = true;
+        }
+        $quoteColumns = $schema['solar_quotes'] ?? [];
+        $projectColumns = $schema['projects'] ?? [];
+        $hasProjects = isset($projectColumns['id'], $projectColumns['quote_id']);
+        $joinProjects = $hasProjects ? ' LEFT JOIN projects p ON p.quote_id=q.id' : '';
+        $projectId = $hasProjects ? 'p.id AS project_id' : 'NULL AS project_id';
+        $projectStatus = isset($projectColumns['status']) ? 'p.status AS project_status' : "'Chưa cập nhật' AS project_status";
+        $source = isset($quoteColumns['source']) ? '' : ", 'bill' AS source";
+        $reviewNote = isset($quoteColumns['review_note']) ? '' : ', NULL AS review_note';
+        $stmt = $pdo->prepare("SELECT q.*{$source}{$reviewNote}, {$projectId}, {$projectStatus} FROM solar_quotes q{$joinProjects} WHERE {$where} ORDER BY q.status='pending_approval' DESC,q.id DESC LIMIT {$limit} OFFSET {$offset}");
         $stmt->execute($params);
         $list = $stmt->fetchAll();
-        $itemsQuery = $pdo->prepare('SELECT product_name,quantity,unit_price FROM solar_quote_items WHERE quote_id=? ORDER BY id');
+        $itemsQuery = isset($schema['solar_quote_items']['quote_id'])
+            ? $pdo->prepare('SELECT product_name,quantity,unit_price FROM solar_quote_items WHERE quote_id=? ORDER BY id')
+            : null;
         foreach ($list as &$quote) {
             $quote['items'] = [];
-            if ($quote['source'] === 'plan') {
+            if ($quote['source'] === 'plan' && $itemsQuery !== null) {
                 $itemsQuery->execute([$quote['id']]);
                 $quote['items'] = $itemsQuery->fetchAll();
             }

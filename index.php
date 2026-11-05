@@ -79,38 +79,70 @@ if ($page === 'products') {
         if (str_starts_with($cartAction, 'admin_')) {
             $adminResult = $productController->adminProductAction($cartAction);
             $_SESSION['product_flash'] = $adminResult['message'];
-            $redirect = 'index.php?page=products';
-            if (!empty($_POST['product_id'])) $redirect .= '&product=' . (int) $_POST['product_id'];
+            $_SESSION['product_form_input'] = $adminResult['ok'] || ($adminResult['status'] ?? 0) === 403 ? null : $_POST;
+            $_SESSION['product_field_errors'] = $adminResult['fieldErrors'] ?? [];
+            $redirect = \App\Hooks\UseProductFilters::url(\App\Hooks\UseProductFilters::read($_GET)['filters'], ['p' => $_GET['p'] ?? 1]);
+            if (($_GET['action'] ?? '') === 'manage') {
+                $redirect = 'index.php?' . http_build_query(['page' => 'products', 'action' => 'manage', 'q' => \App\Hooks\UseProductFilters::text($_GET['q'] ?? ''), 'category' => \App\Hooks\UseProductFilters::text($_GET['category'] ?? ''), 'visibility' => \App\Hooks\UseProductFilters::text($_GET['visibility'] ?? 'all'), 'p' => max(1, (int) ($_GET['p'] ?? 1))]);
+            } elseif ($cartAction === 'admin_create' && !$adminResult['ok']) {
+                $redirect .= '&action=create';
+            } elseif (!in_array($cartAction, ['admin_delete', 'admin_restore'], true) || !$adminResult['ok']) {
+                $productId = (int) ($adminResult['product_id'] ?? $_POST['product_id'] ?? 0);
+                if ($productId > 0) $redirect .= '&product=' . $productId;
+            }
             header('Location: ' . $redirect); exit;
         }
-        $productController->handleCart((string) ($_POST['cart_action'] ?? ''));
+        $cartResult = $productController->handleCart($cartAction);
+        if (str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json')) {
+            http_response_code($cartResult['ok'] ? 200 : ($cartResult['status'] ?? 422));
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode($cartResult + ['count' => \App\Modules\Member2_Products\ProductController::cartCount()], JSON_UNESCAPED_UNICODE); exit;
+        }
+        $_SESSION['product_flash'] = $cartResult['message'];
         if (($_POST['cart_action'] ?? '') === 'add') {
-            $returnParams = ['page' => 'products'];
-            foreach (['p', 'q', 'category', 'min_price', 'max_price'] as $key) {
-                if (isset($_GET[$key]) && $_GET[$key] !== '') $returnParams[$key] = $_GET[$key];
-            }
+            $returnFilters = \App\Hooks\UseProductFilters::read($_GET)['filters'];
             $anchor = !empty($_POST['product_id']) ? '#product-' . (int) $_POST['product_id'] : '';
-            header('Location: index.php?' . http_build_query($returnParams) . $anchor);
+            header('Location: ' . \App\Hooks\UseProductFilters::url($returnFilters, ['p' => $_GET['p'] ?? 1]) . $anchor);
             exit;
         }
         header('Location: index.php?page=cart');
         exit;
     }
-    $productView = isset($_GET['product']) ? $productController->detail((int) $_GET['product']) : $productController->index();
+    $productView = match ($_GET['action'] ?? '') {
+        'create' => $productController->create(),
+        'manage' => $productController->manage(),
+        'compare' => $productController->compare(),
+        default => isset($_GET['product']) ? $productController->detail((int) $_GET['product']) : $productController->index(),
+    };
+    if (in_array($productView['mode'] ?? '', ['create', 'manage'], true)) {
+        $title = ($productView['mode'] === 'create' ? 'Thêm sản phẩm' : 'Quản trị sản phẩm') . ' - SOLARIS';
+        if (!$productView['allowed']) http_response_code(403);
+    }
     $productView['isAdmin'] = $productController->isAdmin();
     $productView['flash'] = $_SESSION['product_flash'] ?? null;
-    unset($_SESSION['product_flash']);
+    $productView['formInput'] = $_SESSION['product_form_input'] ?? null;
+    $productView['fieldErrors'] = $_SESSION['product_field_errors'] ?? [];
+    unset($_SESSION['product_flash'], $_SESSION['product_form_input'], $_SESSION['product_field_errors']);
 }
 
 if ($page === 'cart') {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cartAction = (string) ($_POST['cart_action'] ?? '');
-        (new \App\Modules\Member2_Products\ProductController())->handleCart($cartAction);
-        header('Location: index.php?page=' . ($cartAction === 'demo_selected' ? 'calculator&source=plan' : 'cart'));
+        $cartResult = (new \App\Modules\Member2_Products\ProductController())->handleCart($cartAction);
+        $_SESSION['cart_flash'] = $cartResult['message'];
+        header('Location: index.php?page=' . ($cartAction === 'demo_selected' && $cartResult['ok'] ? 'calculator&source=plan' : 'cart'));
         exit;
     }
     $cartItems = \App\Modules\Member2_Products\ProductController::cartItems();
     $compatibility = \App\Hooks\UseSolarCalculator::analyzeCompatibility($cartItems);
+    $cartItems = (new \App\Modules\Member2_Products\ProductController())->cartDisplayItems($cartItems);
+    $cartFlash = $_SESSION['cart_flash'] ?? null;
+    unset($_SESSION['cart_flash']);
+}
+
+if ($page === 'calculator' && ($_GET['source'] ?? '') === 'plan' && isset($_SESSION['solar_demo_selection']) && !\App\Modules\Member2_Products\ProductController::demoItems()) {
+    $_SESSION['cart_flash'] = 'Vui lòng chọn ít nhất một thiết bị để đồng bộ sang Demo.';
+    header('Location: index.php?page=cart'); exit;
 }
 
 // -------------------------------------------------------------------------

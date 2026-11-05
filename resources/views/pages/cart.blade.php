@@ -1,5 +1,7 @@
 <?php
 declare(strict_types=1);
+use App\Hooks\UseProductCsrf;
+use App\Hooks\UseProductSpecifications;
 $items = $cartItems;
 $resolveCartImage = static function (array $item): ?string {
     $name = basename(trim((string) ($item['image_url'] ?? '')));
@@ -34,7 +36,8 @@ foreach ($items as $item) {
 ?>
 <link rel="stylesheet" href="resources/css/products.css">
 <link rel="stylesheet" href="resources/css/cart.css">
-<link rel="stylesheet" href="resources/css/cart-grid.css">
+<link rel="stylesheet" href="resources/css/products-advisor.css">
+<link rel="stylesheet" href="resources/css/cart-grid.css?v=<?= filemtime(dirname(__DIR__, 3) . '/resources/css/cart-grid.css') ?>">
 <link rel="stylesheet" href="resources/css/cart-polish.css">
 <link rel="stylesheet" href="resources/css/cart-system-map.css">
 <link rel="stylesheet" href="resources/css/cart-system-map-fix.css">
@@ -51,14 +54,30 @@ foreach ($items as $item) {
         <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
             <a class="sol-btn sol-btn--outline" href="index.php?page=products">← Tiếp tục chọn thiết bị</a>
             <?php if (!empty($items)): ?>
-                <a class="sol-btn sol-btn--solar" href="index.php?page=calculator&source=plan">⚡ Tính Toán & Demo Thiết Kế →</a>
+                <button class="sol-btn sol-btn--solar" type="submit" form="cart-form">⚡ Tính Toán & Demo Thiết Kế →</button>
             <?php endif; ?>
         </div>
     </header>
+    <?php if (!empty($cartFlash)): ?><div class="products-notice" role="status"><?= htmlspecialchars($cartFlash, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
 
     <section class="solar-system-map sol-glass-card" aria-labelledby="system-map-title">
         <div class="system-map-heading"><div><span class="sol-badge sol-badge--amber">Sơ đồ cấu hình</span><h2 id="system-map-title">7 nhóm thiết bị cho một hệ thống hoàn chỉnh</h2><p>Chọn các nhóm còn thiếu để hệ thống chuyển sang member3 kiểm tra tương thích và tính toán.</p></div><span class="system-map-progress"><?= count(array_filter($diagramState)) ?>/7 nhóm đã chọn</span></div>
-        <div class="system-map-flow"><?php foreach ($diagramCategories as $index => $category): $selected = $diagramState[$index]; ?><div class="system-map-node <?= $selected ? 'is-selected' : 'is-missing' ?>"><div class="system-map-icon"><?= $category['icon'] ?></div><div class="system-map-node-text"><strong><?= $category['label'] ?></strong><?php if ($selected): ?><small><?= htmlspecialchars($selected['product_code']) ?></small><span class="system-map-status">Đã chọn</span><?php else: ?><small>Chưa chọn</small><a href="index.php?page=products&category=<?= $category['slug'] ?>">Chọn thiết bị →</a><?php endif; ?></div></div><?php if ($index < count($diagramCategories) - 1): ?><span class="system-map-connector" aria-hidden="true">→</span><?php endif; ?><?php endforeach; ?></div>
+        <div class="system-map-flow">
+            <?php foreach ($diagramCategories as $index => $category):
+                $selected = $diagramState[$index];
+                $selectedImage = $selected ? $resolveCartImage($selected) : null;
+            ?>
+                <div class="system-map-node <?= $selected ? 'is-selected' : 'is-missing' ?>">
+                    <div class="system-map-icon<?= $selectedImage ? ' has-product-image' : '' ?>">
+                        <?php if ($selectedImage): ?>
+                            <img src="<?= htmlspecialchars($selectedImage, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars((string) $selected['name'], ENT_QUOTES, 'UTF-8') ?>" loading="lazy">
+                        <?php else: ?><?= $category['icon'] ?><?php endif; ?>
+                    </div>
+                    <div class="system-map-node-text"><strong><?= $category['label'] ?></strong><?php if ($selected): ?><small><?= htmlspecialchars($selected['product_code']) ?></small><span class="system-map-status">Đã chọn</span><?php else: ?><small>Chưa chọn</small><a href="index.php?page=products&category=<?= $category['slug'] ?>">Chọn thiết bị →</a><?php endif; ?></div>
+                </div>
+                <?php if ($index < count($diagramCategories) - 1): ?><span class="system-map-connector" aria-hidden="true">→</span><?php endif; ?>
+            <?php endforeach; ?>
+        </div>
     </section>
 
     <?php if (!$items): ?>
@@ -212,39 +231,21 @@ foreach ($items as $item) {
             </div>
 
             <!-- Danh sách Cảnh báo & Đề xuất ghép đôi kỹ thuật -->
-            <?php if (!empty($compat['rules'])): ?>
-                <div style="display: flex; flex-direction: column; gap: 0.65rem; border-top: 1px solid var(--border-subtle); padding-top: 1rem;">
-                    <div style="font-size: 0.8rem; font-weight: 700; color: var(--accent-gold); text-transform: uppercase;">
-                        📋 Đánh giá tương thích & Khuyến nghị kỹ thuật từ Kỹ Sư Solaris:
-                    </div>
-                    <?php foreach ($compat['rules'] as $rule): $ruleText = mb_strtolower($rule['title'] . ' ' . $rule['detail']); $ruleLink = null; $ruleLinkLabel = null; if ($rule['type'] !== 'success') { if (str_contains($ruleText, 'inverter')) { $ruleLink = 'index.php?page=products&category=inverter' . (str_contains($ruleText, 'hybrid') ? '&system_type=Hybrid' : ''); $ruleLinkLabel = str_contains($ruleText, 'hybrid') ? 'Chọn Inverter Hybrid phù hợp →' : 'Xem Inverter phù hợp →'; } elseif (str_contains($ruleText, 'tấm pin') || str_contains($ruleText, 'pin')) { $ruleLink = 'index.php?page=products&category=tam-pin'; $ruleLinkLabel = 'Chọn tấm pin phù hợp →'; } elseif (str_contains($ruleText, 'tủ điện')) { $ruleLink = 'index.php?page=products&category=tu-dien'; $ruleLinkLabel = 'Chọn tủ điện an toàn →'; } elseif (str_contains($ruleText, 'khung')) { $ruleLink = 'index.php?page=products&category=khung-gia'; $ruleLinkLabel = 'Chọn khung giá phù hợp →'; } } ?>
-                        <div style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); background: <?= $rule['type'] === 'success' ? 'rgba(16, 185, 129, 0.1)' : ($rule['type'] === 'warning' ? 'rgba(245, 158, 11, 0.1)' : ($rule['type'] === 'danger' ? 'rgba(244, 63, 94, 0.1)' : 'rgba(56, 189, 248, 0.1)')) ?>; border-left: 3px solid <?= $rule['type'] === 'success' ? '#10b981' : ($rule['type'] === 'warning' ? '#f59e0b' : ($rule['type'] === 'danger' ? '#f43f5e' : '#38bdf8')) ?>;">
-                            <span style="font-size: 1.1rem; line-height: 1;"><?= $rule['icon'] ?></span>
-                            <div>
-                                <strong style="color: #ffffff; font-size: 0.85rem; display: block; margin-bottom: 0.15rem;">
-                                    <?= htmlspecialchars($rule['title']) ?>
-                                </strong>
-                                <span style="color: var(--text-secondary); font-size: 0.8rem; line-height: 1.4;">
-                                    <?= htmlspecialchars($rule['detail']) ?>
-                                </span>
-                                <?php if ($ruleLink): ?><a class="compatibility-action-link" href="<?= htmlspecialchars($ruleLink, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($ruleLinkLabel) ?></a><?php endif; ?>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
+            <?php include dirname(__DIR__) . '/components/product-compatibility-advisor.blade.php'; ?>
         </section>
 
         <!-- ================================================================= -->
         <!-- DANH SÁCH THIẾT BỊ ĐÃ CHỌN TRONG KẾ HOẠCH DỰ ĐỊNH                -->
         <!-- ================================================================= -->
         <form method="post" class="sol-glass-card cart-table" id="cart-form">
+            <?= UseProductCsrf::field() ?>
             <input type="hidden" name="cart_action" value="demo_selected">
             <div class="cart-toolbar" style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border-subtle);">
                 <label class="cart-select-all" style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-weight: 600; color: #ffffff;">
                     <input type="checkbox" id="select-all"> <span>Chọn tất cả thiết bị</span>
                 </label>
                 <span id="selected-count" style="color: var(--accent-gold); font-weight: 600;">0 thiết bị được chọn</span>
+                <button class="sol-btn sol-btn--outline cart-clear-all" type="submit" name="cart_action" value="clear" formaction="index.php?page=cart" formnovalidate onclick="return confirm('Xóa tất cả sản phẩm khỏi kế hoạch dự định, kể cả sản phẩm đã bỏ chọn?')">Xóa tất cả sản phẩm</button>
             </div>
 
             <div class="cart-items" style="display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem;">
@@ -266,10 +267,11 @@ foreach ($items as $item) {
                                 <span class="sol-badge sol-badge--amber" style="padding: 0.1rem 0.45rem;"><?= htmlspecialchars($item['product_code']) ?></span>
                                 <span class="sol-badge sol-badge--emerald" style="padding: 0.1rem 0.45rem;"><?= htmlspecialchars($item['category_name']) ?></span>
                                 <?php if (!empty($item['capacity_watts'])): ?>
-                                    <span style="color: var(--accent-cyan); font-weight: 600;"><?= (int)$item['capacity_watts'] ?> W/món</span>
-                                    <span style="color: var(--accent-gold); font-weight: 600;">(Tổng: <?= round(((int)$item['capacity_watts'] * (int)$item['quantity']) / 1000, 2) ?> kW)</span>
+                                    <span style="color: var(--accent-cyan); font-weight: 600;"><?= htmlspecialchars(UseProductSpecifications::capacityLabel($item), ENT_QUOTES, 'UTF-8') ?>/thiết bị</span>
+                                    <span style="color: var(--accent-gold); font-weight: 600;">(Tổng: <?= htmlspecialchars(UseProductSpecifications::capacityLabel($item, (int) $item['quantity']), ENT_QUOTES, 'UTF-8') ?>)</span>
                                 <?php endif; ?>
                             </div>
+                            <div class="cart-unit-price"><?= htmlspecialchars(UseProductSpecifications::priceLabel($item), ENT_QUOTES, 'UTF-8') ?></div>
                         </div>
 
                         <div class="quantity-control" style="display: flex; align-items: center; gap: 0.25rem;">
@@ -308,6 +310,14 @@ foreach ($items as $item) {
     if (!form) return;
     const all = document.getElementById('select-all');
     const checks = [...form.querySelectorAll('.cart-check')];
+    form.addEventListener('submit', event => {
+        if ((event.submitter?.value || 'demo_selected') === 'demo_selected' && !checks.some(check => check.checked)) {
+            event.preventDefault();
+            const status = document.getElementById('selected-count');
+            status.textContent = 'Vui lòng chọn ít nhất một thiết bị để mở Demo.';
+            status.setAttribute('role', 'alert');
+        }
+    });
     const refresh = () => {
         let totalQty = 0;
         let selectedCount = 0;

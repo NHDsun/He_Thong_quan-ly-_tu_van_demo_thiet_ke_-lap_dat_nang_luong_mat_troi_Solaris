@@ -278,6 +278,19 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                 font-size: 1.4rem;
                 margin-bottom: 0.55rem;
             }
+            .sol-node-icon.has-product-image {
+                width: 64px;
+                height: 64px;
+                overflow: hidden;
+                border-radius: 12px;
+            }
+            .sol-node-icon.has-product-image img {
+                display: block;
+                width: 100%;
+                height: 100%;
+                padding: 4px;
+                object-fit: contain;
+            }
             .sol-node-label {
                 font-size: 0.875rem;
                 font-weight: 700;
@@ -403,6 +416,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                 <div class="sol-sys-cards">
                     <?php foreach ($diagramCategories as $dIndex => $dCat):
                         $dSelected = $diagramState[$dIndex];
+                        $dImage = $dSelected ? \App\Hooks\UseProductSpecifications::imageUrl($dSelected) : null;
                         $isRequired = $dCat['required'];
                         $cardClass = $dSelected 
                             ? 'is-selected' 
@@ -423,8 +437,10 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                                 </span>
                             <?php endif; ?>
 
-                            <div class="sol-node-icon" style="<?= $dSelected ? 'background: rgba(16, 185, 129, 0.15); border: 1.5px solid rgba(16, 185, 129, 0.5); box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);' : ($isRequired ? 'background: rgba(244, 63, 94, 0.1); border: 1.5px dashed rgba(244, 63, 94, 0.4);' : 'background: rgba(255, 255, 255, 0.04); border: 1.5px dashed rgba(255, 255, 255, 0.15);') ?>">
-                                <?= $dCat['icon'] ?>
+                            <div class="sol-node-icon<?= $dImage ? ' has-product-image' : '' ?>" style="<?= $dImage ? 'background: #f1f5f9; border: 1.5px solid rgba(16, 185, 129, 0.65); box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);' : ($dSelected ? 'background: rgba(16, 185, 129, 0.15); border: 1.5px solid rgba(16, 185, 129, 0.5); box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);' : ($isRequired ? 'background: rgba(244, 63, 94, 0.1); border: 1.5px dashed rgba(244, 63, 94, 0.4);' : 'background: rgba(255, 255, 255, 0.04); border: 1.5px dashed rgba(255, 255, 255, 0.15);')) ?>">
+                                <?php if ($dImage): ?>
+                                    <img src="<?= htmlspecialchars($dImage, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars((string) $dSelected['name'], ENT_QUOTES, 'UTF-8') ?>" loading="lazy">
+                                <?php else: ?><?= $dCat['icon'] ?><?php endif; ?>
                             </div>
 
                             <div class="sol-node-label"><?= $dCat['label'] ?></div>
@@ -496,13 +512,11 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                 <?php else: ?>
                     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1rem;">
                         <?php foreach ($planItems as $item): ?>
-                            <div style="padding: 1rem 1.15rem; background: rgba(8, 12, 20, 0.7); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
-                                <div style="display: flex; align-items: center; gap: 0.85rem;">
-                                    <div style="width: 44px; height: 44px; border-radius: 8px; background: rgba(14, 22, 38, 0.9); border: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0;">
-                                        <?= str_contains(mb_strtolower($item['name']), 'pin') ? '☀️' : (str_contains(mb_strtolower($item['name']), 'biến tần') || str_contains(mb_strtolower($item['name']), 'inverter') ? '⚡' : (str_contains(mb_strtolower($item['name']), 'lưu trữ') || str_contains(mb_strtolower($item['name']), 'lithium') ? '🔋' : '🔧')) ?>
-                                    </div>
-                                    <div>
-                                        <strong style="color: #ffffff; font-size: 0.88rem; display: block; line-height: 1.3;">
+                            <div style="padding: 1rem 1.15rem; background: rgba(8, 12, 20, 0.65); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
+                                <div style="display: flex; align-items: center; gap: 0.85rem; min-width: 0; flex: 1;">
+                                    <?php include dirname(__DIR__) . '/components/product-device-thumbnail.blade.php'; ?>
+                                    <div style="min-width: 0; overflow-wrap: anywhere;">
+                                        <strong style="color: #ffffff; font-size: 0.9rem; display: block; line-height: 1.3;">
                                             <?= htmlspecialchars($item['name'] ?? 'Thiết bị') ?>
                                         </strong>
                                         <div style="display: flex; gap: 0.4rem; margin-top: 0.2rem; flex-wrap: wrap;">

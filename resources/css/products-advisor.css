@@ -1,0 +1,24 @@
+.product-compatibility-advisor { margin-top: 1rem; padding-top: 1.15rem; border-top: 1px solid var(--border-subtle); }
+.product-advisor-heading { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: .85rem; margin-bottom: .9rem; }
+.product-advisor-heading h2 { margin: 0 0 .35rem; color: var(--accent-gold); font-size: .95rem; }
+.product-advisor-heading p { margin: 0; color: var(--text-muted); font-size: .78rem; }
+.product-advisor-counts { display: flex; flex-wrap: wrap; gap: .45rem; }
+.product-advisor-count { padding: .3rem .55rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: var(--text-main); background: var(--bg-surface); font-size: .72rem; }
+.product-advisor-count--danger { color: var(--accent-rose, #f43f5e); }
+.product-advisor-count--warning { color: var(--accent-gold); }
+.product-advisor-count--success { color: var(--accent-emerald, #10b981); }
+.product-advice-list { display: grid; gap: .7rem; }
+.product-advice-card { --advice-accent: var(--accent-cyan, #38bdf8); display: grid; grid-template-columns: 25px minmax(0, 1fr) auto; align-items: start; gap: .8rem; padding: 1rem; border: 1px solid var(--border-subtle); border-left: 3px solid var(--advice-accent); border-radius: var(--radius-sm); background: var(--bg-surface); }
+.product-advice-card--danger { --advice-accent: var(--accent-rose, #f43f5e); }
+.product-advice-card--warning { --advice-accent: var(--accent-gold); }
+.product-advice-card--success { --advice-accent: var(--accent-emerald, #10b981); }
+.product-advice-icon { font-size: 1.2rem; }
+.product-advice-title { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.product-advice-title h3 { margin: 0; color: var(--text-main, var(--text-primary)); font-size: .86rem; line-height: 1.5; }
+.product-advice-status { padding: .13rem .4rem; border: 1px solid var(--advice-accent); border-radius: var(--radius-sm); color: var(--advice-accent); font-size: .64rem; white-space: nowrap; }
+.product-advice-content p { margin: .5rem 0 0; color: var(--text-muted); font-size: .8rem; line-height: 1.7; }
+.product-advice-card .product-advice-action { align-self: center; max-width: 190px; margin: 0; padding: .55rem .7rem; border: 1px solid var(--advice-accent); border-radius: var(--radius-sm); color: var(--advice-accent); font-size: .74rem; line-height: 1.5; text-align: center; }
+.product-advice-action:focus-visible { outline: 2px solid var(--accent-gold); outline-offset: 3px; }
+.product-advisor-successes { margin-top: .85rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); }
+.product-advisor-successes > summary { padding: .85rem 1rem; color: var(--accent-emerald, #10b981); cursor: pointer; font-size: .8rem; font-weight: 600; }
+.product-advisor-successes > .product-advice-list { padding: 0 .85rem .85rem; }
