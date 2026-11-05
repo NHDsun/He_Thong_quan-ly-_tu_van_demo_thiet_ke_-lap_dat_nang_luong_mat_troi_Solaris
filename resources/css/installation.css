@@ -1144,3 +1144,15 @@ body:has(.tv4) .glow-ambient-1 {
         padding:.45rem .6rem;
     }
 }
+
+.tv4-project-filters { display:grid; grid-template-columns:minmax(0,1fr) minmax(170px,240px) auto auto; gap:.85rem; align-items:end; margin:0 0 1.5rem; }
+.tv4 .tv4-project-filters label { margin:0; min-width:0; }
+.tv4-project-filters > .sol-btn { min-height:44px; }
+@media(max-width:760px) {
+    .tv4-project-filters { grid-template-columns:minmax(0,1fr) auto auto; }
+    .tv4-project-filters > label:first-of-type { grid-column:1 / -1; }
+}
+@media(max-width:420px) {
+    .tv4-project-filters { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .tv4-project-filters > label { grid-column:1 / -1; }
+}

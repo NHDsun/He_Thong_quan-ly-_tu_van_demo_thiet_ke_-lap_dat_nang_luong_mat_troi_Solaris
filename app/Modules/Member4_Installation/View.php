@@ -13,7 +13,7 @@ final class View
 
     public static function url(array $changes = []): string
     {
-        $allowed = array_intersect_key($_GET, array_flip(['project', 'filter', 'p', 'from', 'to', 'staff_page', 'log_page', 'doc_page', 'request_page', 'material_page', 'payment_page', 'product_page']));
+        $allowed = array_intersect_key($_GET, array_flip(['project', 'filter', 'search', 'sort', 'p', 'from', 'to', 'staff_page', 'log_page', 'doc_page', 'request_page', 'material_page', 'payment_page', 'product_page']));
         return 'index.php?' . http_build_query(array_merge(['page' => 'installations'], $allowed, $changes));
     }
 

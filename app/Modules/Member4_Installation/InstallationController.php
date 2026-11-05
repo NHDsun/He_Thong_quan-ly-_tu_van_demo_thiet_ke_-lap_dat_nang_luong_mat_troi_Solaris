@@ -60,7 +60,10 @@ final class InstallationController
             }
             $view['today'] = $workflow->today();
             $view['filter'] = (string) ($_GET['filter'] ?? ($actor['role'] === 'admin' ? 'pending' : 'all'));
-            $view['listing'] = $workflow->listing($actor, $view['filter'], (int) ($_GET['p'] ?? 1));
+            $view['search'] = mb_substr(trim(is_string($_GET['search'] ?? null) ? $_GET['search'] : ''), 0, 20);
+            $sort = is_string($_GET['sort'] ?? null) ? $_GET['sort'] : 'default';
+            $view['sort'] = isset(InstallationWorkflow::PROJECT_SORTS[$sort]) ? $sort : 'default';
+            $view['listing'] = $workflow->listing($actor, $view['filter'], (int) ($_GET['p'] ?? 1), $view['search'], $view['sort']);
             if (!$id && in_array($actor['role'], ['admin', 'technician'], true)) {
                 $view['dashboard'] = $workflow->dashboard($actor);
             }
