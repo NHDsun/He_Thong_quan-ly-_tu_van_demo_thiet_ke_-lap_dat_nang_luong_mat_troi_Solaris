@@ -840,10 +840,10 @@ $roleName = match ($userRole) {
                     <span>4 Phân hệ phối hợp đồng bộ</span>
                 </div>
                 <div style="display: flex; width: 100%; height: 26px; border-radius: 999px; overflow: hidden; background: #080c14; border: 1px solid var(--border-subtle); box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);">
-                    <div style="width: 35%; background: linear-gradient(90deg, #f59e0b, #fbbf24); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; color: #080c14;" title="Nguyễn Huy Đạt (35%)">TV1: Đạt (35%)</div>
-                    <div style="width: 20%; background: linear-gradient(90deg, #10b981, #34d399); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; color: #080c14;" title="Lê Chí Hải (20%)">TV2: Hải (20%)</div>
-                    <div style="width: 25%; background: linear-gradient(90deg, #0284c7, #38bdf8); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; color: #ffffff;" title="Mai Đức Toàn (25%)">TV3: Toàn (25%)</div>
-                    <div style="width: 20%; background: linear-gradient(90deg, #f97316, #fb923c); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; color: #080c14;" title="Phan Trần Thịnh (20%)">TV4: Thịnh (20%)</div>
+                    <div style="width: 30%; background: linear-gradient(90deg, #f59e0b, #fbbf24); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; color: #080c14;" title="Nguyễn Huy Đạt (30%)">TV1: Đạt (30%)</div>
+                    <div style="width: 25%; background: linear-gradient(90deg, #10b981, #34d399); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; color: #080c14;" title="Lê Chí Hải (25%)">TV2: Hải (25%)</div>
+                    <div style="width: 20%; background: linear-gradient(90deg, #0284c7, #38bdf8); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; color: #ffffff;" title="Mai Đức Toàn (20%)">TV3: Toàn (20%)</div>
+                    <div style="width: 25%; background: linear-gradient(90deg, #f97316, #fb923c); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; color: #080c14;" title="Phan Trần Thịnh (25%)">TV4: Thịnh (25%)</div>
                 </div>
             </div>
 
@@ -851,22 +851,22 @@ $roleName = match ($userRole) {
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
                 <div style="padding: 0.85rem; background: rgba(8, 12, 20, 0.5); border-radius: var(--radius-sm); border-left: 3px solid #f59e0b;">
                     <div style="font-size: 0.8rem; font-weight: 700; color: #ffffff;">Nguyễn Huy Đạt (TV1 - PM)</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Core Arch, Routing, UI/UX, Quản Lý Dự Án, 6 Bài Tập Form (35%)</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Core Arch, Routing, UI/UX, Quản Lý Dự Án, 6 Bài Tập Form (30%)</div>
                 </div>
 
                 <div style="padding: 0.85rem; background: rgba(8, 12, 20, 0.5); border-radius: var(--radius-sm); border-left: 3px solid #10b981;">
                     <div style="font-size: 0.8rem; font-weight: 700; color: #ffffff;">Lê Chí Hải (TV2)</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Catalog 26 SP, Kế hoạch dự định, Tương thích thiết bị (20%)</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Catalog 26 SP, Kế hoạch dự định, Tương thích thiết bị (25%)</div>
                 </div>
 
                 <div style="padding: 0.85rem; background: rgba(8, 12, 20, 0.5); border-radius: var(--radius-sm); border-left: 3px solid #38bdf8;">
                     <div style="font-size: 0.8rem; font-weight: 700; color: #ffffff;">Mai Đức Toàn (TV3)</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Simulator KW/ROI, SVG Mái, BOM, Thuật Toán Quang Điện & SVG (25%)</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Simulator KW/ROI, SVG Mái, BOM, Thuật Toán Quang Điện & SVG (20%)</div>
                 </div>
 
                 <div style="padding: 0.85rem; background: rgba(8, 12, 20, 0.5); border-radius: var(--radius-sm); border-left: 3px solid #fb923c;">
                     <div style="font-size: 0.8rem; font-weight: 700; color: #ffffff;">Phan Trần Thịnh (TV4)</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Auth 3 Cấp, Workflow Lắp Đặt, Phân Bổ Kỹ Thuật Viên (20%)</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Workflow Lắp Đặt, Billing & Invoice, Dashboard, Phân Bổ Kỹ Thuật Viên (25%)</div>
                 </div>
             </div>
         </section>
