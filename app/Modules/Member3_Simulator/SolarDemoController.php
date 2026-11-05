@@ -74,15 +74,27 @@ class SolarDemoController
 
         $alert = null;
         $savedQuoteId = null;
+        $isPost = (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST');
+        $postAction = trim($_POST['action'] ?? '');
+        $isUpdateRequested = false;
+
+        // Xử lý nút bấm "Bổ sung nhanh trọn bộ thiết bị chuẩn" vào Kế hoạch dự định
+        if ($isPost && $postAction === 'fill_full_system') {
+            $cartProducts = $this->handleFillFullSystem($pdo);
+            $alert = [
+                'type' => 'success',
+                'message' => 'Đã tự động bổ sung đầy đủ trọn bộ 6 nhóm thiết bị kỹ thuật chuẩn vào Kế hoạch dự định! Vui lòng nhấn "Cập Nhật" để bắt đầu mô phỏng.'
+            ];
+        }
 
         // Xử lý khi người dùng gửi form Đăng ký tư vấn / Lưu báo giá hoặc Xác nhận chuyển sang Quản lý lắp đặt
-        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['action'])) {
-            $act = trim($_POST['action']);
-            if ($act === 'save_quote' || $act === 'confirm_to_install') {
-                $saveResult = $this->handleSaveQuote($pdo, $cartProducts, $act === 'confirm_to_install');
-                $alert = $saveResult['alert'] ?? null;
-                $savedQuoteId = $saveResult['quote_id'] ?? null;
-            }
+        if ($isPost && ($postAction === 'save_quote' || $postAction === 'confirm_to_install')) {
+            $saveResult = $this->handleSaveQuote($pdo, $cartProducts, $postAction === 'confirm_to_install');
+            $alert = $saveResult['alert'] ?? null;
+            $savedQuoteId = $saveResult['quote_id'] ?? null;
+            $isUpdateRequested = true;
+        } elseif ($isPost && ($postAction === 'update_simulation' || isset($_POST['calc_source']))) {
+            $isUpdateRequested = true;
         }
 
         // Nhận tham số tính toán từ GET hoặc POST
@@ -103,6 +115,51 @@ class SolarDemoController
         // Phân tích ghép đôi thiết bị từ Kế hoạch dự định
         $compatibility = UseSolarCalculator::analyzeCompatibility($cartProducts);
 
+        // Kiểm tra 6 nhóm thiết bị bắt buộc để cấu thành một hệ thống điện mặt trời hoàn chỉnh
+        $missingRequired = [];
+        if (($compatibility['total_panels'] ?? 0) <= 0) {
+            $missingRequired[] = 'Tấm Pin Năng Lượng Mặt Trời';
+        }
+        if (($compatibility['total_inverters'] ?? 0) <= 0) {
+            $missingRequired[] = 'Biến Tần Inverter';
+        }
+        if (empty($compatibility['has_protection_box'])) {
+            $missingRequired[] = 'Tủ Điện AC/DC & Chống Sét';
+        }
+        if (empty($compatibility['has_mounting_rail'])) {
+            $missingRequired[] = 'Khung Giá / Ray Nhôm & Kẹp Pin';
+        }
+        if (empty($compatibility['has_cables'])) {
+            $missingRequired[] = 'Cáp Điện DC Solar 4.0mm² & MC4';
+        }
+        if (empty($compatibility['has_smart_meter'])) {
+            $missingRequired[] = 'Đồng Hồ Smart Meter 2 Chiều';
+        }
+        $isHardwareComplete = empty($missingRequired);
+
+        // Quy tắc theo yêu cầu:
+        // 1. Chỉ khi nhấn CẬP NHẬT thì mới hiển thị từ Bước 2 trở đi.
+        // 2. Nếu từ Kế hoạch dự định, yêu cầu phải ĐẦY ĐỦ các thiết bị bắt buộc.
+        $showStepsFrom2 = false;
+        if ($isUpdateRequested) {
+            if ($source === 'plan') {
+                if ($isHardwareComplete) {
+                    $showStepsFrom2 = true;
+                } else {
+                    $showStepsFrom2 = false;
+                    if ($alert === null) {
+                        $alert = [
+                            'type' => 'warning',
+                            'message' => 'Yêu cầu phải có đầy đủ các thiết bị bắt buộc trong Kế hoạch dự định trước khi hiển thị mô phỏng! Hiện đang thiếu: ' . implode(', ', $missingRequired) . '. Hãy bổ sung thiết bị hoặc nhấn nút "Bổ Sung Đầy Đủ Trọn Bộ Chuẩn".'
+                        ];
+                    }
+                }
+            } else {
+                // Chế độ hóa đơn điện: Đã được hệ thống tự động sinh trọn bộ thiết bị
+                $showStepsFrom2 = true;
+            }
+        }
+
         // Tính toán theo cả 2 chế độ để người dùng dễ dàng chuyển đổi
         $planCalc = $hasCartItems ? UseSolarCalculator::calculateFromPlan($cartProducts, $roofArea, $roofType) : null;
         $billCalc = UseSolarCalculator::calculate($bill, $roofArea, $package, $roofType);
@@ -114,22 +171,107 @@ class SolarDemoController
         $quotesData = $this->getQuotesList($pdo);
 
         return [
-            'status'         => 'success',
-            'member'         => 'Thành viên 3',
-            'page'           => 'Tư vấn & Demo Thiết Kế (Solar Calculator)',
-            'source'         => $source,
-            'has_cart_items' => $hasCartItems,
-            'calc'           => $calcResult,
-            'plan_calc'      => $planCalc,
-            'bill_calc'      => $billCalc,
-            'compatibility'  => $compatibility,
-            'alert'          => $alert,
-            'saved_quote_id' => $savedQuoteId,
-            'quotes_list'    => $quotesData['list'],
-            'pagination'     => $quotesData['pagination'],
-            'db_connected'   => $pdo !== null,
-            'db_error'       => Database::getLastError()
+            'status'               => 'success',
+            'member'               => 'Thành viên 3',
+            'page'                 => 'Tư vấn & Demo Thiết Kế (Solar Calculator)',
+            'source'               => $source,
+            'has_cart_items'       => $hasCartItems,
+            'calc'                 => $calcResult,
+            'plan_calc'            => $planCalc,
+            'bill_calc'            => $billCalc,
+            'compatibility'        => $compatibility,
+            'alert'                => $alert,
+            'saved_quote_id'       => $savedQuoteId,
+            'quotes_list'          => $quotesData['list'],
+            'pagination'           => $quotesData['pagination'],
+            'db_connected'         => $pdo !== null,
+            'db_error'             => Database::getLastError(),
+            'show_steps_from_2'    => $showStepsFrom2,
+            'is_hardware_complete' => $isHardwareComplete,
+            'missing_required'     => $missingRequired,
+            'is_update_requested'  => $isUpdateRequested
         ];
+    }
+
+    /**
+     * Tự động bổ sung đầy đủ trọn bộ các nhóm thiết bị bắt buộc còn thiếu vào Kế hoạch dự định
+     */
+    public function handleFillFullSystem(?PDO $pdo): array
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        $_SESSION['solar_cart'] ??= [];
+
+        if ($pdo === null) {
+            return $_SESSION['solar_cart'];
+        }
+
+        // Kiểm tra các nhóm thiết bị hiện có trong giỏ hàng để bảo toàn sản phẩm người dùng đã chọn
+        $hasPanels = false;
+        $hasInverter = false;
+        $hasBox = false;
+        $hasRail = false;
+        $hasCable = false;
+        $hasMeter = false;
+
+        foreach ($_SESSION['solar_cart'] as $item) {
+            $code = strtoupper((string)($item['product_code'] ?? ''));
+            $name = mb_strtolower((string)($item['name'] ?? ''));
+            $slug = mb_strtolower((string)($item['category_slug'] ?? ''));
+            if (str_contains($code, 'PAN') || str_contains($slug, 'tam-pin') || str_contains($name, 'tấm pin') || str_contains($name, 'solar panel')) $hasPanels = true;
+            if (str_contains($code, 'INV') || str_contains($slug, 'inverter') || str_contains($name, 'biến tần') || str_contains($name, 'inverter')) $hasInverter = true;
+            if (str_contains($code, 'ACC-006') || str_contains($code, 'ACC-007') || str_contains($slug, 'tu-dien') || str_contains($name, 'tủ điện')) $hasBox = true;
+            if (str_contains($code, 'ACC-001') || str_contains($code, 'ACC-002') || str_contains($code, 'ACC-003') || str_contains($slug, 'khung-gia') || str_contains($name, 'rail') || str_contains($name, 'khung')) $hasRail = true;
+            if (str_contains($code, 'ACC-004') || str_contains($code, 'ACC-005') || str_contains($slug, 'day-cap') || str_contains($name, 'cáp')) $hasCable = true;
+            if (str_contains($code, 'ACC-008') || str_contains($slug, 'dong-ho') || str_contains($name, 'đồng hồ') || str_contains($name, 'meter')) $hasMeter = true;
+        }
+
+        // Bổ sung các nhóm còn thiếu tương ứng
+        $toAddCodes = [];
+        if (!$hasPanels)   $toAddCodes['SOL-PAN-001'] = 10; // 10 x Tấm Pin Canadian Solar 550W
+        if (!$hasInverter) $toAddCodes['SOL-INV-001'] = 1;  // 1 x Biến Tần Hòa Lưới Sungrow 5kW
+        if (!$hasBox)      $toAddCodes['SOL-ACC-006'] = 1;  // 1 x Tủ Điện AC/DC & Chống Sét 5kW
+        if (!$hasRail)     $toAddCodes['SOL-ACC-001'] = 4;  // 4 x Thanh Rail Nhôm AL6005 4.2m
+        if (!$hasCable)    $toAddCodes['SOL-ACC-004'] = 1;  // 1 x Cuộn Cáp DC 4.0mm2 100m
+        if (!$hasMeter)    $toAddCodes['SOL-ACC-008'] = 1;  // 1 x Đồng Hồ Smart Meter Chint 1 Pha
+
+        if (!empty($toAddCodes)) {
+            try {
+                $inClause = "'" . implode("','", array_keys($toAddCodes)) . "'";
+                $sql = "SELECT p.*, c.name AS category_name, c.slug AS category_slug 
+                        FROM products p 
+                        JOIN categories c ON c.id = p.category_id 
+                        WHERE p.product_code IN ($inClause) AND p.is_active = 1";
+                $stmt = $pdo->query($sql);
+                $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                foreach ($products as $prod) {
+                    $pid = (int) $prod['id'];
+                    $code = $prod['product_code'];
+                    $defaultQty = $toAddCodes[$code] ?? 1;
+
+                    $_SESSION['solar_cart'][$pid] = [
+                        'id'              => $pid,
+                        'product_code'    => $code,
+                        'name'            => $prod['name'],
+                        'category_id'     => (int) ($prod['category_id'] ?? 0),
+                        'category_name'   => $prod['category_name'],
+                        'category_slug'   => $prod['category_slug'] ?? '',
+                        'capacity_watts'  => $prod['capacity_watts'],
+                        'price'           => (float) $prod['price'],
+                        'warranty_years'  => (int) ($prod['warranty_years'] ?? 5),
+                        'technical_specs' => $prod['technical_specs'] ?? '{}',
+                        'image_url'       => $prod['image_url'],
+                        'quantity'        => $defaultQty,
+                    ];
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        return class_exists(\App\Modules\Member2_Products\ProductController::class)
+            ? \App\Modules\Member2_Products\ProductController::cartItems()
+            : array_values($_SESSION['solar_cart']);
     }
 
     /**
