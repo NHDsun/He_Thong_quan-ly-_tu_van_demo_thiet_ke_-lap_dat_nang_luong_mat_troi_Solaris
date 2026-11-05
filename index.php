@@ -692,8 +692,8 @@ if ($page === 'profile') {
         <!-- ================================================================= -->
         <section class="sol-calc-widget" style="padding: 2.5rem 0 4.5rem;">
             <div class="sol-container">
-                <div class="sol-calc-widget__card" style="border: 1.5px solid rgba(245, 158, 11, 0.45); box-shadow: 0 25px 60px rgba(0,0,0,0.65); border-radius: var(--radius-lg); background: rgba(11, 17, 30, 0.85); backdrop-filter: blur(16px);">
-                    <div class="sol-calc-widget__grid">
+                <div class="sol-calc-widget__card" style="border: 1.5px solid rgba(245, 158, 11, 0.45); box-shadow: 0 25px 60px rgba(0,0,0,0.65); border-radius: var(--radius-lg); background: rgba(11, 17, 30, 0.85); backdrop-filter: blur(16px); padding: 2.5rem 2.75rem;">
+                    <div class="sol-calc-widget__grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2.5rem; align-items: start;">
                         <div>
                             <span class="sol-badge sol-badge--amber" style="margin-bottom: 0.75rem;">CÔNG CỤ MÔ PHỎNG THÔNG MINH</span>
                             <h2 style="font-size: 2.15rem; color: #ffffff; margin-bottom: 0.85rem; font-family: var(--font-heading); font-weight: 800;">
