@@ -8,10 +8,13 @@ $customer = $actor && $actor['role'] === 'customer';
 if ($admin) {
     $filters = [
         'all' => 'Tất cả',
-        'pending_approval' => 'Chờ duyệt',
+        'pending' => 'Cần xử lý',
+        'pending_approval' => 'Yêu cầu chờ duyệt',
         'new' => 'Dự án mới',
+        'scheduled' => 'Chờ bắt đầu',
         'in_progress' => 'Đang thực hiện',
-        'approved' => 'Đã duyệt',
+        'rejected' => 'Bị từ chối',
+        'cancelled' => 'Đã hủy',
         'completed' => 'Hoàn tất',
     ];
 } elseif ($customer) {
@@ -19,20 +22,21 @@ if ($admin) {
         'all' => 'Tất cả dự án của tôi',
         'pending_approval' => 'Chờ duyệt',
         'new' => 'Chờ triển khai',
+        'scheduled' => 'Chờ bắt đầu',
         'in_progress' => 'Đang thực hiện',
-        'approved' => 'Đã duyệt',
+        'rejected' => 'Bị từ chối',
+        'cancelled' => 'Đã hủy',
         'completed' => 'Đã hoàn tất'
     ];
 } else {
     $filters = [
         'all' => 'Dự án của tôi',
-        'pending_approval' => 'Chờ duyệt',
+        'scheduled' => 'Chờ bắt đầu',
         'in_progress' => 'Đang thực hiện',
-        'approved' => 'Đã duyệt',
     ];
 }
 ?>
-<link rel="stylesheet" href="resources/css/installation.css">
+<link rel="stylesheet" href="resources/css/installation.css?v=<?= filemtime(dirname(__DIR__, 2) . '/css/installation.css') ?>">
 <section class="sol-container tv4">
     <div class="tv4-heading">
         <div>
@@ -51,6 +55,9 @@ if ($admin) {
             </div>
         <?php endif; ?>
     </div>
+    <?php if ($admin): ?>
+        <p><a class="sol-btn sol-btn--secondary" href="index.php?page=calculator#quote-history">Duyệt phương án từ kế hoạch dự định</a></p>
+    <?php endif; ?>
     <?php if ($viewData['flash']): ?>
         <div class="tv4-notice" role="status">
             <?= UI::escape($viewData['flash']) ?>
@@ -84,6 +91,9 @@ if ($admin) {
                 <?php require __DIR__ . '/../components/installation/detail.php'; ?>
             <?php endif; ?>
         <?php else: ?>
+            <?php if (isset($viewData['dashboard'])): ?>
+                <?php require __DIR__ . '/../components/installation/dashboard.php'; ?>
+            <?php endif; ?>
             <nav class="tv4-tabs" aria-label="Lọc dự án">
                 <?php foreach ($filters as $key => $label): ?>
                     <a class="<?= $viewData['filter'] === $key ? 'active' : '' ?>" href="<?= UI::escape(UI::url(['filter' => $key, 'p' => 1])) ?>">
@@ -112,7 +122,7 @@ if ($admin) {
                             </div>
                         </div>
                         <div class="tv4-project-progress">
-                            <?php UI::component('badge', UI::label($project['status']), ['variant' => in_array($project['status'], ['completed', 'approved'], true) ? 'emerald' : 'amber']); ?>
+                            <?php UI::component('badge', UI::label($project['status']), ['variant' => $project['status'] === 'completed' ? 'emerald' : 'amber']); ?>
                             <div class="tv4-meter">
                                 <span style="width:<?= $progress ?>%"></span>
                             </div>
@@ -134,5 +144,5 @@ if ($admin) {
         <?php endif; ?>
     <?php endif; ?>
 </section>
-<script src="resources/js/installation.js" defer>
+<script src="resources/js/installation.js?v=<?= filemtime(dirname(__DIR__, 2) . '/js/installation.js') ?>" defer>
 </script>

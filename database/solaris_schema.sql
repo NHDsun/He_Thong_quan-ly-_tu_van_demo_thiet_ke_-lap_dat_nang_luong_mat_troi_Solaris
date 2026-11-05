@@ -76,11 +76,48 @@ CREATE TABLE `solar_quotes` (
     `estimated_total_cost` DECIMAL(15,2) NOT NULL COMMENT 'Tổng chi phí đầu tư dự kiến VNĐ',
     `payback_years` DECIMAL(4,1) NOT NULL COMMENT 'Thời gian hoàn vốn ước tính (năm)',
     `notes` TEXT NULL,
-    `status` ENUM('pending', 'pending_approval', 'contacted', 'survey_scheduled', 'approved', 'rejected') DEFAULT 'pending_approval',
+    `status` ENUM('draft', 'pending_approval', 'approved', 'rejected') NOT NULL DEFAULT 'draft',
+    `source` ENUM('bill','plan') NOT NULL DEFAULT 'bill',
+    `request_key` CHAR(64) NULL UNIQUE,
+    `legacy_status` VARCHAR(30) NULL,
+    `reviewed_by` INT NULL,
+    `reviewed_at` DATETIME NULL,
+    `review_note` TEXT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL,
     INDEX `idx_quotes_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Chi tiết sản phẩm được chốt khi gửi kế hoạch.
+DROP TABLE IF EXISTS solar_quote_items;
+CREATE TABLE IF NOT EXISTS solar_quote_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    quote_id INT NOT NULL,
+    product_id INT NOT NULL,
+    product_name VARCHAR(255) NOT NULL,
+    quantity INT NOT NULL,
+    unit_price DECIMAL(15,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_quote_product (quote_id,product_id),
+    FOREIGN KEY (quote_id) REFERENCES solar_quotes(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Nhật ký xét duyệt phương án, kể cả khi chưa có dự án.
+DROP TABLE IF EXISTS `solar_quote_logs`;
+CREATE TABLE `solar_quote_logs` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `quote_id` INT NOT NULL,
+    `actor_id` INT NULL,
+    `action` VARCHAR(50) NOT NULL,
+    `from_status` VARCHAR(30) NULL,
+    `to_status` VARCHAR(30) NOT NULL,
+    `note` TEXT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_quote_logs` (`quote_id`,`id`),
+    FOREIGN KEY (`quote_id`) REFERENCES `solar_quotes`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`actor_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 5. Bảng Hợp đồng & Dự án Thi công Lắp đặt thực tế
@@ -95,10 +132,18 @@ CREATE TABLE `projects` (
     `capacity_kwp` DECIMAL(6,2) NOT NULL,
     `total_amount` DECIMAL(15,2) NOT NULL,
     `installation_address` VARCHAR(255) NOT NULL,
-    `status` ENUM('new', 'pending_approval', 'approved', 'in_progress', 'completed', 'cancelled') NOT NULL DEFAULT 'new',
-    `current_stage` ENUM('survey', 'design', 'procurement', 'installation', 'grid_connection', 'handover', 'cancelled') NOT NULL DEFAULT 'survey',
+    `status` ENUM('pending_approval', 'rejected', 'new', 'scheduled', 'in_progress', 'completed', 'cancelled') NOT NULL DEFAULT 'pending_approval',
+    `legacy_status` VARCHAR(30) NULL,
+    `reviewed_by` INT NULL,
+    `reviewed_at` DATETIME NULL,
+    `review_note` TEXT NULL,
+    `cancelled_by` INT NULL,
+    `cancelled_at` DATETIME NULL,
+    `cancel_reason` TEXT NULL,
+    `current_stage` ENUM('survey', 'design', 'procurement', 'installation', 'grid_connection', 'handover') NULL DEFAULT NULL,
     `notes` TEXT NULL,
     `start_date` DATE NULL,
+    `started_at` DATETIME NULL,
     `completion_date` DATE NULL,
     `planned_end_date` DATE NULL,
     `completed_at` DATETIME NULL,
@@ -110,12 +155,46 @@ CREATE TABLE `projects` (
     INDEX `idx_projects_lookup` (`contract_code`, `status`, `current_stage`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Chi phí phát sinh và thanh toán mô phỏng
+DROP TABLE IF EXISTS project_payments;
+DROP TABLE IF EXISTS project_extra_materials;
+-- Chạy trong database Solaris đang sử dụng. Không thay đổi dữ liệu cũ.
+CREATE TABLE IF NOT EXISTS project_extra_materials (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    project_id INT NOT NULL,
+    product_id INT NOT NULL,
+    product_name VARCHAR(255) NOT NULL,
+    quantity INT NOT NULL,
+    unit_price DECIMAL(15,2) NOT NULL,
+    reason TEXT NOT NULL,
+    added_by INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    FOREIGN KEY (added_by) REFERENCES users(id),
+    INDEX(project_id,id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS project_payments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    project_id INT NOT NULL,
+    paid_by INT NOT NULL,
+    amount DECIMAL(15,2) NOT NULL,
+    payment_code VARCHAR(40) NOT NULL UNIQUE,
+    method VARCHAR(30) NOT NULL DEFAULT 'simulation',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (paid_by) REFERENCES users(id),
+    INDEX(project_id,id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- 6. Bảng Vật tư thiết bị xuất kho lắp đặt cho công trình
 DROP TABLE IF EXISTS `installation_items`;
 CREATE TABLE `installation_items` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `project_id` INT NOT NULL,
     `product_id` INT NOT NULL,
+    `product_name` VARCHAR(255) NULL,
     `quantity` INT NOT NULL DEFAULT 1,
     `unit_price` DECIMAL(15,2) NOT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -130,9 +209,10 @@ CREATE TABLE `project_stages` (
     `project_id` INT NOT NULL,
     `stage` ENUM('survey', 'design', 'procurement', 'installation', 'grid_connection', 'handover') NOT NULL,
     `position` TINYINT NOT NULL COMMENT 'Thứ tự từ 1 đến 6',
-    `status` ENUM('locked', 'in_progress', 'pending_approval', 'revision_required', 'approved') NOT NULL DEFAULT 'locked',
+    `status` ENUM('locked', 'scheduled', 'in_progress', 'pending_approval', 'revision_required', 'approved') NOT NULL DEFAULT 'locked',
     `planned_start` DATE NULL,
     `planned_end` DATE NULL,
+    `proposed_next_start` DATE NULL,
     `started_at` DATETIME NULL,
     `submitted_at` DATETIME NULL,
     `submitted_by` INT NULL,
@@ -197,7 +277,7 @@ DROP TABLE IF EXISTS `project_stage_logs`;
 CREATE TABLE `project_stage_logs` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `project_id` INT NOT NULL,
-    `stage` ENUM('survey', 'design', 'procurement', 'installation', 'grid_connection', 'handover') NOT NULL,
+    `stage` ENUM('survey', 'design', 'procurement', 'installation', 'grid_connection', 'handover') NULL,
     `started_at` DATETIME NOT NULL,
     `completed_at` DATETIME NULL,
     `actor_id` INT NULL,

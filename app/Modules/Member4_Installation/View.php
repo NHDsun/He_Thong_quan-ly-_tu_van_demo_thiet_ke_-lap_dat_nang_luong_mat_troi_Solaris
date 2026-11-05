@@ -13,7 +13,7 @@ final class View
 
     public static function url(array $changes = []): string
     {
-        $allowed = array_intersect_key($_GET, array_flip(['project', 'filter', 'p', 'from', 'to', 'staff_page', 'log_page', 'doc_page', 'request_page']));
+        $allowed = array_intersect_key($_GET, array_flip(['project', 'filter', 'p', 'from', 'to', 'staff_page', 'log_page', 'doc_page', 'request_page', 'material_page', 'payment_page', 'product_page']));
         return 'index.php?' . http_build_query(array_merge(['page' => 'installations'], $allowed, $changes));
     }
 
@@ -76,7 +76,7 @@ final class View
         echo '<input type="hidden" name="action" value="' . self::escape($action) . '">';
     }
 
-    public static function pager(array $pager, string $key): void
+    public static function pager(array $pager, string $key, array $changes = []): void
     {
         if ($pager['pages'] <= 1) {
             return;
@@ -85,7 +85,7 @@ final class View
         foreach ([-1 => 'Trước', 1 => 'Sau'] as $delta => $label) {
             $page = $pager['page'] + $delta;
             if ($page >= 1 && $page <= $pager['pages']) {
-                echo '<a class="sol-btn sol-btn--outline sol-btn--sm" href="' . self::escape(self::url([$key => $page])) . '">' . $label . '</a>';
+                echo '<a class="sol-btn sol-btn--outline sol-btn--sm" href="' . self::escape(self::url(array_merge($changes, [$key => $page]))) . '">' . $label . '</a>';
             }
         }
         echo '</nav>';
@@ -93,21 +93,24 @@ final class View
 
     public static function label(string $status): string
     {
-        return ['new' => 'Chờ phân công', 'in_progress' => 'Đang thực hiện', 'completed' => 'Hoàn tất',
+        return ['new' => 'Chờ phân công', 'scheduled' => 'Chờ bắt đầu', 'in_progress' => 'Đang thực hiện', 'completed' => 'Hoàn tất',
             'cancelled' => 'Đã hủy', 'locked' => 'Chưa mở', 'pending_approval' => 'Chờ duyệt',
-            'revision_required' => 'Cần bổ sung', 'approved' => 'Đã duyệt', 'pending' => 'Chờ duyệt',
+            'revision_required' => 'Cần bổ sung', 'approved' => 'Đã duyệt', 'pending' => 'Chờ duyệt', 'draft' => 'Dự toán nháp',
             'rejected' => 'Từ chối', 'superseded' => 'Đã đóng'] [$status] ?? $status;
     }
 
     public static function actionLabel(string $action): string
     {
-        return ['project_created' => 'Khởi tạo dự án', 'crew_assigned' => 'Phân công đội ngũ',
+        return ['project_created' => 'Khởi tạo yêu cầu dự án', 'approve_project' => 'Duyệt triển khai dự án',
+            'reject_project' => 'Từ chối yêu cầu dự án', 'project_cancelled' => 'Hủy dự án', 'crew_assigned' => 'Phân công đội ngũ',
+            'project_started' => 'Bắt đầu dự án thực tế', 'stage_scheduled' => 'Duyệt lịch giai đoạn tiếp theo',
             'stage_started' => 'Bắt đầu giai đoạn', 'document_uploaded' => 'Tải minh chứng',
             'stage_submitted' => 'Gửi duyệt giai đoạn', 'approve_stage' => 'Duyệt giai đoạn',
             'reject_stage' => 'Yêu cầu bổ sung', 'postpone_requested' => 'Đề nghị hoãn lịch',
             'replacement_requested' => 'Đề nghị thay nhân viên', 'request_approved' => 'Duyệt yêu cầu',
             'request_rejected' => 'Từ chối yêu cầu', 'request_superseded' => 'Đóng yêu cầu',
-            'project_completed' => 'Hoàn tất dự án'][$action] ?? $action;
+            'project_completed' => 'Hoàn tất dự án', 'material_added' => 'Bổ sung vật tư sau khảo sát',
+            'payment_simulated' => 'Thanh toán mô phỏng'][$action] ?? $action;
     }
 
     public static function documentLabel(string $type): string

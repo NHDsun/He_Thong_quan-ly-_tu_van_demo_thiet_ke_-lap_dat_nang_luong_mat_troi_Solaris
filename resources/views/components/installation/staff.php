@@ -17,7 +17,7 @@ $availability = $viewData['availability'];
             <span class="tv4-eyebrow">PHÂN CÔNG ĐỘI NGŨ</span>
             <h2>Chọn kỹ thuật viên</h2>
         </div>
-        <span>Lịch làm việc: T2–T6 · 8h/ngày</span>
+        <span>Mức rảnh tính theo T2–T6 · 8h/ngày</span>
     </div>
     <form method="get" class="tv4-calendar-filter">
         <input type="hidden" name="page" value="installations">
@@ -93,10 +93,10 @@ $availability = $viewData['availability'];
                 Dự kiến mỗi người (giờ/ngày)
                 <input type="number" name="hours_per_day" min="0.25" max="8" step="0.25" value="4" required>
             </label>
-            <?php UI::component('button', 'Phân công & bắt đầu dự án', ['type' => 'submit']); ?>
+            <?php UI::component('button', 'Phân công & lên lịch khảo sát', ['type' => 'submit']); ?>
         </div>
         <p class="tv4-muted">
-            Lịch dự án tối thiểu 6 ngày làm việc.
+            Lịch tổng thể là dự kiến tham khảo. Không chia đều sáu bước; nhân viên ghi nhận bắt đầu thực tế và đề xuất ngày thực thi bước kế tiếp khi gửi duyệt.
         </p>
     </form>
 </section>
