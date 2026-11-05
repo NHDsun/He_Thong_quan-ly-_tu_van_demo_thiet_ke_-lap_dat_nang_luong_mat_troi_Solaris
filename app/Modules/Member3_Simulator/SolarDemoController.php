@@ -348,7 +348,7 @@ class SolarDemoController
             : null;
         foreach ($list as &$quote) {
             $quote['items'] = [];
-            if ($quote['source'] === 'plan' && $itemsQuery !== null) {
+if ((($quote['source'] ?? '') === 'plan') && $itemsQuery !== null) {
                 $itemsQuery->execute([$quote['id']]);
                 $quote['items'] = $itemsQuery->fetchAll();
             }
