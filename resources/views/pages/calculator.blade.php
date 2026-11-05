@@ -376,13 +376,6 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
 
         <!-- Khung bản vẽ SVG kỹ thuật bố trí hệ thống -->
         <div style="background: #060911; border: 1.5px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.75rem; position: relative; overflow-x: auto; box-shadow: inset 0 2px 12px rgba(0,0,0,0.6);">
-            <!-- Huy hiệu bức xạ góc phải -->
-            <div style="position: absolute; top: 20px; right: 25px; background: rgba(14, 22, 38, 0.9); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.65rem 0.95rem; font-size: 0.75rem; color: #cbd5e1; z-index: 10; display: flex; flex-direction: column; gap: 0.25rem;">
-                <div style="font-weight: 700; color: var(--accent-gold);">☀️ BỨC XẠ HIỆU DỤNG VIỆT NAM</div>
-                <div>Quang năng: <strong>4.5 kWh/m²/ngày</strong></div>
-                <div>Tiêu chuẩn an toàn: <strong>PCCC & EVN Tier-1</strong></div>
-            </div>
-
             <?php
             $rows = $calc['layout_matrix']['rows'] ?? 2;
             $cols = $calc['layout_matrix']['columns'] ?? 5;
@@ -393,20 +386,36 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
             $gapX = 9;
             $gapY = 14;
 
-            $roofPaddingX = 50;
-            $roofPaddingY = 50;
             $roofArrayW = ($cols * ($panelW + $gapX)) - $gapX;
             $roofArrayH = ($rows * ($panelH + $gapY)) - $gapY;
 
-            // Kích thước tổng thể SVG bao gồm cả khu vực giàn pin trên mái và trạm thiết bị bên dưới
-            $svgW = max(860, $roofArrayW + ($roofPaddingX * 2) + 60);
-            $svgH = $roofArrayH + 280;
+            // Kích thước các khối trạm thiết bị dưới mái
+            $b1W = 125; // Khối 1: Tủ Điện AC/DC
+            $b2W = 145; // Khối 2: Biến Tần Inverter
+            $b3W = 125; // Khối 3: Pin ESS
+            $b4W = 125; // Khối 4: Smart Meter
+            $b5W = 70;  // Khối 5: Lưới EVN
+            $wireLen = 30; // Khoảng cách dây nối giữa các khối
 
+            // Tổng chiều rộng hàng thiết bị 5 khối
+            $stationW = $b1W + $wireLen + $b2W + $wireLen + $b3W + $wireLen + $b4W + $wireLen + $b5W;
+
+            // Chiều rộng tổng thể SVG: đảm bảo cả giàn pin và trạm thiết bị có khoảng thở 2 bên, không bị cắt mép phải
+            $svgW = max(960, $roofArrayW + 280, $stationW + 180);
+            $roofBoxH = $roofArrayH + 95;
+            $bosY = $roofBoxH + 58; // Y đỉnh các khối thiết bị bên dưới
+            $svgH = $bosY + 145;
+
+            // Căn giữa giàn pin trên mái
             $startX = ($svgW - $roofArrayW) / 2;
-            $startY = $roofPaddingY + 25;
+            $startY = 58;
+
+            // Căn giữa trạm thiết bị 5 khối (độc lập với kích thước giàn pin)
+            $eqStartX = ($svgW - $stationW) / 2;
+            $yCorridor = $roofBoxH + 34; // Máng dẫn cáp DC giữa khu vực mái và trạm thiết bị
             ?>
 
-            <svg viewBox="0 0 <?= $svgW ?> <?= $svgH ?>" style="width: 100%; max-width: 980px; height: auto; margin: 0 auto; display: block;">
+            <svg viewBox="0 0 <?= $svgW ?> <?= $svgH ?>" style="width: 100%; min-width: 880px; max-width: 1020px; height: auto; margin: 0 auto; display: block;">
                 <defs>
                     <linearGradient id="cellGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" stop-color="#0e2a47"/>
@@ -428,16 +437,35 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                         <stop offset="0%" stop-color="#064e3b"/>
                         <stop offset="100%" stop-color="#022c22"/>
                     </linearGradient>
+
+                    <!-- Mũi tên định hướng luồng điện tử -->
+                    <marker id="dcArrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                        <path d="M 0 0 L 6 3 L 0 6 Z" fill="#f59e0b" />
+                    </marker>
+                    <marker id="acArrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                        <path d="M 0 0 L 6 3 L 0 6 Z" fill="#38bdf8" />
+                    </marker>
+                    <marker id="greenArrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                        <path d="M 0 0 L 6 3 L 0 6 Z" fill="#10b981" />
+                    </marker>
                 </defs>
 
                 <!-- KHU VỰC 1: MẶT BẰNG MÁI NHÀ KHẢ DỤNG -->
-                <rect x="20" y="20" width="<?= $svgW - 40 ?>" height="<?= $roofArrayH + 85 ?>" rx="8" fill="rgba(15, 23, 42, 0.45)" stroke="#334155" stroke-dasharray="6,4" stroke-width="1.5"/>
-                <text x="35" y="42" fill="#94a3b8" font-size="11" font-weight="bold" font-family="sans-serif">
+                <rect x="20" y="16" width="<?= $svgW - 40 ?>" height="<?= $roofBoxH ?>" rx="8" fill="rgba(15, 23, 42, 0.45)" stroke="#334155" stroke-dasharray="6,4" stroke-width="1.5"/>
+                <text x="35" y="38" fill="#94a3b8" font-size="11" font-weight="bold" font-family="sans-serif">
                     🏠 MẶT BẰNG MÁI LẮP ĐẶT: <?= mb_strtoupper($roofTypeName) ?> (<?= $calc['required_roof_area'] ?> m² KHẢ DỤNG)
                 </text>
 
-                <!-- La bàn Hướng Bắc - Nam đón nắng -->
-                <g transform="translate(<?= $svgW - 60 ?>, 65)">
+                <!-- Thẻ thông số bức xạ hiệu dụng (tích hợp trực tiếp bên trong SVG, không bị che khuất) -->
+                <g transform="translate(<?= $svgW - 275 ?>, 24)">
+                    <rect width="195" height="52" rx="6" fill="#0b1329" stroke="#334155" stroke-width="1"/>
+                    <text x="12" y="17" fill="#fbbf24" font-size="8.5" font-weight="bold">☀️ BỨC XẠ HIỆU DỤNG VIỆT NAM</text>
+                    <text x="12" y="31" fill="#cbd5e1" font-size="8">Quang năng: 4.5 kWh/m²/ngày</text>
+                    <text x="12" y="43" fill="#94a3b8" font-size="7.5">Tiêu chuẩn: PCCC &amp; EVN Tier-1</text>
+                </g>
+
+                <!-- La bàn Hướng Bắc - Nam đón nắng (đặt góc phải thoáng đãng, không bị đè) -->
+                <g transform="translate(<?= $svgW - 52 ?>, 50)">
                     <circle cx="0" cy="0" r="16" fill="#0e1626" stroke="#475569" stroke-width="1.2"/>
                     <path d="M 0 -12 L 4 0 L -4 0 Z" fill="#f43f5e"/>
                     <path d="M 0 12 L 4 0 L -4 0 Z" fill="#94a3b8"/>
@@ -477,13 +505,22 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                 endfor; 
                 ?>
 
-                <!-- KHU VỰC 2: TRẠM THIẾT BỊ BỐ TRÍ DƯỚI MÁI (BOS & INVERTER STATION) -->
-                <?php
-                $bosY = $roofArrayH + 130;
-                ?>
-                <!-- Dây cáp DC chuyên dụng màu cam/đỏ dẫn từ mái xuống -->
-                <path d="M <?= $startX + $roofArrayW ?> <?= $startY + ($roofArrayH / 2) ?> L <?= $svgW - 120 ?> <?= $startY + ($roofArrayH / 2) ?> L <?= $svgW - 120 ?> <?= $bosY + 40 ?> L <?= $svgW - 160 ?> <?= $bosY + 40 ?>" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="5,3"/>
-                <text x="<?= $svgW - 105 ?>" y="<?= $startY + ($roofArrayH / 2) + 20 ?>" fill="#f59e0b" font-size="8" font-family="monospace">Cáp DC 4.0mm²</text>
+                <!-- Điểm ra của chuỗi pin quang điện (DC Terminals) -->
+                <circle cx="<?= $startX + $roofArrayW ?>" cy="<?= $startY + ($roofArrayH / 2) ?>" r="4" fill="#f59e0b" stroke="#ffffff" stroke-width="1.2"/>
+                <text x="<?= $startX + $roofArrayW + 8 ?>" y="<?= $startY + ($roofArrayH / 2) - 6 ?>" fill="#f59e0b" font-size="8" font-family="monospace" font-weight="bold">DC (+/-)</text>
+
+                <!-- TUYẾN DÂY CÁP DC CHUYÊN DỤNG 4.0mm² ĐI TỪ GIÀN PIN VÀO TRỰC TIẾP KHỐI 1 (TỦ ĐIỆN AC/DC) -->
+                <!-- Đi từ giàn pin -> sang phải -> xuống máng cáp kỹ thuật -> rẽ trái vào đầu vào Khối 1 -->
+                <path d="M <?= $startX + $roofArrayW ?> <?= $startY + ($roofArrayH / 2) ?> 
+                         L <?= $svgW - 65 ?> <?= $startY + ($roofArrayH / 2) ?> 
+                         L <?= $svgW - 65 ?> <?= $yCorridor ?> 
+                         L <?= $eqStartX - 28 ?> <?= $yCorridor ?> 
+                         L <?= $eqStartX - 28 ?> <?= $bosY + 42 ?> 
+                         L <?= $eqStartX ?> <?= $bosY + 42 ?>" 
+                      fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="6,3" marker-end="url(#dcArrow)"/>
+                
+                <text x="<?= $svgW - 55 ?>" y="<?= $startY + ($roofArrayH / 2) + 26 ?>" fill="#f59e0b" font-size="8.5" font-family="monospace" font-weight="bold">Cáp DC 4.0mm²</text>
+                <text x="<?= $svgW / 2 ?>" y="<?= $yCorridor - 5 ?>" fill="#f59e0b" font-size="7.5" font-family="monospace" text-anchor="middle">═════ Máng Cáp Kỹ Thuật DC Solar 1000V (Chống Cháy &amp; Tia Cực Tím UV) ═════►</text>
 
                 <?php
                 $dispPanelName = !empty($calc['primary_panel']['name']) ? $calc['primary_panel']['name'] : 'Tấm Pin Tier-1 Mono 550W';
@@ -494,89 +531,122 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                 $dispMeterName = !empty($calc['primary_meter']['name']) ? $calc['primary_meter']['name'] : 'Smart Meter 2 Chiều';
                 ?>
 
-                <!-- KHỐI 1: TỦ ĐIỆN AN TOÀN AC/DC & SPD CHỐNG SÉT -->
-                <g transform="translate(<?= $startX ?>, <?= $bosY ?>)">
-                    <rect x="0" y="0" width="130" height="85" rx="6" fill="#111827" stroke="<?= !empty($calc['primary_box']) ? '#10b981' : '#38bdf8' ?>" stroke-width="1.8"/>
-                    <rect x="6" y="6" width="118" height="20" rx="3" fill="#1e293b"/>
-                    <circle cx="16" cy="16" r="4" fill="<?= !empty($calc['primary_box']) ? '#10b981' : '#38bdf8' ?>"/>
-                    <text x="26" y="19" fill="#ffffff" font-size="8" font-weight="bold"><?= htmlspecialchars(mb_strimwidth($dispBoxName, 0, 16, '..')) ?></text>
+                <!-- KHỐI 1: TỦ ĐIỆN AN TOÀN AC/DC & SPD CHỐNG SÉT LAN TRUYỀN -->
+                <g transform="translate(<?= $eqStartX ?>, <?= $bosY ?>)">
+                    <rect x="0" y="0" width="<?= $b1W ?>" height="85" rx="6" fill="#111827" stroke="<?= !empty($calc['primary_box']) ? '#10b981' : '#38bdf8' ?>" stroke-width="1.8"/>
                     
-                    <rect x="15" y="34" width="30" height="38" rx="2" fill="#1f2937" stroke="#475569" stroke-width="1"/>
-                    <text x="30" y="56" fill="#38bdf8" font-size="8" text-anchor="middle" font-weight="bold">SPD</text>
+                    <!-- Header tiêu đề tủ điện -->
+                    <rect x="5" y="5" width="<?= $b1W - 10 ?>" height="20" rx="3" fill="#1e293b"/>
+                    <circle cx="15" cy="15" r="4" fill="<?= !empty($calc['primary_box']) ? '#10b981' : '#38bdf8' ?>"/>
+                    <text x="25" y="18" fill="#ffffff" font-size="8" font-weight="bold"><?= htmlspecialchars(mb_strimwidth($dispBoxName, 0, 18, '..')) ?></text>
+                    
+                    <!-- Cổng vào DC Input từ giàn pin -->
+                    <circle cx="0" cy="42" r="3.5" fill="#f59e0b"/>
+                    <text x="4" y="38" fill="#f59e0b" font-size="6.5" font-family="monospace">DC IN</text>
 
-                    <rect x="55" y="34" width="30" height="38" rx="2" fill="#1f2937" stroke="#475569" stroke-width="1"/>
-                    <text x="70" y="56" fill="#f59e0b" font-size="8" text-anchor="middle" font-weight="bold">MCB</text>
+                    <!-- Thiết bị chống sét lan truyền SPD DC -->
+                    <rect x="12" y="32" width="28" height="40" rx="2" fill="#1f2937" stroke="#38bdf8" stroke-width="1"/>
+                    <text x="26" y="52" fill="#38bdf8" font-size="7.5" text-anchor="middle" font-weight="bold">SPD</text>
+                    <text x="26" y="63" fill="#94a3b8" font-size="6" text-anchor="middle">1000V</text>
 
-                    <rect x="95" y="34" width="22" height="38" rx="2" fill="#1f2937" stroke="#475569" stroke-width="1"/>
-                    <circle cx="106" cy="53" r="4" fill="#f43f5e"/>
+                    <!-- Aptomat ngắt mạch bảo vệ MCB -->
+                    <rect x="46" y="32" width="30" height="40" rx="2" fill="#1f2937" stroke="#f59e0b" stroke-width="1"/>
+                    <text x="61" y="52" fill="#f59e0b" font-size="7.5" text-anchor="middle" font-weight="bold">MCB</text>
+                    <text x="61" y="63" fill="#94a3b8" font-size="6" text-anchor="middle">DC/AC</text>
 
-                    <text x="65" y="100" fill="#cbd5e1" font-size="8.5" text-anchor="middle" font-weight="bold">1. Tủ Điện AC/DC</text>
-                    <text x="65" y="112" fill="<?= !empty($calc['primary_box']) ? '#10b981' : '#64748b' ?>" font-size="7" text-anchor="middle"><?= !empty($calc['primary_box']) ? '● Đã chọn trong kế hoạch' : 'Tiêu chuẩn IEC' ?></text>
+                    <!-- Cụm đèn chỉ thị trạng thái an toàn -->
+                    <rect x="82" y="32" width="32" height="40" rx="2" fill="#1f2937" stroke="#475569" stroke-width="1"/>
+                    <circle cx="98" cy="46" r="4" fill="#10b981"/>
+                    <text x="98" y="62" fill="#10b981" font-size="6" text-anchor="middle" font-weight="bold">SAFE</text>
+
+                    <!-- Cổng xuất sang Inverter -->
+                    <circle cx="<?= $b1W ?>" cy="42" r="3" fill="#38bdf8"/>
+
+                    <text x="<?= $b1W / 2 ?>" y="100" fill="#cbd5e1" font-size="8.5" text-anchor="middle" font-weight="bold">1. Tủ Điện AC/DC</text>
+                    <text x="<?= $b1W / 2 ?>" y="112" fill="<?= !empty($calc['primary_box']) ? '#10b981' : '#64748b' ?>" font-size="7" text-anchor="middle"><?= !empty($calc['primary_box']) ? '● Đã chọn trong kế hoạch' : 'Tiêu chuẩn IEC 60364' ?></text>
                 </g>
 
-                <!-- Dây dẫn nối giữa Tủ điện và Biến tần -->
-                <line x1="<?= $startX + 130 ?>" y1="<?= $bosY + 42 ?>" x2="<?= $startX + 170 ?>" y2="<?= $bosY + 42 ?>" stroke="#38bdf8" stroke-width="2.5"/>
+                <!-- Dây dẫn nối giữa Tủ điện và Biến tần (DC Bus) -->
+                <line x1="<?= $eqStartX + $b1W ?>" y1="<?= $bosY + 42 ?>" x2="<?= $eqStartX + $b1W + $wireLen ?>" y2="<?= $bosY + 42 ?>" stroke="#38bdf8" stroke-width="2.5" marker-end="url(#acArrow)"/>
+                <text x="<?= $eqStartX + $b1W + ($wireLen / 2) ?>" y="<?= $bosY + 36 ?>" fill="#38bdf8" font-size="7" font-family="monospace" text-anchor="middle">DC Bus</text>
 
                 <!-- KHỐI 2: BIẾN TẦN INVERTER QUANG ĐIỆN -->
-                <g transform="translate(<?= $startX + 170 ?>, <?= $bosY ?>)">
-                    <rect x="0" y="0" width="150" height="85" rx="6" fill="url(#inverterGrad)" stroke="#f59e0b" stroke-width="2"/>
-                    <rect x="10" y="12" width="130" height="32" rx="3" fill="#080c14" stroke="#334155" stroke-width="1"/>
-                    <text x="18" y="27" fill="#10b981" font-size="8" font-family="monospace" font-weight="bold">● <?= $calc['estimated_kwp'] ?> kW · 50Hz</text>
-                    <text x="18" y="39" fill="#fbbf24" font-size="7.5" font-weight="bold"><?= htmlspecialchars(mb_strimwidth($dispInverterName, 0, 20, '..')) ?></text>
-                    <line x1="20" y1="58" x2="130" y2="58" stroke="#334155" stroke-width="1.5"/>
-                    <line x1="20" y1="64" x2="130" y2="64" stroke="#334155" stroke-width="1.5"/>
-                    <text x="75" y="100" fill="#fbbf24" font-size="8.5" text-anchor="middle" font-weight="bold">2. Biến Tần Inverter</text>
-                    <text x="75" y="112" fill="<?= !empty($calc['primary_inverter']) ? '#10b981' : '#f59e0b' ?>" font-size="7" text-anchor="middle"><?= !empty($calc['primary_inverter']) ? '● Model từ kế hoạch' : 'Ước tính hòa lưới' ?></text>
+                <g transform="translate(<?= $eqStartX + $b1W + $wireLen ?>, <?= $bosY ?>)">
+                    <rect x="0" y="0" width="<?= $b2W ?>" height="85" rx="6" fill="url(#inverterGrad)" stroke="#f59e0b" stroke-width="2"/>
+                    
+                    <!-- Màn hình LED thông số kỹ thuật Inverter -->
+                    <rect x="8" y="10" width="<?= $b2W - 16 ?>" height="36" rx="3" fill="#080c14" stroke="#334155" stroke-width="1"/>
+                    <text x="16" y="23" fill="#10b981" font-size="8" font-family="monospace" font-weight="bold">● <?= $calc['estimated_kwp'] ?> kW · 50Hz</text>
+                    <text x="16" y="34" fill="#fbbf24" font-size="7.5" font-weight="bold"><?= htmlspecialchars(mb_strimwidth($dispInverterName, 0, 20, '..')) ?></text>
+                    <text x="16" y="43" fill="#94a3b8" font-size="6.5">Sóng Sin Chuẩn EVN · IP65</text>
+                    
+                    <!-- Khe tản nhiệt công nghiệp của Inverter -->
+                    <line x1="16" y1="56" x2="<?= $b2W - 16 ?>" y2="56" stroke="#334155" stroke-width="1.5"/>
+                    <line x1="16" y1="62" x2="<?= $b2W - 16 ?>" y2="62" stroke="#334155" stroke-width="1.5"/>
+                    <line x1="16" y1="68" x2="<?= $b2W - 16 ?>" y2="68" stroke="#334155" stroke-width="1.5"/>
+
+                    <text x="<?= $b2W / 2 ?>" y="100" fill="#fbbf24" font-size="8.5" text-anchor="middle" font-weight="bold">2. Biến Tần Inverter</text>
+                    <text x="<?= $b2W / 2 ?>" y="112" fill="<?= !empty($calc['primary_inverter']) ? '#10b981' : '#f59e0b' ?>" font-size="7" text-anchor="middle"><?= !empty($calc['primary_inverter']) ? '● Model từ kế hoạch' : 'Ước tính hòa lưới' ?></text>
                 </g>
 
                 <!-- Dây dẫn nối từ Inverter sang Pin lưu trữ hoặc Smart Meter -->
-                <line x1="<?= $startX + 320 ?>" y1="<?= $bosY + 42 ?>" x2="<?= $startX + 360 ?>" y2="<?= $bosY + 42 ?>" stroke="<?= $hasBatteryActive ? '#10b981' : '#475569' ?>" stroke-width="2.5"/>
+                <line x1="<?= $eqStartX + $b1W + $wireLen + $b2W ?>" y1="<?= $bosY + 42 ?>" x2="<?= $eqStartX + $b1W + $wireLen + $b2W + $wireLen ?>" y2="<?= $bosY + 42 ?>" 
+                      stroke="<?= $hasBatteryActive ? '#10b981' : '#475569' ?>" 
+                      stroke-width="<?= $hasBatteryActive ? '2.5' : '1.5' ?>" 
+                      stroke-dasharray="<?= $hasBatteryActive ? 'none' : '4,3' ?>"
+                      <?= $hasBatteryActive ? 'marker-end="url(#greenArrow)"' : '' ?>/>
+                <text x="<?= $eqStartX + $b1W + $wireLen + $b2W + ($wireLen / 2) ?>" y="<?= $bosY + 36 ?>" fill="<?= $hasBatteryActive ? '#10b981' : '#64748b' ?>" font-size="6.5" font-family="monospace" text-anchor="middle"><?= $hasBatteryActive ? 'DC ESS' : 'Hybrid' ?></text>
 
                 <!-- KHỐI 3: PIN LƯU TRỮ LITHIUM ESS (NẾU CÓ HOẶC HỆ HYBRID) -->
-                <g transform="translate(<?= $startX + 360 ?>, <?= $bosY ?>)">
+                <g transform="translate(<?= $eqStartX + $b1W + $wireLen + $b2W + $wireLen ?>, <?= $bosY ?>)">
                     <?php if ($hasBatteryActive): ?>
-                        <rect x="0" y="0" width="120" height="85" rx="6" fill="url(#batteryGrad)" stroke="#10b981" stroke-width="2"/>
-                        <rect x="10" y="10" width="100" height="15" rx="2" fill="#064e3b"/>
-                        <text x="60" y="21" fill="#34d399" font-size="7.5" text-anchor="middle" font-weight="bold">LITHIUM LIFEPO4</text>
-                        <rect x="25" y="32" width="70" height="10" rx="2" fill="#042f2e" stroke="#10b981" stroke-width="0.8"/>
-                        <rect x="27" y="34" width="55" height="6" rx="1" fill="#10b981"/>
-                        <text x="60" y="56" fill="#a7f3d0" font-size="8" text-anchor="middle" font-weight="bold"><?= htmlspecialchars(mb_strimwidth($dispBatteryName, 0, 15, '..')) ?></text>
-                        <text x="60" y="68" fill="#34d399" font-size="7" text-anchor="middle">SOC: 98% · Đã chọn</text>
-                        <text x="60" y="100" fill="#10b981" font-size="8.5" text-anchor="middle" font-weight="bold">3. Pin Lưu Trữ ESS</text>
-                        <text x="60" y="112" fill="#10b981" font-size="7" text-anchor="middle">● Đã đồng bộ từ kế hoạch</text>
+                        <rect x="0" y="0" width="<?= $b3W ?>" height="85" rx="6" fill="url(#batteryGrad)" stroke="#10b981" stroke-width="2"/>
+                        <rect x="8" y="8" width="<?= $b3W - 16 ?>" height="15" rx="2" fill="#064e3b"/>
+                        <text x="<?= $b3W / 2 ?>" y="19" fill="#34d399" font-size="7.5" text-anchor="middle" font-weight="bold">LITHIUM LIFEPO4</text>
+                        <rect x="18" y="28" width="<?= $b3W - 36 ?>" height="10" rx="2" fill="#042f2e" stroke="#10b981" stroke-width="0.8"/>
+                        <rect x="20" y="30" width="<?= $b3W - 55 ?>" height="6" rx="1" fill="#10b981"/>
+                        <text x="<?= $b3W / 2 ?>" y="52" fill="#a7f3d0" font-size="7.5" text-anchor="middle" font-weight="bold"><?= htmlspecialchars(mb_strimwidth($dispBatteryName, 0, 16, '..')) ?></text>
+                        <text x="<?= $b3W / 2 ?>" y="65" fill="#34d399" font-size="7" text-anchor="middle">SOC: 98% · Đã chọn</text>
+                        <text x="<?= $b3W / 2 ?>" y="100" fill="#10b981" font-size="8.5" text-anchor="middle" font-weight="bold">3. Pin Lưu Trữ ESS</text>
+                        <text x="<?= $b3W / 2 ?>" y="112" fill="#10b981" font-size="7" text-anchor="middle">● Đã đồng bộ từ kế hoạch</text>
                     <?php else: ?>
-                        <rect x="0" y="0" width="120" height="85" rx="6" fill="#081412" stroke="#475569" stroke-dasharray="4,3" stroke-width="1.5"/>
-                        <rect x="10" y="12" width="100" height="15" rx="2" fill="#0f172a"/>
-                        <text x="60" y="23" fill="#64748b" font-size="7.5" text-anchor="middle">DỰ PHÒNG ESS</text>
-                        <text x="60" y="50" fill="#64748b" font-size="8" text-anchor="middle">Chưa chọn lưu trữ</text>
-                        <text x="60" y="65" fill="#475569" font-size="7" text-anchor="middle">(Tùy chọn bổ sung)</text>
-                        <text x="60" y="100" fill="#64748b" font-size="8.5" text-anchor="middle" font-weight="bold">3. Pin Lưu Trữ ESS</text>
-                        <text x="60" y="112" fill="#64748b" font-size="7" text-anchor="middle">Hòa lưới On-Grid</text>
+                        <rect x="0" y="0" width="<?= $b3W ?>" height="85" rx="6" fill="#081412" stroke="#475569" stroke-dasharray="4,3" stroke-width="1.5"/>
+                        <rect x="8" y="10" width="<?= $b3W - 16 ?>" height="15" rx="2" fill="#0f172a"/>
+                        <text x="<?= $b3W / 2 ?>" y="21" fill="#64748b" font-size="7.5" text-anchor="middle">DỰ PHÒNG ESS</text>
+                        <text x="<?= $b3W / 2 ?>" y="48" fill="#64748b" font-size="8" text-anchor="middle">Chưa chọn lưu trữ</text>
+                        <text x="<?= $b3W / 2 ?>" y="62" fill="#475569" font-size="7" text-anchor="middle">(Tùy chọn bổ sung)</text>
+                        <text x="<?= $b3W / 2 ?>" y="100" fill="#64748b" font-size="8.5" text-anchor="middle" font-weight="bold">3. Pin Lưu Trữ ESS</text>
+                        <text x="<?= $b3W / 2 ?>" y="112" fill="#64748b" font-size="7" text-anchor="middle">Hòa lưới On-Grid</text>
                     <?php endif; ?>
                 </g>
 
-                <!-- Dây dẫn nối sang Smart Meter -->
-                <line x1="<?= $startX + 480 ?>" y1="<?= $bosY + 42 ?>" x2="<?= $startX + 520 ?>" y2="<?= $bosY + 42 ?>" stroke="#38bdf8" stroke-width="2.5"/>
+                <!-- Dây dẫn nối sang Smart Meter (AC 220V) -->
+                <line x1="<?= $eqStartX + $b1W + $wireLen + $b2W + $wireLen + $b3W ?>" y1="<?= $bosY + 42 ?>" x2="<?= $eqStartX + $b1W + $wireLen + $b2W + $wireLen + $b3W + $wireLen ?>" y2="<?= $bosY + 42 ?>" stroke="#38bdf8" stroke-width="2.5" marker-end="url(#acArrow)"/>
+                <text x="<?= $eqStartX + $b1W + $wireLen + $b2W + $wireLen + $b3W + ($wireLen / 2) ?>" y="<?= $bosY + 36 ?>" fill="#38bdf8" font-size="7" font-family="monospace" text-anchor="middle">AC 220V</text>
 
-                <!-- KHỐI 4: ĐỒNG HỒ SMART METER & ĐẤU NỐI EVN -->
-                <g transform="translate(<?= $startX + 520 ?>, <?= $bosY ?>)">
-                    <rect x="0" y="0" width="130" height="85" rx="6" fill="#111827" stroke="<?= !empty($calc['primary_meter']) ? '#10b981' : '#38bdf8' ?>" stroke-width="1.8"/>
-                    <circle cx="65" cy="35" r="22" fill="#080c14" stroke="<?= !empty($calc['primary_meter']) ? '#10b981' : '#38bdf8' ?>" stroke-width="1.2"/>
-                    <text x="65" y="32" fill="#38bdf8" font-size="8" font-family="monospace" text-anchor="middle">kWh EVN</text>
-                    <text x="65" y="44" fill="#fbbf24" font-size="8.5" font-family="monospace" font-weight="bold" text-anchor="middle">2 CHIỀU</text>
-                    <text x="65" y="70" fill="#94a3b8" font-size="7.5" text-anchor="middle"><?= htmlspecialchars(mb_strimwidth($dispMeterName, 0, 16, '..')) ?></text>
-                    <text x="65" y="100" fill="#38bdf8" font-size="8.5" text-anchor="middle" font-weight="bold">4. Smart Meter</text>
-                    <text x="65" y="112" fill="<?= !empty($calc['primary_meter']) ? '#10b981' : '#38bdf8' ?>" font-size="7" text-anchor="middle"><?= !empty($calc['primary_meter']) ? '● Đã chọn trong kế hoạch' : 'Đo đếm 2 chiều EVN' ?></text>
+                <!-- KHỐI 4: ĐỒNG HỒ SMART METER & ĐO ĐẾM 2 CHIỀU -->
+                <g transform="translate(<?= $eqStartX + $b1W + $wireLen + $b2W + $wireLen + $b3W + $wireLen ?>, <?= $bosY ?>)">
+                    <rect x="0" y="0" width="<?= $b4W ?>" height="85" rx="6" fill="#111827" stroke="<?= !empty($calc['primary_meter']) ? '#10b981' : '#38bdf8' ?>" stroke-width="1.8"/>
+                    <circle cx="<?= $b4W / 2 ?>" cy="34" r="21" fill="#080c14" stroke="<?= !empty($calc['primary_meter']) ? '#10b981' : '#38bdf8' ?>" stroke-width="1.2"/>
+                    <text x="<?= $b4W / 2 ?>" y="31" fill="#38bdf8" font-size="7.5" font-family="monospace" text-anchor="middle">kWh EVN</text>
+                    <text x="<?= $b4W / 2 ?>" y="43" fill="#fbbf24" font-size="8" font-family="monospace" font-weight="bold" text-anchor="middle">2 CHIỀU</text>
+                    <text x="<?= $b4W / 2 ?>" y="69" fill="#94a3b8" font-size="7" text-anchor="middle"><?= htmlspecialchars(mb_strimwidth($dispMeterName, 0, 16, '..')) ?></text>
+                    <text x="<?= $b4W / 2 ?>" y="100" fill="#38bdf8" font-size="8.5" text-anchor="middle" font-weight="bold">4. Smart Meter</text>
+                    <text x="<?= $b4W / 2 ?>" y="112" fill="<?= !empty($calc['primary_meter']) ? '#10b981' : '#38bdf8' ?>" font-size="7" text-anchor="middle"><?= !empty($calc['primary_meter']) ? '● Đã chọn trong kế hoạch' : 'Đo đếm 2 chiều EVN' ?></text>
                 </g>
 
                 <!-- Dây AC nối vào Lưới điện EVN và Phụ tải gia đình -->
-                <path d="M <?= $startX + 650 ?> <?= $bosY + 42 ?> L <?= $startX + 690 ?> <?= $bosY + 42 ?>" stroke="#10b981" stroke-width="2.5"/>
+                <line x1="<?= $eqStartX + $b1W + $wireLen + $b2W + $wireLen + $b3W + $wireLen + $b4W ?>" y1="<?= $bosY + 42 ?>" x2="<?= $eqStartX + $b1W + $wireLen + $b2W + $wireLen + $b3W + $wireLen + $b4W + $wireLen ?>" y2="<?= $bosY + 42 ?>" stroke="#10b981" stroke-width="2.5" marker-end="url(#greenArrow)"/>
+                <text x="<?= $eqStartX + $b1W + $wireLen + $b2W + $wireLen + $b3W + $wireLen + $b4W + ($wireLen / 2) ?>" y="<?= $bosY + 36 ?>" fill="#10b981" font-size="6.5" font-family="monospace" text-anchor="middle">Grid</text>
 
-                <g transform="translate(<?= $startX + 690 ?>, <?= $bosY + 10 ?>)">
-                    <rect x="0" y="0" width="55" height="65" rx="4" fill="#1f2937" stroke="#64748b" stroke-width="1"/>
-                    <text x="27" y="28" font-size="18" text-anchor="middle">⚡</text>
-                    <text x="27" y="46" fill="#cbd5e1" font-size="7" font-weight="bold" text-anchor="middle">LƯỚI EVN</text>
-                    <text x="27" y="56" fill="#10b981" font-size="7" text-anchor="middle">HÒA LƯỚI</text>
+                <!-- KHỐI 5: LƯỚI ĐIỆN QUỐC GIA EVN & PHỤ TẢI GIA ĐÌNH -->
+                <g transform="translate(<?= $eqStartX + $b1W + $wireLen + $b2W + $wireLen + $b3W + $wireLen + $b4W + $wireLen ?>, <?= $bosY + 5 ?>)">
+                    <rect x="0" y="0" width="<?= $b5W ?>" height="75" rx="5" fill="#1f2937" stroke="#10b981" stroke-width="1.5"/>
+                    <text x="<?= $b5W / 2 ?>" y="26" font-size="18" text-anchor="middle">⚡</text>
+                    <text x="<?= $b5W / 2 ?>" y="44" fill="#cbd5e1" font-size="7.5" font-weight="bold" text-anchor="middle">LƯỚI EVN</text>
+                    <text x="<?= $b5W / 2 ?>" y="56" fill="#10b981" font-size="7" font-weight="bold" text-anchor="middle">&amp; TẢI NHÀ</text>
+                    <text x="<?= $b5W / 2 ?>" y="95" fill="#10b981" font-size="8.5" text-anchor="middle" font-weight="bold">5. Lưới EVN</text>
+                    <text x="<?= $b5W / 2 ?>" y="107" fill="#64748b" font-size="7" text-anchor="middle">Hòa đồng bộ 220V</text>
                 </g>
             </svg>
 
@@ -588,23 +658,31 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.45rem;">
                     <span style="display: inline-block; width: 18px; height: 3px; background: #38bdf8;"></span>
-                    <span>Ray Nhôm AL6005 & Kẹp Pin Inox</span>
+                    <span>Ray Nhôm AL6005 &amp; Kẹp Pin Inox</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                    <span style="display: inline-block; width: 22px; height: 2px; border-top: 2.5px dashed #f59e0b;"></span>
+                    <span>Cáp DC 4.0mm² (1000V)</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.45rem;">
                     <span style="display: inline-block; width: 12px; height: 12px; background: #111827; border: 1.5px solid #38bdf8; border-radius: 2px;"></span>
-                    <span>Tủ Điện AC/DC & SPD Chống Sét</span>
+                    <span>1. Tủ Điện AC/DC &amp; SPD Chống Sét</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.45rem;">
                     <span style="display: inline-block; width: 14px; height: 12px; background: #1e293b; border: 1.5px solid #f59e0b; border-radius: 2px;"></span>
-                    <span>Biến Tần Inverter IP65</span>
+                    <span>2. Biến Tần Inverter IP65</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.45rem;">
                     <span style="display: inline-block; width: 12px; height: 12px; background: #064e3b; border: 1.5px solid #10b981; border-radius: 2px;"></span>
-                    <span>Pin Lưu Trữ Lithium (ESS)</span>
+                    <span>3. Pin Lưu Trữ Lithium (ESS)</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.45rem;">
                     <span style="display: inline-block; width: 12px; height: 12px; background: #111827; border: 1.5px solid #38bdf8; border-radius: 50%;"></span>
-                    <span>Đồng Hồ Smart Meter 2 Chiều</span>
+                    <span>4. Đồng Hồ Smart Meter 2 Chiều</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                    <span style="display: inline-block; width: 12px; height: 12px; background: #1f2937; border: 1.5px solid #10b981; border-radius: 2px;"></span>
+                    <span>5. Lưới Điện Quốc Gia EVN</span>
                 </div>
             </div>
         </div>
