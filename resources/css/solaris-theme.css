@@ -1471,3 +1471,14 @@ a.sol-header-cart:hover,
 }
 
 
+/* 10. Hiệu ứng nền động Solar Energy & Particles (GIF Background) */
+body.solar-bg-grid {
+    background-image:
+        radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.04) 1px, transparent 0),
+        linear-gradient(180deg, rgba(8, 12, 20, 0.72) 0%, rgba(8, 12, 20, 0.82) 100%),
+        url('../../assets/solar-bg.gif');
+    background-size: 24px 24px, cover, cover;
+    background-position: 0 0, center center, center center;
+    background-repeat: repeat, no-repeat, no-repeat;
+    background-attachment: scroll, fixed, fixed;
+}
