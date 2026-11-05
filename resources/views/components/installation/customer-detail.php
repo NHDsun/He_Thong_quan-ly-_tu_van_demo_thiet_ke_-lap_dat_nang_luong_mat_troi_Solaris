@@ -33,7 +33,7 @@ $stageLabels = ['locked' => 'Chưa triển khai', 'scheduled' => 'Chờ bắt đ
         <div><span>Tiến độ đã xác nhận</span><strong><?= $approved ?>/6 bước · <?= (int) round($approved / 6 * 100) ?>%</strong></div>
     </div>
     <?php if ($detail['crew']): ?>
-        <div><p>Đội kỹ thuật đang phụ trách</p><div class="tv4-crew">
+        <div><p><?= $project['status'] === 'completed' ? 'Đội kỹ thuật đã tham gia' : 'Đội kỹ thuật đang phụ trách' ?></p><div class="tv4-crew">
             <?php foreach ($detail['crew'] as $member): ?><span><?= UI::escape($member['full_name']) ?></span><?php endforeach; ?>
         </div></div>
     <?php endif; ?>

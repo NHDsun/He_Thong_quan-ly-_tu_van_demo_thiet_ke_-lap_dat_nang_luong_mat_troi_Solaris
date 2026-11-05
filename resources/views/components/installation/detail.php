@@ -83,6 +83,9 @@ foreach ($detail['crew'] as $member) {
     <?php endif; ?>
     <p>Bắt đầu thực tế dự án: <?= UI::escape($project['started_at'] ?? 'Chưa bắt đầu') ?></p>
 </article>
+<?php if (!$admin && $project['status'] === 'completed'): ?>
+    <p class="tv4-notice">Dự án đã hoàn tất. Bạn có thể xem lại tiến độ, hồ sơ và hóa đơn.</p>
+<?php endif; ?>
 <?php if ($project['reviewed_at']): ?>
     <div class="tv4-notice">Kết quả duyệt lúc <?= UI::escape($project['reviewed_at']) ?>: <?= UI::escape($project['review_note'] ?: UI::label($project['status'])) ?></div>
 <?php endif; ?>
