@@ -1125,6 +1125,10 @@ if ($page === 'profile') {
                         echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
                         include __DIR__ . '/resources/views/pages/exercises/member1/exercise6_phep_tinh.php';
                         echo '</div>';
+                    elseif ($ex >= 7 && $ex <= 12):
+                        echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
+                        include __DIR__ . '/resources/views/pages/exercises/member2/array_exercises.php';
+                        echo '</div>';
                     elseif ($ex === 13):
                         echo '<div class="sol-container" style="padding: 2.5rem 1.5rem 4rem;">';
                         include __DIR__ . '/resources/views/pages/exercises/member3/exercise13_matrix_replace.php';

@@ -29,19 +29,19 @@
         </div>
 
         <!-- Thành viên 2: 6 Bài Mảng & Form -->
-        <div class="sol-glass-card" style="padding: 1.65rem;">
+        <div class="sol-glass-card" style="padding: 1.65rem; border-color: rgba(16, 185, 129, 0.4); box-shadow: 0 0 16px rgba(16, 185, 129, 0.1);">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem;">
-                <span class="sol-badge sol-badge--emerald">Thành Viên 2</span>
-                <span style="font-size: 0.75rem; color: var(--text-muted);">6 Bài Mảng & Form</span>
+                <span class="sol-badge sol-badge--emerald">Thành Viên 2 (Đã xong)</span>
+                <span style="font-size: 0.75rem; color: #10b981; font-weight: 700;">6 Bài Hoàn Chỉnh</span>
             </div>
             <h3 style="font-size: 1.1rem; color: #ffffff; margin-bottom: 0.85rem;">Mảng & Xử Lý Form</h3>
-            <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.55rem; font-size: 0.825rem;">
-                <li><span style="color: #10b981;">1.</span> Khởi tạo và hiển thị mảng số</li>
-                <li><span style="color: #10b981;">2.</span> Tính tổng dãy số nhập từ Form</li>
-                <li><span style="color: #10b981;">3.</span> Tìm Min/Max & tính trung bình mảng</li>
-                <li><span style="color: #10b981;">4.</span> Tìm kiếm phần tử trong mảng</li>
-                <li><span style="color: #10b981;">5.</span> Thay thế phần tử mảng theo điều kiện</li>
-                <li><span style="color: #10b981;">6.</span> Sắp xếp mảng tăng dần / giảm dần</li>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.65rem; font-size: 0.825rem;">
+                <li><a href="index.php?page=exercises&amp;exercise=7" style="color: #10b981; text-decoration: none; display: flex; align-items: center; justify-content: space-between; gap: .5rem;"><span style="color: #cbd5e1;"><strong style="color: #10b981;">7.</strong> Tạo mảng ngẫu nhiên & thống kê</span><span style="color: #10b981; font-size: 0.75rem; white-space: nowrap;">Mở bài ➔</span></a></li>
+                <li><a href="index.php?page=exercises&amp;exercise=8" style="color: #10b981; text-decoration: none; display: flex; align-items: center; justify-content: space-between; gap: .5rem;"><span style="color: #cbd5e1;"><strong style="color: #10b981;">8.</strong> Tính tổng dãy số</span><span style="color: #10b981; font-size: 0.75rem; white-space: nowrap;">Mở bài ➔</span></a></li>
+                <li><a href="index.php?page=exercises&amp;exercise=9" style="color: #10b981; text-decoration: none; display: flex; align-items: center; justify-content: space-between; gap: .5rem;"><span style="color: #cbd5e1;"><strong style="color: #10b981;">9.</strong> Phát sinh mảng & tính toán</span><span style="color: #10b981; font-size: 0.75rem; white-space: nowrap;">Mở bài ➔</span></a></li>
+                <li><a href="index.php?page=exercises&amp;exercise=10" style="color: #10b981; text-decoration: none; display: flex; align-items: center; justify-content: space-between; gap: .5rem;"><span style="color: #cbd5e1;"><strong style="color: #10b981;">10.</strong> Tìm kiếm phần tử trong mảng</span><span style="color: #10b981; font-size: 0.75rem; white-space: nowrap;">Mở bài ➔</span></a></li>
+                <li><a href="index.php?page=exercises&amp;exercise=11" style="color: #10b981; text-decoration: none; display: flex; align-items: center; justify-content: space-between; gap: .5rem;"><span style="color: #cbd5e1;"><strong style="color: #10b981;">11.</strong> Thay thế phần tử trong mảng</span><span style="color: #10b981; font-size: 0.75rem; white-space: nowrap;">Mở bài ➔</span></a></li>
+                <li><a href="index.php?page=exercises&amp;exercise=12" style="color: #10b981; text-decoration: none; display: flex; align-items: center; justify-content: space-between; gap: .5rem;"><span style="color: #cbd5e1;"><strong style="color: #10b981;">12.</strong> Sắp xếp mảng tăng / giảm</span><span style="color: #10b981; font-size: 0.75rem; white-space: nowrap;">Mở bài ➔</span></a></li>
             </ul>
         </div>
 
