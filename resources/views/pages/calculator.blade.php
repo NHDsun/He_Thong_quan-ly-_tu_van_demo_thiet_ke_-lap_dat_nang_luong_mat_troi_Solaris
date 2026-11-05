@@ -151,16 +151,189 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
         </div>
 
         <?php if ($isPlanSource): ?>
+            <style>
+            .sol-sys-matrix {
+                margin-bottom: 2rem;
+                padding: 1.5rem;
+                border-radius: var(--radius-lg, 16px);
+                background: linear-gradient(135deg, rgba(14, 22, 38, 0.85) 0%, rgba(8, 12, 20, 0.95) 100%);
+                border: 1px solid rgba(245, 158, 11, 0.25);
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            }
+            .sol-sys-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 1rem;
+                padding-bottom: 1.25rem;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            }
+            .sol-sys-title-group {
+                max-width: 620px;
+            }
+            .sol-sys-title {
+                font-size: 1.25rem;
+                color: #ffffff;
+                font-family: var(--font-heading);
+                margin: 0.35rem 0 0.25rem;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            .sol-sys-desc {
+                font-size: 0.825rem;
+                color: var(--text-secondary, #94a3b8);
+                margin: 0;
+                line-height: 1.5;
+            }
+            .sol-sys-progress-meta {
+                display: flex;
+                align-items: center;
+                gap: 0.65rem;
+                flex-wrap: wrap;
+            }
+            .sol-sys-track {
+                width: 100%;
+                height: 6px;
+                background: rgba(255, 255, 255, 0.06);
+                border-radius: 999px;
+                overflow: hidden;
+                margin-top: 1rem;
+                position: relative;
+            }
+            .sol-sys-bar {
+                height: 100%;
+                border-radius: 999px;
+                transition: width 0.4s ease;
+            }
+            .sol-sys-cards {
+                display: grid;
+                grid-template-columns: repeat(7, minmax(0, 1fr));
+                gap: 0.75rem;
+                margin-top: 1.25rem;
+            }
+            @media (max-width: 1200px) {
+                .sol-sys-cards {
+                    grid-template-columns: repeat(4, minmax(0, 1fr));
+                }
+            }
+            @media (max-width: 768px) {
+                .sol-sys-cards {
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                }
+            }
+            @media (max-width: 480px) {
+                .sol-sys-cards {
+                    grid-template-columns: 1fr;
+                }
+            }
+            .sol-card-node {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                padding: 1.1rem 0.85rem;
+                border-radius: var(--radius-md, 12px);
+                background: rgba(10, 15, 26, 0.7);
+                border: 1.5px solid rgba(255, 255, 255, 0.08);
+                transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+                position: relative;
+                min-height: 220px;
+            }
+            .sol-card-node:hover {
+                transform: translateY(-3px);
+            }
+            .sol-card-node.is-selected {
+                border-color: rgba(16, 185, 129, 0.55);
+                background: linear-gradient(180deg, rgba(16, 185, 129, 0.12) 0%, rgba(10, 15, 26, 0.85) 100%);
+                box-shadow: 0 4px 18px rgba(16, 185, 129, 0.15);
+            }
+            .sol-card-node.is-missing-required {
+                border-color: rgba(244, 63, 94, 0.45);
+                border-style: dashed;
+                background: linear-gradient(180deg, rgba(244, 63, 94, 0.08) 0%, rgba(10, 15, 26, 0.85) 100%);
+            }
+            .sol-card-node.is-missing-optional {
+                border-color: rgba(148, 163, 184, 0.25);
+                border-style: dashed;
+                background: rgba(10, 15, 26, 0.5);
+            }
+            .sol-node-tag {
+                font-size: 0.65rem;
+                font-weight: 800;
+                letter-spacing: 0.5px;
+                padding: 0.18rem 0.55rem;
+                border-radius: 999px;
+                margin-bottom: 0.75rem;
+                text-transform: uppercase;
+            }
+            .sol-node-icon {
+                width: 46px;
+                height: 46px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.4rem;
+                margin-bottom: 0.55rem;
+            }
+            .sol-node-label {
+                font-size: 0.875rem;
+                font-weight: 700;
+                color: #ffffff;
+                margin-bottom: 0.25rem;
+                line-height: 1.25;
+            }
+            .sol-node-sub {
+                font-size: 0.7rem;
+                color: var(--text-muted, #94a3b8);
+                margin-bottom: 0.65rem;
+            }
+            .sol-node-product-name {
+                font-size: 0.72rem;
+                font-weight: 600;
+                color: #38bdf8;
+                line-height: 1.3;
+                max-height: 2.6em;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                margin-bottom: 0.35rem;
+            }
+            .sol-node-qty {
+                font-size: 0.75rem;
+                font-weight: 700;
+                color: #10b981;
+                margin-bottom: 0.5rem;
+            }
+            .sol-node-action {
+                margin-top: auto;
+                width: 100%;
+            }
+            .sol-node-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.35rem;
+                width: 100%;
+                padding: 0.4rem 0.5rem;
+                font-size: 0.72rem;
+                font-weight: 700;
+                border-radius: 6px;
+                text-decoration: none;
+                transition: all 0.15s ease;
+            }
+            </style>
             <?php
             // Sơ đồ đồng bộ 7 nhóm thiết bị liên kết với phân hệ Giải Pháp & Sản Phẩm (TV2)
             $diagramCategories = [
-                ['slug' => 'tam-pin', 'label' => 'Tấm pin', 'icon' => '☀️', 'keys' => ['tấm pin', 'tam pin', 'solar panel']],
-                ['slug' => 'inverter', 'label' => 'Inverter', 'icon' => '⚡', 'keys' => ['inverter', 'biến tần']],
-                ['slug' => 'tu-dien', 'label' => 'Tủ điện', 'icon' => '🛡️', 'keys' => ['tủ điện', 'đóng cắt', 'box']],
-                ['slug' => 'khung-gia', 'label' => 'Khung giá', 'icon' => '🔩', 'keys' => ['khung giá', 'khung nhôm', 'ray', 'kẹp']],
-                ['slug' => 'day-cap', 'label' => 'Cáp & MC4', 'icon' => '🔌', 'keys' => ['cáp', 'mc4', 'dây']],
-                ['slug' => 'dong-ho', 'label' => 'Công tơ', 'icon' => '📟', 'keys' => ['đồng hồ', 'công tơ', 'meter']],
-                ['slug' => 'pin-luu-tru', 'label' => 'Pin lưu trữ', 'icon' => '🔋', 'keys' => ['pin lưu trữ', 'lithium', 'battery', 'bess']],
+                ['slug' => 'tam-pin', 'label' => 'Tấm Pin Solar', 'sub' => 'Thu quang năng', 'icon' => '☀️', 'required' => true, 'keys' => ['tấm pin', 'tam pin', 'solar panel']],
+                ['slug' => 'inverter', 'label' => 'Biến Tần Inverter', 'sub' => 'Đổi điện DC sang AC', 'icon' => '⚡', 'required' => true, 'keys' => ['inverter', 'biến tần']],
+                ['slug' => 'tu-dien', 'label' => 'Tủ Điện AC/DC', 'sub' => 'Đóng cắt & chống sét', 'icon' => '🛡️', 'required' => true, 'keys' => ['tủ điện', 'đóng cắt', 'box']],
+                ['slug' => 'khung-gia', 'label' => 'Khung Giá Ray', 'sub' => 'Ray nhôm AL6005 & kẹp', 'icon' => '🔩', 'required' => true, 'keys' => ['khung giá', 'khung nhôm', 'ray', 'kẹp']],
+                ['slug' => 'day-cap', 'label' => 'Cáp Điện & MC4', 'sub' => 'Cáp DC Solar 4.0mm²', 'icon' => '🔌', 'required' => true, 'keys' => ['cáp', 'mc4', 'dây']],
+                ['slug' => 'dong-ho', 'label' => 'Công Tơ 2 Chiều', 'sub' => 'Smart Meter đo đếm', 'icon' => '📟', 'required' => true, 'keys' => ['đồng hồ', 'công tơ', 'meter']],
+                ['slug' => 'pin-luu-tru', 'label' => 'Pin Lưu Trữ ESS', 'sub' => 'Lưu trữ điện ban đêm', 'icon' => '🔋', 'required' => false, 'keys' => ['pin lưu trữ', 'lithium', 'battery', 'bess']],
             ];
             $diagramState = array_fill(0, count($diagramCategories), null);
             foreach ($planItems as $pItem) {
@@ -178,69 +351,134 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                 }
             }
             $syncedGroupsCount = count(array_filter($diagramState));
+            $syncedRequiredCount = 0;
+            foreach ($diagramCategories as $idx => $cat) {
+                if ($cat['required'] && $diagramState[$idx] !== null) {
+                    $syncedRequiredCount++;
+                }
+            }
+            $progressPercent = min(100, (int) round(($syncedRequiredCount / 6) * 100));
             ?>
 
-            <!-- SƠ ĐỒ ĐỒNG BỘ 7 NHÓM THIẾT BỊ HỆ THỐNG -->
-            <section class="solar-system-map sol-glass-card" style="margin-bottom: 1.5rem; background: rgba(14, 22, 38, 0.7); border-color: rgba(245, 158, 11, 0.3);">
-                <div class="system-map-heading" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-                    <div>
-                        <span class="sol-badge sol-badge--amber" style="margin-bottom: 0.25rem;">Liên Kết Module TV2 ⇄ TV3</span>
-                        <h3 style="font-size: 1.15rem; color: #ffffff; margin: 0.25rem 0 0.15rem;">Sơ đồ phối ghép 7 nhóm thiết bị hoàn chỉnh</h3>
-                        <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0;">Yêu cầu bắt buộc đầy đủ 6 nhóm thiết bị kỹ thuật (Tấm pin, Inverter, Tủ điện, Khung giá, Cáp điện, Công tơ) để bắt đầu mô phỏng.</p>
+            <!-- SƠ ĐỒ ĐỒNG BỘ 7 NHÓM THIẾT BỊ HỆ THỐNG (REMAKE MODERN TECH DASHBOARD) -->
+            <section class="sol-glass-card sol-sys-matrix">
+                <div class="sol-sys-header">
+                    <div class="sol-sys-title-group">
+                        <span class="sol-badge sol-badge--amber" style="margin-bottom: 0.35rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                            <span>🔗</span> Đồng Bộ Module: TV2 Giải Pháp ⇄ TV3 Thiết Kế
+                        </span>
+                        <h3 class="sol-sys-title">
+                            Sơ Đồ Phối Ghép 7 Nhóm Thiết Bị Hệ Thống
+                        </h3>
+                        <p class="sol-sys-desc">
+                            Hệ thống yêu cầu phải có đủ <strong>6 nhóm thiết bị kỹ thuật bắt buộc</strong> (Tấm pin, Inverter, Tủ điện, Khung giá, Cáp điện, Công tơ) để bắt đầu tính toán mô phỏng mặt bằng 2D.
+                        </p>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
-                        <span class="system-map-progress"><?= $syncedGroupsCount ?>/7 nhóm đã chọn</span>
-                        <?php if (!empty($missingRequired)): ?>
-                            <span class="sol-badge sol-badge--rose" style="font-size: 0.75rem;">⚠️ Thiếu <?= count($missingRequired) ?> nhóm bắt buộc</span>
-                        <?php else: ?>
-                            <span class="sol-badge sol-badge--emerald" style="font-size: 0.75rem;">✅ Đã đủ thiết bị bắt buộc</span>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                <div class="system-map-flow">
-                    <?php foreach ($diagramCategories as $dIndex => $dCat): $dSelected = $diagramState[$dIndex]; ?>
-                        <div class="system-map-node <?= $dSelected ? 'is-selected' : 'is-missing' ?>">
-                            <div class="system-map-icon"><?= $dCat['icon'] ?></div>
-                            <div class="system-map-node-text">
-                                <strong><?= $dCat['label'] ?></strong>
-                                <?php if ($dSelected): ?>
-                                    <small><?= htmlspecialchars($dSelected['product_code'] ?? $dSelected['name']) ?></small>
-                                    <span class="system-map-status">Đã đồng bộ</span>
+                    <div class="sol-sys-progress-meta">
+                        <div style="text-align: right;">
+                            <span class="sol-badge sol-badge--cyan" style="font-size: 0.8rem; font-weight: 700; padding: 0.35rem 0.75rem;">
+                                <?= $syncedGroupsCount ?> / 7 Nhóm Đã Chọn
+                            </span>
+                            <div style="margin-top: 0.4rem;">
+                                <?php if (!empty($missingRequired)): ?>
+                                    <span class="sol-badge sol-badge--rose" style="font-size: 0.76rem; font-weight: 700; padding: 0.35rem 0.75rem;">
+                                        ⚠️ Thiếu <?= count($missingRequired) ?> nhóm bắt buộc
+                                    </span>
                                 <?php else: ?>
-                                    <small>Chưa chọn</small>
-                                    <a href="index.php?page=products&category=<?= $dCat['slug'] ?>">Chọn thêm →</a>
+                                    <span class="sol-badge sol-badge--emerald" style="font-size: 0.76rem; font-weight: 700; padding: 0.35rem 0.75rem;">
+                                        ✅ Đã đủ 6 nhóm kỹ thuật chuẩn
+                                    </span>
                                 <?php endif; ?>
                             </div>
                         </div>
-                        <?php if ($dIndex < count($diagramCategories) - 1): ?>
-                            <span class="system-map-connector" aria-hidden="true">→</span>
-                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Thanh chỉ báo tiến độ đồng bộ -->
+                <div class="sol-sys-track">
+                    <div class="sol-sys-bar" style="width: <?= $progressPercent ?>%; background: <?= $progressPercent === 100 ? 'linear-gradient(90deg, #10b981, #059669)' : 'linear-gradient(90deg, #f59e0b, #ef4444)' ?>; box-shadow: 0 0 10px <?= $progressPercent === 100 ? 'rgba(16,185,129,0.5)' : 'rgba(245,158,11,0.5)' ?>;"></div>
+                </div>
+
+                <!-- Lưới 7 thẻ nhóm thiết bị chuyên nghiệp -->
+                <div class="sol-sys-cards">
+                    <?php foreach ($diagramCategories as $dIndex => $dCat):
+                        $dSelected = $diagramState[$dIndex];
+                        $isRequired = $dCat['required'];
+                        $cardClass = $dSelected 
+                            ? 'is-selected' 
+                            : ($isRequired ? 'is-missing-required' : 'is-missing-optional');
+                    ?>
+                        <div class="sol-card-node <?= $cardClass ?>">
+                            <?php if ($dSelected): ?>
+                                <span class="sol-node-tag" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.45);">
+                                    ✓ Đã Chọn
+                                </span>
+                            <?php elseif ($isRequired): ?>
+                                <span class="sol-node-tag" style="background: rgba(244, 63, 94, 0.18); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.4);">
+                                    Bắt Buộc
+                                </span>
+                            <?php else: ?>
+                                <span class="sol-node-tag" style="background: rgba(148, 163, 184, 0.12); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.25);">
+                                    Tùy Chọn
+                                </span>
+                            <?php endif; ?>
+
+                            <div class="sol-node-icon" style="<?= $dSelected ? 'background: rgba(16, 185, 129, 0.15); border: 1.5px solid rgba(16, 185, 129, 0.5); box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);' : ($isRequired ? 'background: rgba(244, 63, 94, 0.1); border: 1.5px dashed rgba(244, 63, 94, 0.4);' : 'background: rgba(255, 255, 255, 0.04); border: 1.5px dashed rgba(255, 255, 255, 0.15);') ?>">
+                                <?= $dCat['icon'] ?>
+                            </div>
+
+                            <div class="sol-node-label"><?= $dCat['label'] ?></div>
+                            <div class="sol-node-sub"><?= $dCat['sub'] ?></div>
+
+                            <?php if ($dSelected): ?>
+                                <div class="sol-node-product-name" title="<?= htmlspecialchars($dSelected['name']) ?>">
+                                    <?= htmlspecialchars($dSelected['name']) ?>
+                                </div>
+                                <div class="sol-node-qty">
+                                    Số lượng: <strong>x<?= (int)($dSelected['quantity'] ?? 1) ?></strong>
+                                </div>
+                                <div class="sol-node-action">
+                                    <a href="index.php?page=cart" class="sol-node-btn" style="background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.35);">
+                                        <span>✏️</span> Xem Trong Giỏ
+                                    </a>
+                                </div>
+                            <?php else: ?>
+                                <div style="font-size: 0.72rem; color: var(--text-muted); margin: 0.4rem 0 0.6rem;">
+                                    <?= $isRequired ? 'Chưa có trong kế hoạch' : 'Chưa chọn lưu trữ' ?>
+                                </div>
+                                <div class="sol-node-action">
+                                    <a href="index.php?page=products&category=<?= $dCat['slug'] ?>" class="sol-node-btn" style="<?= $isRequired ? 'background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.5);' : 'background: rgba(255, 255, 255, 0.06); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.18);' ?>">
+                                        <span>+</span> <?= $isRequired ? 'Chọn Ngay' : 'Thêm Pin' ?>
+                                    </a>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                     <?php endforeach; ?>
                 </div>
-            </section>
 
-            <!-- Hộp cảnh báo thiếu thiết bị bắt buộc kèm nút bổ sung nhanh 1-click -->
-            <?php if (!empty($missingRequired)): ?>
-                <div style="background: rgba(244, 63, 94, 0.12); border: 1.5px solid rgba(244, 63, 94, 0.45); border-radius: var(--radius-sm); padding: 1.15rem 1.35rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; box-shadow: 0 4px 15px rgba(244, 63, 94, 0.15);">
-                    <div style="display: flex; align-items: flex-start; gap: 0.85rem; max-width: 650px;">
-                        <span style="font-size: 1.5rem; line-height: 1;">⚠️</span>
-                        <div>
-                            <strong style="color: #ffffff; font-size: 0.95rem; display: block; margin-bottom: 0.25rem;">
-                                Kế hoạch dự định chưa đủ các thiết bị bắt buộc (Thiếu <?= count($missingRequired) ?> nhóm kỹ thuật):
-                            </strong>
-                            <div style="font-size: 0.825rem; color: #fecdd3; line-height: 1.5;">
-                                Đang thiếu: <strong style="color: #ffffff;"><?= implode(', ', $missingRequired) ?></strong>. Vui lòng bổ sung đầy đủ thiết bị trước khi cập nhật.
+                <!-- Thanh thông báo thiếu thiết bị kèm nút bổ sung nhanh 1-Click tích hợp ngay bên dưới -->
+                <?php if (!empty($missingRequired)): ?>
+                    <div style="margin-top: 1.25rem; background: rgba(244, 63, 94, 0.12); border: 1.5px solid rgba(244, 63, 94, 0.45); border-radius: var(--radius-md, 12px); padding: 1.15rem 1.35rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; box-shadow: 0 4px 15px rgba(244, 63, 94, 0.15);">
+                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; max-width: 680px;">
+                            <span style="font-size: 1.6rem; line-height: 1;">⚠️</span>
+                            <div>
+                                <strong style="color: #ffffff; font-size: 0.95rem; display: block; margin-bottom: 0.25rem;">
+                                    Kế hoạch dự định chưa đủ các thiết bị bắt buộc (Đang thiếu <?= count($missingRequired) ?> nhóm kỹ thuật):
+                                </strong>
+                                <div style="font-size: 0.825rem; color: #fecdd3; line-height: 1.5;">
+                                    Đang thiếu: <strong style="color: #ffffff;"><?= implode(', ', $missingRequired) ?></strong>. Bạn có thể chọn từng nhóm ở trên hoặc nhấn nút bên phải để tự động bổ sung nhanh.
+                                </div>
                             </div>
                         </div>
+                        <form method="POST" action="index.php?page=calculator&source=plan" style="margin: 0;">
+                            <input type="hidden" name="action" value="fill_full_system">
+                            <button type="submit" class="sol-btn sol-btn--solar" style="font-size: 0.9rem; font-weight: 800; padding: 0.75rem 1.4rem; box-shadow: 0 4px 18px rgba(245, 158, 11, 0.45); display: inline-flex; align-items: center; gap: 0.5rem;">
+                                <span>⚡</span> Bổ Sung Đầy Đủ Trọn Bộ 6 Nhóm Chuẩn (1-Click)
+                            </button>
+                        </form>
                     </div>
-                    <form method="POST" action="index.php?page=calculator&source=plan" style="margin: 0;">
-                        <input type="hidden" name="action" value="fill_full_system">
-                        <button type="submit" class="sol-btn sol-btn--solar sol-btn--sm" style="font-weight: 700; padding: 0.65rem 1.15rem; font-size: 0.85rem; box-shadow: 0 2px 10px rgba(245, 158, 11, 0.4); display: inline-flex; align-items: center; gap: 0.45rem;">
-                            <span>⚡</span> Bổ Sung Đầy Đủ Trọn Bộ 6 Nhóm Chuẩn (1-Click)
-                        </button>
-                    </form>
-                </div>
-            <?php endif; ?>
+                <?php endif; ?>
+            </section>
 
             <!-- Lưới danh sách thiết bị trong Kế hoạch dự định -->
             <div style="margin-bottom: 1.5rem;">
