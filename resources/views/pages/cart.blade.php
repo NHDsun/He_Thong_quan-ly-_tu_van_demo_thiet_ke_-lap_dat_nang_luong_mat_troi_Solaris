@@ -37,7 +37,7 @@ foreach ($items as $item) {
 <link rel="stylesheet" href="resources/css/products.css">
 <link rel="stylesheet" href="resources/css/cart.css">
 <link rel="stylesheet" href="resources/css/products-advisor.css">
-<link rel="stylesheet" href="resources/css/cart-grid.css">
+<link rel="stylesheet" href="resources/css/cart-grid.css?v=<?= filemtime(dirname(__DIR__, 3) . '/resources/css/cart-grid.css') ?>">
 <link rel="stylesheet" href="resources/css/cart-polish.css">
 <link rel="stylesheet" href="resources/css/cart-system-map.css">
 <link rel="stylesheet" href="resources/css/cart-system-map-fix.css">
