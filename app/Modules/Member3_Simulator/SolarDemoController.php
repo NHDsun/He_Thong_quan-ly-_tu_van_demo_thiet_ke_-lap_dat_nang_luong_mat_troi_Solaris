@@ -26,7 +26,6 @@ class SolarDemoController
     public function index(array $cartProducts = []): array
     {
         $data = $this->handleRequest($cartProducts);
-        $data['cart_products'] = $cartProducts;
         return $data;
     }
 
@@ -45,6 +44,24 @@ class SolarDemoController
         $postAction = trim((string) ($_POST['action'] ?? ''));
         $isUpdateRequested = false;
 
+        // Nhận tham số tính toán từ GET hoặc POST (Hỗ trợ cả 'monthly_bill' và 'bill')
+        $rawBill = $_REQUEST['monthly_bill'] ?? $_REQUEST['bill'] ?? null;
+        $bill = $rawBill !== null ? (float) preg_replace('/[^0-9]/', '', (string)$rawBill) : 3000000;
+        if ($bill < 500000) $bill = 3000000;
+
+        $roofArea = isset($_REQUEST['roof_area']) && $_REQUEST['roof_area'] !== '' ? (float) $_REQUEST['roof_area'] : null;
+        if ($roofArea !== null && $roofArea <= 0) {
+            $roofArea = null;
+        }
+        $package = isset($_REQUEST['package']) ? trim((string)$_REQUEST['package']) : 'residential';
+        if (!array_key_exists($package, UseSolarCalculator::PACKAGE_PRICING)) {
+            $package = 'residential';
+        }
+        $roofType = isset($_REQUEST['roof_type']) ? trim((string)$_REQUEST['roof_type']) : 'metal_roof';
+        if (!in_array($roofType, ['metal_roof', 'tile_roof', 'concrete_roof'], true)) {
+            $roofType = 'metal_roof';
+        }
+
         // Xử lý nút bấm "Bổ sung nhanh trọn bộ thiết bị chuẩn" vào Kế hoạch dự định
         if ($isPost && $postAction === 'fill_full_system') {
             $cartProducts = $this->handleFillFullSystem($pdo);
@@ -52,6 +69,30 @@ class SolarDemoController
                 'type' => 'success',
                 'message' => 'Đã tự động bổ sung đầy đủ trọn bộ 6 nhóm thiết bị kỹ thuật chuẩn vào Kế hoạch dự định! Vui lòng nhấn "Cập Nhật" để bắt đầu mô phỏng.'
             ];
+        }
+
+        // Xử lý nút bấm "Áp dụng cấu hình Hóa đơn điện vào Kế hoạch dự định"
+        $forcedSource = null;
+        if ($isPost && $postAction === 'apply_bill_to_plan') {
+            $tempBillCalc = UseSolarCalculator::calculate($bill, $roofArea, $package, $roofType);
+            $cartProducts = $this->handleApplyBillToPlan($pdo, $tempBillCalc);
+            $forcedSource = 'plan';
+            $isUpdateRequested = true;
+            $alert = [
+                'type' => 'success',
+                'message' => 'Đã đồng bộ cấu hình từ Hóa đơn điện (' . $tempBillCalc['estimated_kwp'] . ' kWp • ' . $tempBillCalc['panel_count'] . ' tấm pin • ' . $tempBillCalc['package_name'] . ') sang Kế hoạch dự định và kích hoạt mô phỏng 2D!'
+            ];
+        }
+
+        // Xác định nguồn tính toán: 'plan' (từ Kế hoạch dự định) hoặc 'bill' (từ Hóa đơn tiền điện)
+        $hasCartItems = !empty($cartProducts);
+        $requestedSource = $forcedSource ?? $_REQUEST['source'] ?? $_REQUEST['calc_source'] ?? null;
+        if ($requestedSource !== null && in_array(trim((string)$requestedSource), ['plan', 'bill'], true)) {
+            $source = trim((string)$requestedSource);
+        } elseif (isset($_REQUEST['monthly_bill']) || isset($_REQUEST['bill']) || isset($_REQUEST['package'])) {
+            $source = 'bill';
+        } else {
+            $source = $hasCartItems ? 'plan' : 'bill';
         }
 
         // Xử lý khi người dùng cập nhật mô phỏng
@@ -87,12 +128,12 @@ class SolarDemoController
                     exit;
                 }
                 $_SESSION['solar_flash'] = ['type' => 'success', 'message' => match ($postAction) {
-                    'save_quote' => 'Đã lưu dự toán nháp. Bạn có thể gửi yêu cầu từ danh sách bên dưới.',
+                    'save_quote' => 'Đã lưu dự toán nháp thành công. Bạn có thể gửi yêu cầu từ danh sách bên dưới.',
                     'approve_quote' => 'Đã duyệt phương án.',
                     'reject_quote' => 'Đã từ chối phương án và lưu phản hồi.',
-                    default => 'Đã gửi yêu cầu. Bạn có thể theo dõi trạng thái bên dưới.',
+                    default => 'Đã gửi yêu cầu thành công. Bạn có thể theo dõi trạng thái bên dưới.',
                 }];
-                header('Location: index.php?page=calculator', true, 303);
+                header('Location: index.php?page=calculator&source=' . urlencode($source) . '#quote-history', true, 303);
                 exit;
             } catch (\Throwable $error) {
                 $businessError = $error instanceof \RuntimeException && !$error instanceof \PDOException;
@@ -101,21 +142,6 @@ class SolarDemoController
                     error_log('Solar quote: ' . $error->getMessage());
                 }
             }
-        }
-
-        // Nhận tham số tính toán từ GET hoặc POST
-        $bill = isset($_REQUEST['bill']) ? (float) preg_replace('/[^0-9]/', '', (string)$_REQUEST['bill']) : 3000000;
-        if ($bill <= 0) $bill = 3000000;
-
-        $roofArea = isset($_REQUEST['roof_area']) && $_REQUEST['roof_area'] !== '' ? (float) $_REQUEST['roof_area'] : null;
-        $package = isset($_REQUEST['package']) ? trim((string)$_REQUEST['package']) : 'residential';
-        $roofType = isset($_REQUEST['roof_type']) ? trim((string)$_REQUEST['roof_type']) : 'metal_roof';
-
-        // Xác định nguồn tính toán: 'plan' (từ Kế hoạch dự định) hoặc 'bill' (từ Hóa đơn tiền điện)
-        $hasCartItems = !empty($cartProducts);
-        $source = isset($_REQUEST['source']) ? trim((string)$_REQUEST['source']) : ($hasCartItems ? 'plan' : 'bill');
-        if (!in_array($source, ['plan', 'bill'], true)) {
-            $source = $hasCartItems ? 'plan' : 'bill';
         }
 
         // Phân tích ghép đôi thiết bị từ Kế hoạch dự định
@@ -143,32 +169,35 @@ class SolarDemoController
         }
         $isHardwareComplete = empty($missingRequired);
 
-        // Quy tắc theo yêu cầu:
-        // 1. Chỉ khi nhấn CẬP NHẬT thì mới hiển thị từ Bước 2 trở đi.
-        // 2. Nếu từ Kế hoạch dự định, yêu cầu phải ĐẦY ĐỦ các thiết bị bắt buộc.
-        $showStepsFrom2 = false;
-        if ($isUpdateRequested) {
-            if ($source === 'plan') {
-                if ($isHardwareComplete) {
-                    $showStepsFrom2 = true;
-                } else {
-                    $showStepsFrom2 = false;
-                    if ($alert === null) {
-                        $alert = [
-                            'type' => 'warning',
-                            'message' => 'Yêu cầu phải có đầy đủ các thiết bị bắt buộc trong Kế hoạch dự định trước khi hiển thị mô phỏng! Hiện đang thiếu: ' . implode(', ', $missingRequired) . '. Hãy bổ sung thiết bị hoặc nhấn nút "Bổ Sung Đầy Đủ Trọn Bộ Chuẩn".'
-                        ];
-                    }
-                }
-            } else {
-                // Chế độ hóa đơn điện: Đã được hệ thống tự động sinh trọn bộ thiết bị
-                $showStepsFrom2 = true;
-            }
-        }
-
         // Tính toán theo cả 2 chế độ để người dùng dễ dàng chuyển đổi
         $planCalc = $hasCartItems ? UseSolarCalculator::calculateFromPlan($cartProducts, $roofArea, $roofType) : null;
         $billCalc = UseSolarCalculator::calculate($bill, $roofArea, $package, $roofType);
+
+        // Quy tắc hiển thị các bước 2, 3, 4:
+        // - Với 'plan': Cần nhấn Cập nhật và có đủ 6 nhóm thiết bị bắt buộc.
+        // - Với 'bill': Hệ thống tự động tính toán trọn bộ thiết bị theo hóa đơn điện nên luôn sẵn sàng hiển thị từ Bước 2.
+        $showStepsFrom2 = false;
+        if ($source === 'bill') {
+            $showStepsFrom2 = true;
+            if ($isPost && $postAction === 'update_simulation' && $alert === null) {
+                $alert = [
+                    'type' => 'success',
+                    'message' => 'Đã cập nhật tính toán theo hóa đơn ' . $billCalc['monthly_bill_formatted'] . '/tháng (' . $billCalc['package_name'] . '): Đề xuất hệ thống ' . $billCalc['estimated_kwp'] . ' kWp (' . $billCalc['panel_count'] . ' tấm pin Mono 550W) • Hoàn vốn ~' . $billCalc['payback_text'] . '.'
+                ];
+            }
+        } elseif ($isUpdateRequested) {
+            if ($isHardwareComplete) {
+                $showStepsFrom2 = true;
+            } else {
+                $showStepsFrom2 = false;
+                if ($alert === null) {
+                    $alert = [
+                        'type' => 'warning',
+                        'message' => 'Yêu cầu phải có đầy đủ các thiết bị bắt buộc trong Kế hoạch dự định trước khi hiển thị mô phỏng! Hiện đang thiếu: ' . implode(', ', $missingRequired) . '. Hãy bổ sung thiết bị hoặc nhấn nút "Bổ Sung Đầy Đủ Trọn Bộ Chuẩn".'
+                    ];
+                }
+            }
+        }
 
         // Chọn kết quả tính toán chính theo nguồn đang chọn
         $calcResult = ($source === 'plan' && $planCalc !== null) ? $planCalc : $billCalc;
@@ -198,6 +227,92 @@ class SolarDemoController
             'missing_required'     => $missingRequired,
             'is_update_requested'  => $isUpdateRequested
         ];
+    }
+
+    /**
+     * Đồng bộ cấu hình ước tính từ Hóa đơn điện sang Kế hoạch dự định (Giỏ hàng thiết bị)
+     */
+    public function handleApplyBillToPlan(?PDO $pdo, array $billCalc): array
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        $_SESSION['solar_cart'] ??= [];
+
+        if ($pdo === null) {
+            return array_values($_SESSION['solar_cart']);
+        }
+
+        $panelCount = max(4, (int) ($billCalc['panel_count'] ?? 10));
+        $kwp = (float) ($billCalc['estimated_kwp'] ?? 5.5);
+        $packageKey = (string) ($billCalc['package_key'] ?? 'residential');
+
+        // Chọn model Inverter phù hợp với gói & công suất
+        if ($packageKey === 'hybrid') {
+            $invCode = $kwp >= 9 ? 'SOL-INV-006' : 'SOL-INV-005';
+            $invQty = max(1, (int) ceil($kwp / ($invCode === 'SOL-INV-006' ? 10 : 8)));
+        } elseif ($kwp >= 9) {
+            $invCode = 'SOL-INV-003';
+            $invQty = max(1, (int) ceil($kwp / 10));
+        } elseif ($kwp >= 6) {
+            $invCode = 'SOL-INV-004';
+            $invQty = 1;
+        } else {
+            $invCode = 'SOL-INV-001';
+            $invQty = 1;
+        }
+
+        $toSyncCodes = [
+            'SOL-PAN-001' => $panelCount,
+            $invCode      => $invQty,
+            ($kwp >= 10 || $packageKey === 'hybrid') ? 'SOL-ACC-007' : 'SOL-ACC-006' => 1,
+            'SOL-ACC-001' => max(4, (int) ceil($panelCount / 2)),
+            'SOL-ACC-004' => max(1, (int) ceil($panelCount / 12)),
+            'SOL-ACC-008' => 1,
+        ];
+
+        if ($packageKey === 'hybrid') {
+            $batCode = $kwp >= 9 ? 'SOL-BAT-003' : 'SOL-BAT-002';
+            $batQty = max(1, (int) ceil(($kwp * 1.2) / ($batCode === 'SOL-BAT-003' ? 10 : 5.12)));
+            $toSyncCodes[$batCode] = $batQty;
+        }
+
+        try {
+            $inClause = "'" . implode("','", array_keys($toSyncCodes)) . "'";
+            $sql = "SELECT p.*, c.name AS category_name, c.slug AS category_slug 
+                    FROM products p 
+                    JOIN categories c ON c.id = p.category_id 
+                    WHERE p.product_code IN ($inClause) AND p.is_active = 1";
+            $stmt = $pdo->query($sql);
+            $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (!empty($products)) {
+                $_SESSION['solar_cart'] = [];
+                foreach ($products as $prod) {
+                    $pid = (int) $prod['id'];
+                    $code = $prod['product_code'];
+                    $qty = $toSyncCodes[$code] ?? 1;
+
+                    $_SESSION['solar_cart'][$pid] = [
+                        'id'              => $pid,
+                        'product_code'    => $code,
+                        'name'            => $prod['name'],
+                        'category_id'     => (int) ($prod['category_id'] ?? 0),
+                        'category_name'   => $prod['category_name'],
+                        'category_slug'   => $prod['category_slug'] ?? '',
+                        'capacity_watts'  => $prod['capacity_watts'],
+                        'price'           => (float) $prod['price'],
+                        'warranty_years'  => (int) ($prod['warranty_years'] ?? 5),
+                        'technical_specs' => $prod['technical_specs'] ?? '{}',
+                        'image_url'       => $prod['image_url'],
+                        'quantity'        => $qty,
+                    ];
+                }
+                $_SESSION['solar_demo_selection'] = array_keys($_SESSION['solar_cart']);
+            }
+        } catch (\Throwable $e) {}
+
+        return array_values($_SESSION['solar_cart']);
     }
 
     /**
@@ -285,11 +400,12 @@ class SolarDemoController
      */
     private function handleSaveQuote(?PDO $pdo, array $cartProducts = [], bool $confirmToInstall = false): array
     {
-        $source = (string) ($_POST['calc_source'] ?? 'bill');
+        $source = (string) ($_POST['calc_source'] ?? $_REQUEST['source'] ?? 'bill');
         if ($source === 'plan' && empty($cartProducts)) {
             throw new \RuntimeException('Kế hoạch chưa có thiết bị. Hãy chọn thiết bị hoặc dùng chế độ hóa đơn.');
         }
-        $bill = (float) preg_replace('/[^0-9]/', '', (string) ($_POST['monthly_bill'] ?? 3000000));
+        $rawBill = $_POST['monthly_bill'] ?? $_POST['bill'] ?? 3000000;
+        $bill = (float) preg_replace('/[^0-9]/', '', (string) $rawBill);
         $area = (float) ($_POST['roof_area'] ?? 35);
         if ($bill <= 0 || $area <= 0) {
             throw new \RuntimeException('Tiền điện và diện tích mái phải lớn hơn 0.');
@@ -348,7 +464,7 @@ class SolarDemoController
             : null;
         foreach ($list as &$quote) {
             $quote['items'] = [];
-if ((($quote['source'] ?? '') === 'plan') && $itemsQuery !== null) {
+            if ((($quote['source'] ?? '') === 'plan') && $itemsQuery !== null) {
                 $itemsQuery->execute([$quote['id']]);
                 $quote['items'] = $itemsQuery->fetchAll();
             }

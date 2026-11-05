@@ -559,7 +559,7 @@ if ($page === 'profile') {
                                         </li>
                                     </ul>
                                 </div>
-                                <a href="index.php?page=calculator&package=residential" class="sol-btn sol-btn--solar sol-btn--sm" style="width: 100%; text-align: center; font-weight: 700; padding: 0.7rem 1rem;">
+                                <a href="index.php?page=calculator&source=bill&package=residential#step-2-simulation" class="sol-btn sol-btn--solar sol-btn--sm" style="width: 100%; text-align: center; font-weight: 700; padding: 0.7rem 1rem;">
                                     ⚡ Khám Phá Gói Dân Dụng →
                                 </a>
                             </div>
@@ -594,7 +594,7 @@ if ($page === 'profile') {
                                         </li>
                                     </ul>
                                 </div>
-                                <a href="index.php?page=calculator&package=hybrid" class="sol-btn sol-btn--secondary sol-btn--sm" style="width: 100%; text-align: center; border-color: rgba(56, 189, 248, 0.5); color: #bae6fd; font-weight: 700; padding: 0.7rem 1rem;">
+                                <a href="index.php?page=calculator&source=bill&package=hybrid#step-2-simulation" class="sol-btn sol-btn--secondary sol-btn--sm" style="width: 100%; text-align: center; border-color: rgba(56, 189, 248, 0.5); color: #bae6fd; font-weight: 700; padding: 0.7rem 1rem;">
                                     🔋 Khám Phá Gói Hybrid Lưu Trữ →
                                 </a>
                             </div>
@@ -629,7 +629,7 @@ if ($page === 'profile') {
                                         </li>
                                     </ul>
                                 </div>
-                                <a href="index.php?page=calculator&package=commercial" class="sol-btn sol-btn--secondary sol-btn--sm" style="width: 100%; text-align: center; border-color: rgba(168, 85, 247, 0.5); color: #e9d5ff; font-weight: 700; padding: 0.7rem 1rem;">
+                                <a href="index.php?page=calculator&source=bill&package=commercial&monthly_bill=15000000&roof_area=120#step-2-simulation" class="sol-btn sol-btn--secondary sol-btn--sm" style="width: 100%; text-align: center; border-color: rgba(168, 85, 247, 0.5); color: #e9d5ff; font-weight: 700; padding: 0.7rem 1rem;">
                                     🏭 Khám Phá Gói Doanh Nghiệp →
                                 </a>
                             </div>
@@ -664,7 +664,7 @@ if ($page === 'profile') {
                                         </li>
                                     </ul>
                                 </div>
-                                <a href="index.php?page=calculator&package=agri" class="sol-btn sol-btn--secondary sol-btn--sm" style="width: 100%; text-align: center; border-color: rgba(16, 185, 129, 0.5); color: #a7f3d0; font-weight: 700; padding: 0.7rem 1rem;">
+                                <a href="index.php?page=calculator&source=bill&package=agri&monthly_bill=5000000&roof_area=60#step-2-simulation" class="sol-btn sol-btn--secondary sol-btn--sm" style="width: 100%; text-align: center; border-color: rgba(16, 185, 129, 0.5); color: #a7f3d0; font-weight: 700; padding: 0.7rem 1rem;">
                                     🌱 Khám Phá Gói Bơm Nước →
                                 </a>
                             </div>
@@ -709,13 +709,13 @@ if ($page === 'profile') {
                                     Khu vực địa lý lắp đặt (Số giờ nắng đỉnh trung bình):
                                 </label>
                                 <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;" id="regionBtns">
-                                    <button type="button" class="sol-btn sol-btn--secondary sol-btn--sm sol-region-btn" data-hours="3.8" onclick="setRegion(3.8, this)">
+                                    <button type="button" class="sol-btn sol-btn--secondary sol-btn--sm sol-region-btn" data-hours="3.8" data-region="north" onclick="setRegion(3.8, 'north', this)">
                                         Miền Bắc (3.8h)
                                     </button>
-                                    <button type="button" class="sol-btn sol-btn--secondary sol-btn--sm sol-region-btn" data-hours="4.8" onclick="setRegion(4.8, this)">
+                                    <button type="button" class="sol-btn sol-btn--secondary sol-btn--sm sol-region-btn" data-hours="4.8" data-region="central" onclick="setRegion(4.8, 'central', this)">
                                         Miền Trung (4.8h)
                                     </button>
-                                    <button type="button" class="sol-btn sol-btn--solar sol-btn--sm sol-region-btn active" data-hours="5.2" onclick="setRegion(5.2, this)">
+                                    <button type="button" class="sol-btn sol-btn--solar sol-btn--sm sol-region-btn active" data-hours="5.2" data-region="south" onclick="setRegion(5.2, 'south', this)">
                                         Miền Nam (5.2h)
                                     </button>
                                 </div>
@@ -764,8 +764,8 @@ if ($page === 'profile') {
                             </div>
 
                             <div style="margin-top: 1.65rem; display: flex; flex-direction: column; gap: 0.75rem;">
-                                <a id="btnSimulate" href="index.php?page=calculator&source=plan" class="sol-btn sol-btn--solar" style="width: 100%; text-align: center; font-size: 0.95rem; font-weight: 700; padding: 0.8rem 1rem;">
-                                    🚀 Đưa Vào Kế Hoạch & Demo Thiết Kế 3D →
+                                <a id="btnSimulate" href="index.php?page=calculator&source=bill&monthly_bill=3000000&region=south#step-2-simulation" class="sol-btn sol-btn--solar" style="width: 100%; text-align: center; font-size: 0.95rem; font-weight: 700; padding: 0.8rem 1rem;">
+                                    🚀 Mô Phỏng Chi Tiết Theo Hóa Đơn Này →
                                 </a>
                                 <a href="index.php?page=cart" class="sol-btn sol-btn--outline" style="width: 100%; text-align: center; font-size: 0.875rem; padding: 0.65rem 1rem;">
                                     📋 Xem Kế Hoạch Dự Định Thiết Bị
@@ -1499,9 +1499,11 @@ if ($page === 'profile') {
 
         // 5. CÔNG CỤ TÍNH TOÁN CÔNG SUẤT & THỜI GIAN GỠ VỐN (HOME ROI CALCULATOR)
         let currentPeakHours = 5.2; // Mặc định Miền Nam (5.2h nắng đỉnh)
+        let currentRegionKey = 'south';
 
-        function setRegion(hours, btn) {
+        function setRegion(hours, regionKey, btn) {
             currentPeakHours = parseFloat(hours) || 5.2;
+            currentRegionKey = regionKey || 'south';
             document.querySelectorAll('.sol-region-btn').forEach(b => {
                 b.classList.remove('sol-btn--solar', 'active');
                 b.classList.add('sol-btn--secondary');
@@ -1555,7 +1557,7 @@ if ($page === 'profile') {
                 elPayback.innerText = `${paybackYears} Năm ${paybackMonths} Tháng`;
             }
             if (btnSim) {
-                btnSim.href = `index.php?page=calculator&source=plan&bill=${bill}&kwp=${kwp}`;
+                btnSim.href = `index.php?page=calculator&source=bill&monthly_bill=${bill}&region=${currentRegionKey}&roof_area=${Math.max(45, area)}#step-2-simulation`;
             }
         }
 
