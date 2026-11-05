@@ -186,6 +186,7 @@ class SolarDemoController
             'plan_calc'            => $planCalc,
             'bill_calc'            => $billCalc,
             'compatibility'        => $compatibility,
+            'cart_products'        => $cartProducts,
             'alert'                => $alert,
             'saved_quote_id'       => $savedQuoteId,
             'quotes_list'          => $quotesData['list'],
@@ -272,12 +273,11 @@ class SolarDemoController
                         'quantity'        => $defaultQty,
                     ];
                 }
+                $_SESSION['solar_demo_selection'] = array_keys($_SESSION['solar_cart']);
             } catch (\Throwable $e) {}
         }
 
-        return class_exists(\App\Modules\Member2_Products\ProductController::class)
-            ? \App\Modules\Member2_Products\ProductController::cartItems()
-            : array_values($_SESSION['solar_cart']);
+        return array_values($_SESSION['solar_cart']);
     }
 
     /**
