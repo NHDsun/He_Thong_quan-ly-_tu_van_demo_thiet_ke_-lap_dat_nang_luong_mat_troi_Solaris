@@ -137,6 +137,9 @@ if ($page === 'calculator') {
     $pagination = $solarData['pagination'];
     $db_connected = $solarData['db_connected'];
     $db_error = $solarData['db_error'];
+    $show_steps_from_2 = $solarData['show_steps_from_2'] ?? false;
+    $is_hardware_complete = $solarData['is_hardware_complete'] ?? false;
+    $missing_required = $solarData['missing_required'] ?? [];
 }
 
 // -------------------------------------------------------------------------

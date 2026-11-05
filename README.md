@@ -1,5 +1,8 @@
 # ☀️ SOLARIS - HỆ THỐNG QUẢN LÝ, TƯ VẤN, DEMO THIẾT KẾ & LẮP ĐẶT ĐIỆN MẶT TRỜI (v2.1)
 
+Quy trình dự án hiện tại và hướng dẫn cập nhật database: [Đăng ký, duyệt và triển khai dự án](docs/PROJECT_WORKFLOW.md).
+
+
 [![PHP Version](https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=flat&logo=php&logoColor=white)](https://www.php.net/)
 [![Database](https://img.shields.io/badge/MySQL-InnoDB_utf8mb4-4479A1?style=flat&logo=mysql&logoColor=white)](https://www.mysql.com/)
 [![Realtime](https://img.shields.io/badge/Socket.io-Port_3001-010101?style=flat&logo=socket.io&logoColor=white)](https://socket.io/)

@@ -12,6 +12,7 @@ require_once __DIR__ . '/Config.php';
 require_once dirname(__DIR__, 2) . '/Hooks/UsePaginationState.php';
 require_once dirname(__DIR__, 2) . '/Hooks/UseFileUpload.php';
 require_once dirname(__DIR__, 2) . '/Hooks/UseInstallationWorkflow.php';
+require_once dirname(__DIR__, 2) . '/Hooks/UseProjectBilling.php';
 require_once __DIR__ . '/InstallationController.php';
 require_once __DIR__ . '/View.php';
 $installationView = (new InstallationController())->index();

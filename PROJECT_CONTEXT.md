@@ -1,4 +1,7 @@
 # TÀI LIỆU BỐI CẢNH DỰ ÁN & HƯỚNG DẪN DÀNH CHO AI (PROJECT CONTEXT FOR AI AGENTS)
+
+> Quy trình dự án cập nhật 04/11/2026: xem [docs/PROJECT_WORKFLOW.md](docs/PROJECT_WORKFLOW.md). Dự án đi qua `pending_approval → new → scheduled → in_progress → completed`; admin phân công lên lịch khảo sát, nhân viên nhấn bắt đầu để ghi giờ thực tế. Mỗi bước gửi duyệt kèm ngày thực thi bước kế tiếp; admin duyệt lịch dự kiến, nhân viên có thể bắt đầu sớm; giữ lịch dự kiến và ghi riêng giờ thực tế. Không chia đều sáu bước. Phương án từ kế hoạch cần admin duyệt trước khi tạo yêu cầu dự án. Database cũ cập nhật bằng `php tools/migrate-project-workflow.php`.
+
 > **Dự án:** SOLARIS - Hệ Thống Quản Lý, Tư Vấn, Tính Toán & Lắp Đặt Điện Mặt Trời  
 > **Tích hợp:** Cổng 24 Bài Tập Thực Hành Lập Trình Web PHP & MySQL  
 > **Phiên bản tài liệu:** v2.1 (Cập nhật chuẩn hóa CSDL & Phân hệ Lắp đặt/Kiểm thử)  

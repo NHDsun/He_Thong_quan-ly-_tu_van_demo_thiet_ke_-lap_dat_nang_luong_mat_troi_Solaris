@@ -83,11 +83,48 @@ CREATE TABLE `solar_quotes` (
     `estimated_total_cost` DECIMAL(15,2) NOT NULL COMMENT 'Tổng chi phí đầu tư dự kiến VNĐ',
     `payback_years` DECIMAL(4,1) NOT NULL COMMENT 'Thời gian hoàn vốn ước tính (năm)',
     `notes` TEXT NULL,
-    `status` ENUM('pending', 'pending_approval', 'contacted', 'survey_scheduled', 'approved', 'rejected') DEFAULT 'pending_approval',
+    `status` ENUM('draft', 'pending_approval', 'approved', 'rejected') NOT NULL DEFAULT 'draft',
+    `source` ENUM('bill','plan') NOT NULL DEFAULT 'bill',
+    `request_key` CHAR(64) NULL UNIQUE,
+    `legacy_status` VARCHAR(30) NULL,
+    `reviewed_by` INT NULL,
+    `reviewed_at` DATETIME NULL,
+    `review_note` TEXT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL,
     INDEX `idx_quotes_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Chi tiết sản phẩm được chốt khi gửi kế hoạch.
+DROP TABLE IF EXISTS solar_quote_items;
+CREATE TABLE IF NOT EXISTS solar_quote_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    quote_id INT NOT NULL,
+    product_id INT NOT NULL,
+    product_name VARCHAR(255) NOT NULL,
+    quantity INT NOT NULL,
+    unit_price DECIMAL(15,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_quote_product (quote_id,product_id),
+    FOREIGN KEY (quote_id) REFERENCES solar_quotes(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Nhật ký xét duyệt phương án, kể cả khi chưa có dự án.
+DROP TABLE IF EXISTS `solar_quote_logs`;
+CREATE TABLE `solar_quote_logs` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `quote_id` INT NOT NULL,
+    `actor_id` INT NULL,
+    `action` VARCHAR(50) NOT NULL,
+    `from_status` VARCHAR(30) NULL,
+    `to_status` VARCHAR(30) NOT NULL,
+    `note` TEXT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_quote_logs` (`quote_id`,`id`),
+    FOREIGN KEY (`quote_id`) REFERENCES `solar_quotes`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`actor_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 5. Bảng Hợp đồng & Dự án Thi công Lắp đặt thực tế
@@ -102,10 +139,18 @@ CREATE TABLE `projects` (
     `capacity_kwp` DECIMAL(6,2) NOT NULL,
     `total_amount` DECIMAL(15,2) NOT NULL,
     `installation_address` VARCHAR(255) NOT NULL,
-    `status` ENUM('new', 'pending_approval', 'approved', 'in_progress', 'completed', 'cancelled') NOT NULL DEFAULT 'new',
-    `current_stage` ENUM('survey', 'design', 'procurement', 'installation', 'grid_connection', 'handover', 'cancelled') NOT NULL DEFAULT 'survey',
+    `status` ENUM('pending_approval', 'rejected', 'new', 'scheduled', 'in_progress', 'completed', 'cancelled') NOT NULL DEFAULT 'pending_approval',
+    `legacy_status` VARCHAR(30) NULL,
+    `reviewed_by` INT NULL,
+    `reviewed_at` DATETIME NULL,
+    `review_note` TEXT NULL,
+    `cancelled_by` INT NULL,
+    `cancelled_at` DATETIME NULL,
+    `cancel_reason` TEXT NULL,
+    `current_stage` ENUM('survey', 'design', 'procurement', 'installation', 'grid_connection', 'handover') NULL DEFAULT NULL,
     `notes` TEXT NULL,
     `start_date` DATE NULL,
+    `started_at` DATETIME NULL,
     `completion_date` DATE NULL,
     `planned_end_date` DATE NULL,
     `completed_at` DATETIME NULL,
@@ -117,12 +162,46 @@ CREATE TABLE `projects` (
     INDEX `idx_projects_lookup` (`contract_code`, `status`, `current_stage`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Chi phí phát sinh và thanh toán mô phỏng
+DROP TABLE IF EXISTS project_payments;
+DROP TABLE IF EXISTS project_extra_materials;
+-- Chạy trong database Solaris đang sử dụng. Không thay đổi dữ liệu cũ.
+CREATE TABLE IF NOT EXISTS project_extra_materials (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    project_id INT NOT NULL,
+    product_id INT NOT NULL,
+    product_name VARCHAR(255) NOT NULL,
+    quantity INT NOT NULL,
+    unit_price DECIMAL(15,2) NOT NULL,
+    reason TEXT NOT NULL,
+    added_by INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    FOREIGN KEY (added_by) REFERENCES users(id),
+    INDEX(project_id,id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS project_payments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    project_id INT NOT NULL,
+    paid_by INT NOT NULL,
+    amount DECIMAL(15,2) NOT NULL,
+    payment_code VARCHAR(40) NOT NULL UNIQUE,
+    method VARCHAR(30) NOT NULL DEFAULT 'simulation',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (paid_by) REFERENCES users(id),
+    INDEX(project_id,id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- 6. Bảng Vật tư thiết bị xuất kho lắp đặt cho công trình
 DROP TABLE IF EXISTS `installation_items`;
 CREATE TABLE `installation_items` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `project_id` INT NOT NULL,
     `product_id` INT NOT NULL,
+    `product_name` VARCHAR(255) NULL,
     `quantity` INT NOT NULL DEFAULT 1,
     `unit_price` DECIMAL(15,2) NOT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -137,9 +216,10 @@ CREATE TABLE `project_stages` (
     `project_id` INT NOT NULL,
     `stage` ENUM('survey', 'design', 'procurement', 'installation', 'grid_connection', 'handover') NOT NULL,
     `position` TINYINT NOT NULL COMMENT 'Thứ tự từ 1 đến 6',
-    `status` ENUM('locked', 'in_progress', 'pending_approval', 'revision_required', 'approved') NOT NULL DEFAULT 'locked',
+    `status` ENUM('locked', 'scheduled', 'in_progress', 'pending_approval', 'revision_required', 'approved') NOT NULL DEFAULT 'locked',
     `planned_start` DATE NULL,
     `planned_end` DATE NULL,
+    `proposed_next_start` DATE NULL,
     `started_at` DATETIME NULL,
     `submitted_at` DATETIME NULL,
     `submitted_by` INT NULL,
@@ -204,7 +284,7 @@ DROP TABLE IF EXISTS `project_stage_logs`;
 CREATE TABLE `project_stage_logs` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `project_id` INT NOT NULL,
-    `stage` ENUM('survey', 'design', 'procurement', 'installation', 'grid_connection', 'handover') NOT NULL,
+    `stage` ENUM('survey', 'design', 'procurement', 'installation', 'grid_connection', 'handover') NULL,
     `started_at` DATETIME NOT NULL,
     `completed_at` DATETIME NULL,
     `actor_id` INT NULL,
@@ -320,6 +400,8 @@ CREATE TABLE `ct_hoadon` (
     FOREIGN KEY (`Ma_sua`) REFERENCES `sua`(`Ma_sua`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+UPDATE projects p JOIN (SELECT project_id,MIN(started_at) first_start FROM project_stages WHERE started_at IS NOT NULL GROUP BY project_id) s ON s.project_id=p.id SET p.started_at=s.first_start WHERE p.started_at IS NULL AND p.status IN ('in_progress','completed');
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- =============================================================================
@@ -421,23 +503,27 @@ INSERT INTO `products` (`id`, `category_id`, `product_code`, `name`, `capacity_w
 -- -----------------------------------------------------------------------------
 -- 4. BẢNG SOLAR_QUOTES (Báo giá và hồ sơ tính toán hoàn vốn)
 -- -----------------------------------------------------------------------------
+DELETE FROM `solar_quote_items`;
+DELETE FROM `solar_quote_logs`;
 DELETE FROM `solar_quotes`;
 INSERT INTO `solar_quotes` (`id`, `user_id`, `customer_name`, `customer_phone`, `customer_email`, `address`, `monthly_electric_bill`, `roof_area_sqm`, `estimated_system_kwp`, `panel_count`, `estimated_total_cost`, `payback_years`, `notes`, `status`, `created_at`) VALUES
 (1, 12, 'Nguyễn Văn Hải', '0912345678', 'customer.pro@gmail.com', '12 Nguyễn Văn Hưởng, Thảo Điền, TP. Thủ Đức, TP.HCM', 3500000.00, 48.00, 7.70, 14, 115000000.00, 4.2, 'Mái ngói Thái hướng Nam, có nhu cầu lắp thêm lưu trữ sau 6 tháng.', 'approved', '2026-10-14 09:00:00'),
 (2, 8, 'Trần Thị Mai', '0987654321', 'mai.tt@gmail.com', '145 Bạch Đằng, Phường 2, Quận Bình Thạnh, TP.HCM', 2400000.00, 35.00, 5.50, 10, 85000000.00, 4.5, 'Mái tôn bằng phẳng, yêu cầu thi công gọn gàng trong ngày thứ 7.', 'approved', '2026-09-28 10:30:00'),
 (3, 9, 'Đặng Quốc Tuấn', '0933221100', 'tuan.dq@gmail.com', '78 Cộng Hòa, Phường 4, Quận Tân Bình, TP.HCM', 6800000.00, 110.00, 15.00, 26, 210000000.00, 3.8, 'Xưởng may thời trang, tiêu thụ điện chủ yếu ban ngày từ 8h đến 17h.', 'approved', '2026-10-25 15:00:00'),
-(4, NULL, 'Lê Hoàng Long', '0903112233', 'long.lh@yahoo.com', 'Khu biệt thự Nam Long, Quận 7, TP.HCM', 4500000.00, 65.00, 10.00, 18, 148000000.00, 4.1, 'Khách hàng vãng lai để lại yêu cầu tính toán trên website.', 'survey_scheduled', '2026-10-27 16:20:00'),
-(5, NULL, 'Công Ty TNHH Logistics Á Châu', '0283889988', 'info@achau-logistics.vn', 'KCN Sóng Thần 2, Dĩ An, Bình Dương', 25000000.00, 450.00, 50.00, 90, 680000000.00, 3.4, 'Dự án áp mái nhà kho xưởng công nghiệp.', 'contacted', '2026-10-29 09:10:00'),
-(6, NULL, 'Phạm Gia Khiêm', '0944556677', 'khiem.pg@gmail.com', '24 Lê Lợi, Phường Bến Nghé, Quận 1, TP.HCM', 1800000.00, 25.00, 3.30, 6, 52000000.00, 4.8, 'Nhà phố trung tâm, diện tích mái hạn chế.', 'pending', '2026-10-31 14:00:00');
+(4, NULL, 'Lê Hoàng Long', '0903112233', 'long.lh@yahoo.com', 'Khu biệt thự Nam Long, Quận 7, TP.HCM', 4500000.00, 65.00, 10.00, 18, 148000000.00, 4.1, 'Khách hàng vãng lai để lại yêu cầu tính toán trên website.', 'pending_approval', '2026-10-27 16:20:00'),
+(5, NULL, 'Công Ty TNHH Logistics Á Châu', '0283889988', 'info@achau-logistics.vn', 'KCN Sóng Thần 2, Dĩ An, Bình Dương', 25000000.00, 450.00, 50.00, 90, 680000000.00, 3.4, 'Dự án áp mái nhà kho xưởng công nghiệp.', 'pending_approval', '2026-10-29 09:10:00'),
+(6, NULL, 'Phạm Gia Khiêm', '0944556677', 'khiem.pg@gmail.com', '24 Lê Lợi, Phường Bến Nghé, Quận 1, TP.HCM', 1800000.00, 25.00, 3.30, 6, 52000000.00, 4.8, 'Nhà phố trung tâm, diện tích mái hạn chế.', 'pending_approval', '2026-10-31 14:00:00');
 
 -- -----------------------------------------------------------------------------
 -- 5. BẢNG PROJECTS (Các hợp đồng thi công thực tế)
 -- -----------------------------------------------------------------------------
+DELETE FROM `project_payments`;
+DELETE FROM `project_extra_materials`;
 DELETE FROM `projects`;
 INSERT INTO `projects` (`id`, `contract_code`, `quote_id`, `user_id`, `technician_id`, `project_name`, `capacity_kwp`, `total_amount`, `installation_address`, `status`, `current_stage`, `notes`, `start_date`, `completion_date`, `planned_end_date`, `completed_at`, `created_at`) VALUES
 (1, 'SOLAR-2026-001', 1, 12, 3, 'Điện mặt trời Biệt thự Thảo Điền - Anh Hải', 7.70, 115000000.00, '12 Nguyễn Văn Hưởng, Thảo Điền, TP. Thủ Đức, TP.HCM', 'in_progress', 'installation', 'Hợp đồng trọn gói bao gồm 14 tấm pin Canadian 550W và Inverter Sungrow 8kW.', '2026-10-15', NULL, '2026-11-15', NULL, '2026-10-15 08:00:00'),
 (2, 'SOLAR-2026-002', 2, 8, 4, 'Điện mặt trời Nhà phố Bình Thạnh - Chị Mai', 5.50, 85000000.00, '145 Bạch Đằng, Phường 2, Quận Bình Thạnh, TP.HCM', 'completed', 'handover', 'Hệ thống đã nghiệm thu đóng điện hòa lưới thành công với công tơ 2 chiều EVN.', '2026-10-01', '2026-10-20', '2026-10-22', '2026-10-20 11:30:00', '2026-10-01 08:00:00'),
-(3, 'SOLAR-2026-003', 3, 9, 3, 'Hệ thống Điện mặt trời Xưởng May Tân Bình', 15.00, 210000000.00, '78 Cộng Hòa, Phường 4, Quận Tân Bình, TP.HCM', 'new', 'survey', 'Chờ phê duyệt lịch khảo sát kết cấu xà gồ mái tôn xưởng.', '2026-10-28', NULL, '2026-12-05', NULL, '2026-10-28 09:00:00');
+(3, 'SOLAR-2026-003', 3, 9, 3, 'Hệ thống Điện mặt trời Xưởng May Tân Bình', 15.00, 210000000.00, '78 Cộng Hòa, Phường 4, Quận Tân Bình, TP.HCM', 'in_progress', 'survey', 'Chờ phê duyệt lịch khảo sát kết cấu xà gồ mái tôn xưởng.', '2026-10-28', NULL, '2026-12-05', NULL, '2026-10-28 09:00:00');
 
 -- -----------------------------------------------------------------------------
 -- 6. BẢNG INSTALLATION_ITEMS (BOM - Bóc tách danh mục vật tư cho công trình)
@@ -632,6 +718,8 @@ INSERT INTO `ct_hoadon` (`So_hoa_don`, `Ma_sua`, `So_luong`, `Don_gia`) VALUES
 ('HD004', 'SUA004', 1, 15000.00),
 ('HD005', 'SUA006', 10, 26000.00),
 ('HD005', 'SUA008', 4, 30000.00);
+
+UPDATE projects p JOIN (SELECT project_id,MIN(started_at) first_start FROM project_stages WHERE started_at IS NOT NULL GROUP BY project_id) s ON s.project_id=p.id SET p.started_at=s.first_start WHERE p.started_at IS NULL AND p.status IN ('in_progress','completed');
 
 SET FOREIGN_KEY_CHECKS = 1;
 

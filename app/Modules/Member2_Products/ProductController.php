@@ -81,6 +81,12 @@ final class ProductController
         if ($action === 'remove') { unset($_SESSION['solar_cart'][$id]); return; }
         if ($action === 'clear') { $_SESSION['solar_cart'] = []; return; }
         if ($action === 'demo_selected') {
+            if (isset($_POST['quantity']) && is_array($_POST['quantity'])) {
+                foreach ($_POST['quantity'] as $productId => $quantity) {
+                    $productId = (int) $productId; $quantity = max(1, min(99, (int) $quantity));
+                    if (isset($_SESSION['solar_cart'][$productId])) $_SESSION['solar_cart'][$productId]['quantity'] = $quantity;
+                }
+            }
             $_SESSION['solar_demo_selection'] = array_values(array_filter(array_map('intval', (array) ($_POST['selected'] ?? []))));
             return;
         }
@@ -95,17 +101,25 @@ final class ProductController
         $product = $this->findProduct($id);
         if (!$product) return;
         $_SESSION['solar_cart'][$id] = [
-            'id' => (int) $product['id'], 'product_code' => $product['product_code'],
-            'name' => $product['name'], 'category_name' => $product['category_name'],
-            'capacity_watts' => $product['capacity_watts'], 'price' => (float) $product['price'],
-            'image_url' => $product['image_url'], 'quantity' => (int) ($_SESSION['solar_cart'][$id]['quantity'] ?? 0) + 1,
+            'id' => (int) $product['id'],
+            'product_code' => $product['product_code'],
+            'name' => $product['name'],
+            'category_id' => (int) ($product['category_id'] ?? 0),
+            'category_name' => $product['category_name'],
+            'category_slug' => $product['category_slug'] ?? '',
+            'capacity_watts' => $product['capacity_watts'],
+            'price' => (float) $product['price'],
+            'warranty_years' => (int) ($product['warranty_years'] ?? 5),
+            'technical_specs' => $product['technical_specs'] ?? '{}',
+            'image_url' => $product['image_url'],
+            'quantity' => (int) ($_SESSION['solar_cart'][$id]['quantity'] ?? 0) + 1,
         ];
     }
 
     private function findProduct(int $id): ?array
     {
         try {
-            $query = ($this->pdo ?? $this->database())->prepare('SELECT p.*, c.name AS category_name FROM products p JOIN categories c ON c.id=p.category_id WHERE p.id=? AND p.is_active=1');
+            $query = ($this->pdo ?? $this->database())->prepare('SELECT p.*, c.name AS category_name, c.slug AS category_slug FROM products p JOIN categories c ON c.id=p.category_id WHERE p.id=? AND p.is_active=1');
             $query->execute([$id]); return $query->fetch() ?: null;
         } catch (Throwable) { return null; }
     }
@@ -137,7 +151,28 @@ final class ProductController
                 $params['search_name'] = $searchValue;
                 $params['search_code'] = $searchValue;
             }
-            if ($filters['category'] !== '') { $where[] = 'c.slug = :category'; $params['category'] = $filters['category']; }
+            if ($filters['category'] !== '') {
+                $catSlug = $filters['category'];
+                // Ánh xạ mềm giữa 7 nhóm thiết bị ở Kế hoạch (cart) và 4 danh mục chính trong CSDL
+                if ($catSlug === 'tam-pin' || $catSlug === 'tam-pin-mat-troi') {
+                    $where[] = "(c.slug = 'tam-pin-mat-troi' OR c.slug = 'tam-pin')";
+                } elseif ($catSlug === 'inverter' || $catSlug === 'bien-tan-inverter') {
+                    $where[] = "(c.slug = 'bien-tan-inverter' OR c.slug = 'inverter')";
+                } elseif ($catSlug === 'pin-luu-tru' || $catSlug === 'pin-luu-tru-lithium') {
+                    $where[] = "(c.slug = 'pin-luu-tru-lithium' OR c.slug = 'pin-luu-tru')";
+                } elseif ($catSlug === 'tu-dien') {
+                    $where[] = "(c.slug = 'phu-kien-lap-dat' AND (p.name LIKE '%tủ điện%' OR p.name LIKE '%đóng cắt%' OR p.product_code LIKE '%PRO%'))";
+                } elseif ($catSlug === 'khung-gia') {
+                    $where[] = "(c.slug = 'phu-kien-lap-dat' AND (p.name LIKE '%rail%' OR p.name LIKE '%kẹp%' OR p.name LIKE '%khung%' OR p.product_code LIKE '%MTG%'))";
+                } elseif ($catSlug === 'day-cap') {
+                    $where[] = "(c.slug = 'phu-kien-lap-dat' AND (p.name LIKE '%cáp%' OR p.name LIKE '%mc4%' OR p.name LIKE '%dây%' OR p.product_code LIKE '%CAB%'))";
+                } elseif ($catSlug === 'dong-ho') {
+                    $where[] = "(c.slug = 'phu-kien-lap-dat' AND (p.name LIKE '%đồng hồ%' OR p.name LIKE '%meter%' OR p.name LIKE '%công tơ%' OR p.product_code LIKE '%MET%'))";
+                } else {
+                    $where[] = 'c.slug = :category';
+                    $params['category'] = $catSlug;
+                }
+            }
             if ($filters['brand'] !== '') { $where[] = "JSON_UNQUOTE(JSON_EXTRACT(p.technical_specs, '$.brand')) = :brand"; $params['brand'] = $filters['brand']; }
             if ($filters['system_type'] !== '') { $where[] = "JSON_UNQUOTE(JSON_EXTRACT(p.technical_specs, '$.type')) = :system_type"; $params['system_type'] = $filters['system_type']; }
             if ($filters['min_price'] !== null) { $where[] = 'p.price >= :min_price'; $params['min_price'] = $filters['min_price']; }
@@ -168,7 +203,44 @@ final class ProductController
 
     private function database(): PDO { require_once dirname(__DIR__, 2) . '/Config/Database.php'; return Database::connection(); }
     private function positiveNumber(mixed $value): ?float { return is_numeric($value) && (float) $value >= 0 ? (float) $value : null; }
-    private static function filterFallback(array $products, array $filters): array { return array_values(array_filter($products, static function (array $product) use ($filters): bool { $needle = mb_strtolower($filters['search']); $specs = json_decode((string) ($product['technical_specs'] ?? '{}'), true) ?: []; return ($needle === '' || str_contains(mb_strtolower($product['name']), $needle) || str_contains(mb_strtolower($product['product_code']), $needle)) && ($filters['category'] === '' || $product['category_slug'] === $filters['category']) && ($filters['brand'] === '' || ($specs['brand'] ?? '') === $filters['brand']) && ($filters['system_type'] === '' || ($specs['type'] ?? '') === $filters['system_type']) && ($filters['min_price'] === null || $product['price'] >= $filters['min_price']) && ($filters['max_price'] === null || $product['price'] <= $filters['max_price']) && ($filters['min_capacity'] === null || (float) ($product['capacity_watts'] ?? 0) >= $filters['min_capacity']) && ($filters['max_capacity'] === null || (float) ($product['capacity_watts'] ?? 0) <= $filters['max_capacity']) && ($filters['min_warranty'] === null || $product['warranty_years'] >= $filters['min_warranty']); })); }
+    private static function filterFallback(array $products, array $filters): array {
+        return array_values(array_filter($products, static function (array $product) use ($filters): bool {
+            $needle = mb_strtolower($filters['search']);
+            $specs = json_decode((string) ($product['technical_specs'] ?? '{}'), true) ?: [];
+            $matchSearch = ($needle === '' || str_contains(mb_strtolower($product['name']), $needle) || str_contains(mb_strtolower($product['product_code']), $needle));
+            $matchCategory = true;
+            if ($filters['category'] !== '') {
+                $cat = $filters['category'];
+                $itemSlug = $product['category_slug'] ?? '';
+                $itemName = mb_strtolower($product['name'] ?? '');
+                if ($cat === 'tam-pin' || $cat === 'tam-pin-mat-troi') {
+                    $matchCategory = ($itemSlug === 'tam-pin' || $itemSlug === 'tam-pin-mat-troi');
+                } elseif ($cat === 'inverter' || $cat === 'bien-tan-inverter') {
+                    $matchCategory = ($itemSlug === 'inverter' || $itemSlug === 'bien-tan-inverter');
+                } elseif ($cat === 'pin-luu-tru' || $cat === 'pin-luu-tru-lithium') {
+                    $matchCategory = ($itemSlug === 'pin-luu-tru' || $itemSlug === 'pin-luu-tru-lithium');
+                } elseif ($cat === 'tu-dien') {
+                    $matchCategory = ($itemSlug === 'tu-dien' || str_contains($itemName, 'tủ điện') || str_contains($itemName, 'đóng cắt'));
+                } elseif ($cat === 'khung-gia') {
+                    $matchCategory = ($itemSlug === 'khung-gia' || str_contains($itemName, 'rail') || str_contains($itemName, 'kẹp') || str_contains($itemName, 'khung'));
+                } elseif ($cat === 'day-cap') {
+                    $matchCategory = ($itemSlug === 'day-cap' || str_contains($itemName, 'cáp') || str_contains($itemName, 'mc4'));
+                } elseif ($cat === 'dong-ho') {
+                    $matchCategory = ($itemSlug === 'dong-ho' || str_contains($itemName, 'đồng hồ') || str_contains($itemName, 'meter'));
+                } else {
+                    $matchCategory = ($itemSlug === $cat);
+                }
+            }
+            return $matchSearch && $matchCategory
+                && ($filters['brand'] === '' || ($specs['brand'] ?? '') === $filters['brand'])
+                && ($filters['system_type'] === '' || ($specs['type'] ?? '') === $filters['system_type'])
+                && ($filters['min_price'] === null || $product['price'] >= $filters['min_price'])
+                && ($filters['max_price'] === null || $product['price'] <= $filters['max_price'])
+                && ($filters['min_capacity'] === null || (float) ($product['capacity_watts'] ?? 0) >= $filters['min_capacity'])
+                && ($filters['max_capacity'] === null || (float) ($product['capacity_watts'] ?? 0) <= $filters['max_capacity'])
+                && ($filters['min_warranty'] === null || $product['warranty_years'] >= $filters['min_warranty']);
+        }));
+    }
     private static function fallbackCategories(): array { return [['id'=>1,'name'=>'Tấm pin năng lượng mặt trời','slug'=>'tam-pin','description'=>'Chuyển hóa bức xạ mặt trời thành điện DC.'],['id'=>2,'name'=>'Bộ biến tần Inverter','slug'=>'inverter','description'=>'Chuyển đổi điện DC thành AC ổn định.'],['id'=>3,'name'=>'Tủ điện và thiết bị bảo vệ','slug'=>'tu-dien','description'=>'Bảo vệ hệ thống khỏi quá tải và sét lan truyền.'],['id'=>4,'name'=>'Hệ thống khung giá','slug'=>'khung-gia','description'=>'Khung nhôm, kẹp pin và phụ kiện lắp đặt.'],['id'=>5,'name'=>'Dây cáp điện và phụ kiện','slug'=>'day-cap','description'=>'Cáp DC, đầu nối MC4 và phụ kiện đấu nối.'],['id'=>6,'name'=>'Đồng hồ đo điện năng','slug'=>'dong-ho','description'=>'Đo điện hai chiều cho hệ thống hòa lưới.'],['id'=>7,'name'=>'Pin lưu trữ / Ắc quy Solar','slug'=>'pin-luu-tru','description'=>'Lưu điện cho hệ độc lập và hệ Hybrid.']]; }
     private static function fallbackProducts(): array { $items = [['name'=>'Solar Panel Mono 550W Tier-1','category_name'=>'Tấm pin năng lượng mặt trời','category_slug'=>'tam-pin','capacity_watts'=>550,'price'=>2850000,'warranty_years'=>12,'product_code'=>'SP-550-MONO','technical_specs'=>'{"efficiency":"21.3%"}'],['name'=>'Hybrid Inverter 5kW IP65','category_name'=>'Bộ biến tần Inverter','category_slug'=>'inverter','capacity_watts'=>5000,'price'=>24500000,'warranty_years'=>5,'product_code'=>'INV-HYB-5K','technical_specs'=>'{"phase":"1 pha"}'],['name'=>'Tủ điện bảo vệ AC/DC Solar','category_name'=>'Tủ điện và thiết bị bảo vệ','category_slug'=>'tu-dien','capacity_watts'=>null,'price'=>3200000,'warranty_years'=>2,'product_code'=>'BOX-ACDC-01','technical_specs'=>'{"protection":"MCB + SPD"}'],['name'=>'Bộ khung nhôm mái tôn 5kWp','category_name'=>'Hệ thống khung giá','category_slug'=>'khung-gia','capacity_watts'=>null,'price'=>7800000,'warranty_years'=>10,'product_code'=>'MNT-ROOF-5K','technical_specs'=>'{"material":"Aluminium"}'],['name'=>'Cáp DC Solar 6mm² + MC4','category_name'=>'Dây cáp điện và phụ kiện','category_slug'=>'day-cap','capacity_watts'=>null,'price'=>1850000,'warranty_years'=>2,'product_code'=>'CAB-DC-6MM','technical_specs'=>'{"length":"100m"}'],['name'=>'Công tơ điện hai chiều 3 pha','category_name'=>'Đồng hồ đo điện năng','category_slug'=>'dong-ho','capacity_watts'=>null,'price'=>4600000,'warranty_years'=>3,'product_code'=>'METER-3P-2W','technical_specs'=>'{"communication":"RS485"}'],['name'=>'Pin lưu trữ LiFePO4 10kWh','category_name'=>'Pin lưu trữ / Ắc quy Solar','category_slug'=>'pin-luu-tru','capacity_watts'=>10000,'price'=>52000000,'warranty_years'=>10,'product_code'=>'BAT-LFP-10K','technical_specs'=>'{"cycles":6000}']]; foreach ($items as $index => &$item) { $item['id']=$index+1; $item['image_url']=null; $item['stock_quantity']=10; $item['is_active']=1; } return $items; }
 }
