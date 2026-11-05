@@ -333,7 +333,7 @@ class SolarDemoController
         $itemsQuery = $pdo->prepare('SELECT product_name,quantity,unit_price FROM solar_quote_items WHERE quote_id=? ORDER BY id');
         foreach ($list as &$quote) {
             $quote['items'] = [];
-            if ($quote['source'] === 'plan') {
+            if (($quote['source'] ?? '') === 'plan') {
                 $itemsQuery->execute([$quote['id']]);
                 $quote['items'] = $itemsQuery->fetchAll();
             }

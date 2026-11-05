@@ -1421,14 +1421,14 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                                     <?php if ($q['review_note']): ?><p><?= htmlspecialchars($q['review_note']) ?></p><?php endif; ?>
                                     <?php if ($q['project_id']): ?><p>Dự án: <?= htmlspecialchars(\App\Modules\Member4_Installation\View::label($q['project_status'])) ?></p><?php endif; ?>
                                     <details><summary>Thông tin phương án</summary>
-                                        <p>Nguồn: <?= $q['source'] === 'plan' ? 'Kế hoạch dự định' : 'Hóa đơn tiền điện' ?></p>
+                                        <p>Nguồn: <?= ($q['source'] ?? '') === 'plan' ? 'Kế hoạch dự định' : 'Hóa đơn tiền điện' ?></p>
                                         <p>Diện tích: <?= htmlspecialchars((string) $q['roof_area_sqm']) ?> m² · Tiền điện: <?= number_format((float) $q['monthly_electric_bill'], 0, ',', '.') ?> đ/tháng</p>
                                         <p><?= htmlspecialchars($q['customer_email'] ?? '') ?></p>
                                         <p><?= nl2br(htmlspecialchars($q['notes'] ?? '')) ?></p>
                                         <?php foreach ($q['items'] as $item): ?>
                                             <p><?= htmlspecialchars($item['product_name']) ?> · <?= (int) $item['quantity'] ?> × <?= number_format((float) $item['unit_price'], 0, ',', '.') ?> đ</p>
                                         <?php endforeach; ?>
-                                        <?php if ($q['source'] === 'plan' && !$q['items']): ?><p>Phương án cũ chưa lưu chi tiết sản phẩm. Cần gửi lại từ kế hoạch.</p><?php endif; ?>
+                                        <?php if (($q['source'] ?? '') === 'plan' && empty($q['items'])): ?><p>Phương án cũ chưa lưu chi tiết sản phẩm. Cần gửi lại từ kế hoạch.</p><?php endif; ?>
                                     </details>
                                 </td>
                                 <td style="padding: 0.8rem 0.85rem; text-align: center; color: var(--text-muted); font-size: 0.75rem;">
@@ -1441,7 +1441,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                                         <form method="post" action="index.php?page=calculator">
                                             <input type="hidden" name="csrf" value="<?= htmlspecialchars($_SESSION['solar_csrf'], ENT_QUOTES) ?>">
                                             <input type="hidden" name="quote_id" value="<?= (int) $q['id'] ?>">
-                                            <button class="sol-btn sol-btn--solar sol-btn--sm" name="action" value="submit_quote"><?= $q['source'] === 'plan' ? 'Gửi duyệt phương án' : 'Đăng ký khảo sát' ?></button>
+                                            <button class="sol-btn sol-btn--solar sol-btn--sm" name="action" value="submit_quote"><?= ($q['source'] ?? '') === 'plan' ? 'Gửi duyệt phương án' : 'Đăng ký khảo sát' ?></button>
                                         </form>
                                     <?php elseif (($currentUser['role'] ?? '') === 'admin' && $q['status'] === 'pending_approval'): ?>
                                         <form method="post" action="index.php?page=calculator">
