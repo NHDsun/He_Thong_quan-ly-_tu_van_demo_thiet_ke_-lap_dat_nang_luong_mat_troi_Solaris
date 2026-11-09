@@ -135,7 +135,16 @@ final class ProductController
     public static function demoItems(): array
     {
         $cart = self::cartItems();
-        $selected = array_map('intval', (array) ($_SESSION['solar_demo_selection'] ?? array_keys($cart)));
+        if (!isset($_SESSION['solar_demo_selection'])) {
+            return array_values($cart);
+        }
+        $selected = array_map('intval', (array) $_SESSION['solar_demo_selection']);
+        foreach (array_keys($cart) as $cartId) {
+            if (!in_array((int) $cartId, $selected, true)) {
+                $selected[] = (int) $cartId;
+            }
+        }
+        $_SESSION['solar_demo_selection'] = $selected;
         return array_values(array_filter($cart, static fn (array $item): bool => in_array((int) $item['id'], $selected, true)));
     }
 
@@ -195,6 +204,9 @@ final class ProductController
             'image_url' => $product['image_url'],
             'quantity' => (int) ($_SESSION['solar_cart'][$id]['quantity'] ?? 0) + 1,
         ];
+        if (isset($_SESSION['solar_demo_selection']) && !in_array($id, $_SESSION['solar_demo_selection'], true)) {
+            $_SESSION['solar_demo_selection'][] = $id;
+        }
         return ['ok' => true, 'message' => 'Đã thêm thiết bị vào kế hoạch.', 'count' => self::cartCount()];
     }
 

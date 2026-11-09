@@ -158,8 +158,18 @@ if ($page === 'calculator') {
     $demoItems = class_exists(\App\Modules\Member2_Products\ProductController::class)
         ? \App\Modules\Member2_Products\ProductController::demoItems()
         : [];
-    if (empty($demoItems) && class_exists(\App\Modules\Member2_Products\ProductController::class)) {
-        $demoItems = \App\Modules\Member2_Products\ProductController::cartItems();
+    $allCartItems = class_exists(\App\Modules\Member2_Products\ProductController::class)
+        ? \App\Modules\Member2_Products\ProductController::cartItems()
+        : [];
+    if (empty($demoItems)) {
+        $demoItems = $allCartItems;
+    } else {
+        $demoIds = array_map(static fn($it) => (int)($it['id'] ?? 0), $demoItems);
+        foreach ($allCartItems as $cIt) {
+            if (!in_array((int)($cIt['id'] ?? 0), $demoIds, true)) {
+                $demoItems[] = $cIt;
+            }
+        }
     }
     $solarData = $solarCtrl->index($demoItems);
     $calc = $solarData['calc'];

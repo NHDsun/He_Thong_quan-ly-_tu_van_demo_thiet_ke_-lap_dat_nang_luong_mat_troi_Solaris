@@ -348,17 +348,24 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                 ['slug' => 'khung-gia', 'label' => 'Khung Giá Ray', 'sub' => 'Ray nhôm AL6005 & kẹp', 'icon' => '🔩', 'required' => true, 'keys' => ['khung giá', 'khung nhôm', 'ray', 'kẹp']],
                 ['slug' => 'day-cap', 'label' => 'Cáp Điện & MC4', 'sub' => 'Cáp DC Solar 4.0mm²', 'icon' => '🔌', 'required' => true, 'keys' => ['cáp', 'mc4', 'dây']],
                 ['slug' => 'dong-ho', 'label' => 'Công Tơ 2 Chiều', 'sub' => 'Smart Meter đo đếm', 'icon' => '📟', 'required' => true, 'keys' => ['đồng hồ', 'công tơ', 'meter']],
-                ['slug' => 'pin-luu-tru', 'label' => 'Pin Lưu Trữ ESS', 'sub' => 'Lưu trữ điện ban đêm', 'icon' => '🔋', 'required' => false, 'keys' => ['pin lưu trữ', 'lithium', 'battery', 'bess']],
+                ['slug' => 'pin-luu-tru', 'label' => 'Pin Lưu Trữ ESS', 'sub' => 'Lưu trữ điện ban đêm', 'icon' => '🔋', 'required' => false, 'keys' => ['pin lưu trữ', 'pin luu tru', 'lithium', 'lifepo4', 'battery', 'bess', 'ess', 'bat']],
             ];
             $diagramState = array_fill(0, count($diagramCategories), null);
             foreach ($planItems as $pItem) {
                 $categoryName = mb_strtolower((string) ($pItem['category_name'] ?? ''));
+                $categorySlug = mb_strtolower((string) ($pItem['category_slug'] ?? ''));
                 $itemName = mb_strtolower((string) ($pItem['name'] ?? ''));
                 $itemCode = strtoupper((string) ($pItem['product_code'] ?? ''));
                 foreach ($diagramCategories as $dIndex => $dCat) {
                     if ($diagramState[$dIndex] !== null) continue;
                     foreach ($dCat['keys'] as $dKey) {
-                        if (str_contains($categoryName, $dKey) || str_contains($itemName, $dKey) || str_contains($itemCode, strtoupper($dCat['slug']))) {
+                        if (
+                            str_contains($categoryName, $dKey) || 
+                            str_contains($categorySlug, $dKey) || 
+                            str_contains($itemName, $dKey) || 
+                            str_contains($itemCode, strtoupper($dKey)) || 
+                            str_contains($itemCode, strtoupper($dCat['slug']))
+                        ) {
                             $diagramState[$dIndex] = $pItem;
                             break;
                         }
@@ -823,7 +830,7 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
             $b3W = 125; // Khối 3: Pin ESS
             $b4W = 125; // Khối 4: Smart Meter
             $b5W = 70;  // Khối 5: Lưới EVN
-            $wireLen = 30; // Khoảng cách dây nối giữa các khối
+            $wireLen = 48; // Khoảng cách dây nối giữa các khối (nới rộng để chữ không chạm mép khung)
 
             // Tổng chiều rộng hàng thiết bị 5 khối
             $stationW = $b1W + $wireLen + $b2W + $wireLen + $b3W + $wireLen + $b4W + $wireLen + $b5W;
@@ -954,8 +961,41 @@ $roofTypeName = match ($calc['roof_type'] ?? 'metal_roof') {
                 $dispPanelName = !empty($calc['primary_panel']['name']) ? $calc['primary_panel']['name'] : 'Tấm Pin Tier-1 Mono 550W';
                 $dispInverterName = !empty($calc['primary_inverter']['name']) ? $calc['primary_inverter']['name'] : ('Inverter ' . $calc['estimated_kwp'] . 'kW');
                 $dispBoxName = !empty($calc['primary_box']['name']) ? $calc['primary_box']['name'] : 'Tủ Điện AC/DC & Chống Sét';
-                $dispBatteryName = !empty($calc['primary_battery']['name']) ? $calc['primary_battery']['name'] : null;
-                $hasBatteryActive = ($dispBatteryName !== null && ($calc['primary_battery']['quantity'] ?? 0) > 0);
+                
+                // Nhận diện Pin Lưu Trữ ESS từ mọi nguồn dữ liệu (kế hoạch, phân tích tương thích, ma trận thiết bị)
+                $batteryObj = $calc['primary_battery'] 
+                    ?? ($compatibility['batteries'][0] ?? null) 
+                    ?? ($planCalc['primary_battery'] ?? null) 
+                    ?? ($diagramState[6] ?? null);
+
+                if ($batteryObj === null && !empty($planItems)) {
+                    foreach ($planItems as $pIt) {
+                        $pCode = strtoupper((string)($pIt['product_code'] ?? ''));
+                        $pName = mb_strtolower((string)($pIt['name'] ?? ''));
+                        $pCat  = mb_strtolower((string)($pIt['category_name'] ?? ''));
+                        $pSlug = mb_strtolower((string)($pIt['category_slug'] ?? ''));
+                        if (
+                            str_contains($pCode, 'BAT') || 
+                            str_contains($pCode, 'ESS') || 
+                            str_contains($pSlug, 'pin-luu-tru') || 
+                            str_contains($pCat, 'pin lưu trữ') || 
+                            str_contains($pCat, 'pin luu tru') || 
+                            str_contains($pName, 'pin lưu trữ') || 
+                            str_contains($pName, 'pin luu tru') || 
+                            str_contains($pName, 'lithium') || 
+                            str_contains($pName, 'lifepo4') || 
+                            str_contains($pName, 'battery') || 
+                            str_contains($pName, 'bess') || 
+                            str_contains($pName, 'ess')
+                        ) {
+                            $batteryObj = $pIt;
+                            break;
+                        }
+                    }
+                }
+
+                $dispBatteryName = !empty($batteryObj['name']) ? $batteryObj['name'] : null;
+                $hasBatteryActive = ($dispBatteryName !== null && ((int)($batteryObj['quantity'] ?? 1) > 0));
                 $dispMeterName = !empty($calc['primary_meter']['name']) ? $calc['primary_meter']['name'] : 'Smart Meter 2 Chiều';
                 ?>
 

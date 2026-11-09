@@ -103,7 +103,12 @@ class UseSolarCalculator
                 $panels[] = $itemData;
             } elseif (str_contains($catName, 'biến tần') || str_contains($catName, 'inverter') || str_contains($slug, 'inverter') || str_contains($code, 'INV') || str_contains($name, 'biến tần') || str_contains($name, 'inverter')) {
                 $inverters[] = $itemData;
-            } elseif (str_contains($catName, 'pin lưu trữ') || str_contains($catName, 'lithium') || str_contains($slug, 'pin-luu-tru') || str_contains($code, 'BAT') || str_contains($name, 'pin lưu trữ') || str_contains($name, 'lithium') || str_contains($name, 'bess')) {
+            } elseif (
+                str_contains($catName, 'pin lưu trữ') || str_contains($catName, 'pin luu tru') || str_contains($catName, 'lithium') || str_contains($catName, 'lifepo4') || str_contains($catName, 'battery') || str_contains($catName, 'bess') || str_contains($catName, 'ess') ||
+                str_contains($slug, 'pin-luu-tru') || str_contains($slug, 'pin-luu-tru-lithium') || str_contains($slug, 'battery') || str_contains($slug, 'lithium') || str_contains($slug, 'bess') ||
+                str_contains($code, 'BAT') || str_contains($code, 'ESS') || str_contains($code, 'BESS') ||
+                str_contains($name, 'pin lưu trữ') || str_contains($name, 'pin luu tru') || str_contains($name, 'lithium') || str_contains($name, 'lifepo4') || str_contains($name, 'battery') || str_contains($name, 'bess') || str_contains($name, 'ess')
+            ) {
                 $batteries[] = $itemData;
             } elseif (str_contains($name, 'tủ điện') || str_contains($name, 'đóng cắt') || str_contains($name, 'box') || str_contains($slug, 'tu-dien') || str_contains($code, 'PRO')) {
                 $protectionBoxes[] = $itemData;
@@ -758,7 +763,10 @@ class UseSolarCalculator
                 $unit = 'Bộ';
                 $hasInverter = true;
                 $warrantyText = $warranty > 0 ? "{$warranty} năm đổi mới" : "5 năm đổi mới chính hãng";
-            } elseif (str_contains($lower, 'pin lưu trữ') || str_contains($lower, 'lithium') || str_contains($code, 'BAT')) {
+            } elseif (
+                str_contains($lower, 'pin lưu trữ') || str_contains($lower, 'pin luu tru') || str_contains($lower, 'lithium') || str_contains($lower, 'lifepo4') || str_contains($lower, 'battery') || str_contains($lower, 'bess') || str_contains($lower, 'ess') ||
+                str_contains($code, 'BAT') || str_contains($code, 'ESS')
+            ) {
                 $unit = 'Bộ ESS';
                 $hasBattery = true;
                 $warrantyText = $warranty > 0 ? "{$warranty} năm bảo hành dung lượng" : "10 năm bảo hành dung lượng";
